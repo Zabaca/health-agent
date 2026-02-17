@@ -39,7 +39,7 @@ export interface ReleaseFormData {
   // Providers
   providers: ProviderFormData[];
   // Authorization
-  authExpirationDate?: string;
+  authExpirationDate: string;
   authExpirationEvent?: string;
   authPrintedName: string;
   authSignatureImage?: string;

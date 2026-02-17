@@ -13,6 +13,7 @@ export default function AuthorizationSection() {
     control,
     watch,
     setValue,
+    trigger,
     formState: { errors },
   } = useFormContext<ReleaseFormData>();
 
@@ -54,8 +55,11 @@ export default function AuthorizationSection() {
           <TextInput
             label="Authorization Expiration Date"
             placeholder="MM/DD/YYYY"
+            required
             error={errors.authExpirationDate?.message}
-            {...register("authExpirationDate")}
+            {...register("authExpirationDate", {
+              onBlur: () => trigger("authExpirationDate"),
+            })}
           />
           <TextInput
             label="Expiration Event"
@@ -77,7 +81,24 @@ export default function AuthorizationSection() {
             placeholder="MM/DD/YYYY"
             required
             error={errors.authDate?.message}
-            {...register("authDate")}
+            {...register("authDate", {
+              onBlur: (e) => {
+                const date = new Date(e.target.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (isNaN(date.getTime()) || date < today) {
+                  setValue(
+                    "authDate",
+                    today.toLocaleDateString("en-US", {
+                      month: "2-digit",
+                      day: "2-digit",
+                      year: "numeric",
+                    })
+                  );
+                }
+                trigger("authDate");
+              },
+            })}
           />
         </SimpleGrid>
 

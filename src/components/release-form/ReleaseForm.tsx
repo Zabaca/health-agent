@@ -49,11 +49,26 @@ const releaseSchema = z.object({
   email: z.string().email("Invalid email"),
   ssn: z.string().min(1, "SSN is required"),
   providers: z.array(providerSchema),
-  authExpirationDate: z.string().optional(),
+  authExpirationDate: z
+    .string()
+    .min(1, "Expiration date is required")
+    .refine((val) => {
+      const date = new Date(val);
+      return !isNaN(date.getTime());
+    }, "Invalid date")
+    .refine((val) => {
+      const date = new Date(val);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return date >= today;
+    }, "Expiration date cannot be in the past"),
   authExpirationEvent: z.string().optional(),
   authPrintedName: z.string().min(1, "Printed name is required"),
   authSignatureImage: z.string().optional(),
-  authDate: z.string().min(1, "Date is required"),
+  authDate: z
+    .string()
+    .min(1, "Date is required")
+    .refine((val) => !isNaN(new Date(val).getTime()), "Invalid date"),
   authAgentName: z.string().optional(),
 });
 
@@ -69,7 +84,7 @@ export default function ReleaseForm({ releaseId, defaultValues }: Props) {
 
   const methods = useForm<ReleaseFormData>({
     resolver: zodResolver(releaseSchema),
-    defaultValues: defaultValues || {
+    defaultValues: {
       firstName: "",
       lastName: "",
       dateOfBirth: "",
@@ -84,6 +99,7 @@ export default function ReleaseForm({ releaseId, defaultValues }: Props) {
         day: "2-digit",
         year: "numeric",
       }),
+      ...defaultValues,
     },
   });
 
