@@ -20,6 +20,11 @@ dist/
 # Database
 prisma/dev.db
 prisma/dev.db-journal
+*.db
+*.db-journal
+
+# Claude
+.claude/
 
 # Uploads
 public/uploads/*
