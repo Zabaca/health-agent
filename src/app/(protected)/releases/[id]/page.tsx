@@ -35,7 +35,7 @@ export default async function EditReleasePage({
     phoneNumber: release.phoneNumber,
     email: release.email,
     ssn: release.ssn,
-    authExpirationDate: release.authExpirationDate || undefined,
+    authExpirationDate: release.authExpirationDate || "",
     authExpirationEvent: release.authExpirationEvent || undefined,
     authPrintedName: release.authPrintedName,
     authSignatureImage: release.authSignatureImage || undefined,

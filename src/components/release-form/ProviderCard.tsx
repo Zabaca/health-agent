@@ -30,7 +30,6 @@ export default function ProviderCard({ index, onRemove }: Props) {
     register,
     control,
     watch,
-    setValue,
     formState: { errors },
   } = useFormContext<ReleaseFormData>();
 

@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "type-check": "tsc --noEmit",
+    "lint": "oxlint src/",
+    "lint:fix": "oxlint src/ --fix"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -35,6 +38,7 @@
     "@types/react-dom": "^18.3.0",
     "@types/react-signature-canvas": "^1.0.5",
     "@types/uuid": "^10.0.0",
+    "oxlint": "^1.48.0",
     "postcss": "^8.4.0",
     "postcss-preset-mantine": "^1.17.0",
     "postcss-simple-vars": "^7.0.0",
