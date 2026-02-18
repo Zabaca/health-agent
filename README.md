@@ -13,15 +13,14 @@ A Next.js web app that allows patients to register, log in, and create medical r
 
 ## Prerequisites
 
-- Node.js v18 or higher
-- npm v9 or higher
+- [Bun](https://bun.sh) v1.0 or higher
 
 ## Getting Started
 
 ### 1. Install dependencies
 
 ```bash
-npm install
+bun install
 ```
 
 ### 2. Configure environment variables
@@ -43,7 +42,7 @@ openssl rand -base64 32
 ### 3. Set up the database
 
 ```bash
-npx prisma migrate dev
+bun db:migrate
 ```
 
 This creates the SQLite database at `prisma/dev.db` and runs all migrations.
@@ -51,7 +50,7 @@ This creates the SQLite database at `prisma/dev.db` and runs all migrations.
 ### 4. Start the development server
 
 ```bash
-npm run dev
+bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -72,11 +71,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server at http://localhost:3000 |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server (requires build first) |
-| `npx prisma migrate dev` | Apply database migrations |
-| `npx prisma studio` | Open Prisma Studio to browse the database |
+| `bun dev` | Start development server at http://localhost:3000 |
+| `bun build` | Build for production |
+| `bun start` | Start production server (requires build first) |
+| `bun lint` | Run oxlint on all source files |
+| `bun type-check` | Run TypeScript type checking |
+| `bun db:migrate` | Apply database migrations |
+| `bun x prisma studio` | Open Prisma Studio to browse the database |
 
 ---
 
