@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
+import { and, asc, eq } from "drizzle-orm";
 import ReleaseForm from "@/components/release-form/ReleaseForm";
 import type { ReleaseFormData } from "@/types/release";
 
@@ -17,9 +19,9 @@ export default async function EditReleasePage({
   const userId = session?.user?.id;
   if (!userId) notFound();
 
-  const release = await prisma.release.findFirst({
-    where: { id, userId },
-    include: { providers: { orderBy: { order: "asc" } } },
+  const release = await db.query.releases.findFirst({
+    where: and(eq(releasesTable.id, id), eq(releasesTable.userId, userId)),
+    with: { providers: { orderBy: [asc(providersTable.order)] } },
   });
 
   if (!release) {

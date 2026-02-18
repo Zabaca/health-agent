@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { hashPassword } from "@/lib/auth-helpers";
 import { z } from "zod";
 
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = parsed.data;
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
     if (existing) {
       return NextResponse.json(
         { error: "Email already registered" },
@@ -31,9 +33,10 @@ export async function POST(req: NextRequest) {
     }
 
     const hashed = await hashPassword(password);
-    const user = await prisma.user.create({
-      data: { email, password: hashed },
-    });
+    const [user] = await db
+      .insert(users)
+      .values({ id: crypto.randomUUID(), email, password: hashed })
+      .returning();
 
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
   } catch (error) {

@@ -1,5 +1,7 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { releases as releasesTable } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { Button, Group, Title } from "@mantine/core";
 import Link from "next/link";
 import ReleaseList from "@/components/dashboard/ReleaseList";
@@ -13,22 +15,22 @@ export default async function DashboardPage() {
   const userId = session?.user?.id;
   if (!userId) return null;
 
-  const releases = await prisma.release.findMany({
-    where: { userId },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+  const releases = await db
+    .select({
+      id: releasesTable.id,
+      firstName: releasesTable.firstName,
+      lastName: releasesTable.lastName,
+      createdAt: releasesTable.createdAt,
+      updatedAt: releasesTable.updatedAt,
+    })
+    .from(releasesTable)
+    .where(eq(releasesTable.userId, userId))
+    .orderBy(desc(releasesTable.updatedAt));
 
   const serialized: ReleaseSummary[] = releases.map((r) => ({
     ...r,
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt.toISOString(),
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
   }));
 
   return (

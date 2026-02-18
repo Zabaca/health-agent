@@ -7,8 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
     "type-check": "tsc --noEmit",
     "lint": "oxlint src/",
     "lint:fix": "oxlint src/ --fix"
@@ -19,7 +19,8 @@
     "@mantine/dates": "^7.15.0",
     "@mantine/hooks": "^7.15.0",
     "@mantine/notifications": "^7.15.0",
-    "@prisma/client": "^5.22.0",
+    "@libsql/client": "^0.14.0",
+    "drizzle-orm": "^0.38.0",
     "@tabler/icons-react": "^3.36.1",
     "bcryptjs": "^2.4.3",
     "dayjs": "^1.11.0",
@@ -43,7 +44,7 @@
     "postcss": "^8.4.0",
     "postcss-preset-mantine": "^1.17.0",
     "postcss-simple-vars": "^7.0.0",
-    "prisma": "^5.22.0",
+    "drizzle-kit": "^0.30.0",
     "typescript": "^5.7.0"
   }
 }

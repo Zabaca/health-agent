@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
+import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
+import { and, asc, eq } from "drizzle-orm";
 
 async function getRelease(id: string, userId: string) {
-  return prisma.release.findFirst({
-    where: { id, userId },
-    include: { providers: { orderBy: { order: "asc" } } },
+  return db.query.releases.findFirst({
+    where: and(eq(releasesTable.id, id), eq(releasesTable.userId, userId)),
+    with: { providers: { orderBy: [asc(providersTable.order)] } },
   });
 }
 
@@ -50,28 +52,32 @@ export async function PUT(
     const { id: _id, userId: _userId, createdAt: _createdAt, updatedAt: _updatedAt, ...updateData } = releaseData;
     void _id; void _userId; void _createdAt; void _updatedAt;
 
-    const release = await prisma.$transaction(async (tx) => {
+    const release = await db.transaction(async (tx) => {
       // Delete all existing providers
-      await tx.provider.deleteMany({ where: { releaseId: id } });
+      await tx.delete(providersTable).where(eq(providersTable.releaseId, id));
 
-      // Update release and re-insert providers
-      const updated = await tx.release.update({
-        where: { id },
-        data: {
-          ...updateData,
-          providers: {
-            create: (providers || []).map(
-              (p: Record<string, unknown>, idx: number) => {
-                const { id: _pid, releaseId: _rid, ...providerData } = p as Record<string, unknown>;
+      // Update release
+      const [updated] = await tx
+        .update(releasesTable)
+        .set({ ...updateData, updatedAt: new Date().toISOString() })
+        .where(eq(releasesTable.id, id))
+        .returning();
+
+      // Re-insert providers
+      const insertedProviders = providers?.length
+        ? await tx
+            .insert(providersTable)
+            .values(
+              providers.map((p: Record<string, unknown>, i: number) => {
+                const { id: _pid, releaseId: _rid, ...providerData } = p;
                 void _pid; void _rid;
-                return { ...providerData, order: idx };
-              }
-            ),
-          },
-        },
-        include: { providers: { orderBy: { order: "asc" } } },
-      });
-      return updated;
+                return { id: crypto.randomUUID(), releaseId: id, ...providerData, order: i };
+              })
+            )
+            .returning()
+        : [];
+
+      return { ...updated, providers: insertedProviders };
     });
 
     return NextResponse.json(release);
@@ -96,7 +102,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await prisma.release.delete({ where: { id } });
+  await db.delete(releasesTable).where(eq(releasesTable.id, id));
 
   return NextResponse.json({ success: true });
 }
