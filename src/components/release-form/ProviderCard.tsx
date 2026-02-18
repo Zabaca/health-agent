@@ -21,7 +21,7 @@ interface Props {
 }
 
 const PROVIDER_TYPES = [
-  { value: "Insurance", label: "Insurance" },
+  { value: "Medical Group", label: "Medical Group" },
   { value: "Facility", label: "Facility / Hospital / Clinic" },
 ];
 
@@ -35,7 +35,8 @@ export default function ProviderCard({ index, onRemove }: Props) {
 
   const providerName = watch(`providers.${index}.providerName`) || `Provider ${index + 1}`;
   const providerType = watch(`providers.${index}.providerType`);
-  const isInsurance = providerType === "Insurance";
+  const isInsurance = providerType === "Medical Group";
+  const isFacility = providerType === "Facility";
   const providerErrors = errors.providers?.[index];
 
   return (
@@ -73,21 +74,36 @@ export default function ProviderCard({ index, onRemove }: Props) {
             />
           </SimpleGrid>
 
+          {isFacility && (
+            <TextInput
+              label="Physician Name"
+              error={providerErrors?.physicianName?.message}
+              {...register(`providers.${index}.physicianName`)}
+            />
+          )}
+
           {isInsurance && (
             <>
+              <TextInput
+                label="Insurance"
+                required
+                error={providerErrors?.insurance?.message}
+                {...register(`providers.${index}.insurance`)}
+              />
               <SimpleGrid cols={{ base: 1, sm: 3 }}>
                 <TextInput
-                  label="Patient Member ID"
+                  label="Insurance Member ID"
+                  required
                   error={providerErrors?.patientMemberId?.message}
                   {...register(`providers.${index}.patientMemberId`)}
                 />
                 <TextInput
-                  label="Group ID"
+                  label="Insurance Group ID"
                   error={providerErrors?.groupId?.message}
                   {...register(`providers.${index}.groupId`)}
                 />
                 <TextInput
-                  label="Plan Name"
+                  label="Insurance Plan Name"
                   error={providerErrors?.planName?.message}
                   {...register(`providers.${index}.planName`)}
                 />

@@ -1,7 +1,9 @@
 export interface ProviderFormData {
   id?: string;
   providerName: string;
-  providerType: "Insurance" | "Facility";
+  providerType: "Medical Group" | "Facility";
+  physicianName?: string;
+  insurance?: string;
   patientMemberId?: string;
   groupId?: string;
   planName?: string;
@@ -39,6 +41,14 @@ export interface ReleaseFormData {
   // Providers
   providers: ProviderFormData[];
   // Authorization
+  releaseAuthAgent: boolean;
+  releaseAuthZabaca: boolean;
+  authAgentFirstName?: string;
+  authAgentLastName?: string;
+  authAgentOrganization?: string;
+  authAgentAddress?: string;
+  authAgentPhone?: string;
+  authAgentEmail?: string;
   authExpirationDate: string;
   authExpirationEvent?: string;
   authPrintedName: string;

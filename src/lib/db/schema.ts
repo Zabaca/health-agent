@@ -25,6 +25,16 @@ export const releases = sqliteTable('Release', {
   email: text('email').notNull(),
   ssn: text('ssn').notNull(),
 
+  // Release Authorization
+  releaseAuthAgent: integer('releaseAuthAgent', { mode: 'boolean' }).notNull().default(false),
+  releaseAuthZabaca: integer('releaseAuthZabaca', { mode: 'boolean' }).notNull().default(false),
+  authAgentFirstName: text('authAgentFirstName'),
+  authAgentLastName: text('authAgentLastName'),
+  authAgentOrganization: text('authAgentOrganization'),
+  authAgentAddress: text('authAgentAddress'),
+  authAgentPhone: text('authAgentPhone'),
+  authAgentEmail: text('authAgentEmail'),
+
   // Authorization
   authExpirationDate: text('authExpirationDate'),
   authExpirationEvent: text('authExpirationEvent'),
@@ -42,6 +52,8 @@ export const providers = sqliteTable('Provider', {
   // Provider Info
   providerName: text('providerName').notNull(),
   providerType: text('providerType').notNull(),
+  physicianName: text('physicianName'),
+  insurance: text('insurance'),
   patientMemberId: text('patientMemberId'),
   groupId: text('groupId'),
   planName: text('planName'),

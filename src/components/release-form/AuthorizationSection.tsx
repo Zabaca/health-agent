@@ -1,6 +1,6 @@
 "use client";
 
-import { TextInput, Title, Paper, Stack, SimpleGrid } from "@mantine/core";
+import { TextInput, Title, Paper, Stack, SimpleGrid, Checkbox, Group, Text } from "@mantine/core";
 import { useFormContext, Controller } from "react-hook-form";
 import dynamic from "next/dynamic";
 import type { ReleaseFormData } from "@/types/release";
@@ -18,6 +18,7 @@ export default function AuthorizationSection() {
   } = useFormContext<ReleaseFormData>();
 
   const sigValue = watch("authSignatureImage");
+  const releaseAuthAgent = watch("releaseAuthAgent");
 
   const handleSignatureChange = async (dataUrl: string) => {
     if (!dataUrl) {
@@ -25,7 +26,6 @@ export default function AuthorizationSection() {
       return;
     }
 
-    // Upload signature
     try {
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -37,7 +37,6 @@ export default function AuthorizationSection() {
         const { url } = await res.json();
         setValue("authSignatureImage", url);
       } else {
-        // Store as data URL temporarily
         setValue("authSignatureImage", dataUrl);
       }
     } catch {
@@ -51,6 +50,86 @@ export default function AuthorizationSection() {
         Authorization
       </Title>
       <Stack gap="md">
+        <Stack gap="xs">
+          <Text fw={500} size="sm">
+            Release Authorization <Text component="span" c="red">*</Text>
+          </Text>
+          <Group gap="xl">
+            <Controller
+              name="releaseAuthAgent"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  label="Agent"
+                  checked={field.value}
+                  onChange={(e) => field.onChange(e.currentTarget.checked)}
+                />
+              )}
+            />
+            <Controller
+              name="releaseAuthZabaca"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  label="Zabaca"
+                  checked={field.value}
+                  onChange={(e) => field.onChange(e.currentTarget.checked)}
+                />
+              )}
+            />
+          </Group>
+          {errors.releaseAuthAgent && (
+            <Text c="red" size="xs">{errors.releaseAuthAgent.message}</Text>
+          )}
+        </Stack>
+
+        {releaseAuthAgent && (
+          <Paper withBorder p="sm" radius="md">
+            <Stack gap="md">
+              <Title order={6}>Agent Details</Title>
+              <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <TextInput
+                  label="First Name"
+                  required
+                  error={errors.authAgentFirstName?.message}
+                  {...register("authAgentFirstName")}
+                />
+                <TextInput
+                  label="Last Name"
+                  required
+                  error={errors.authAgentLastName?.message}
+                  {...register("authAgentLastName")}
+                />
+              </SimpleGrid>
+              <TextInput
+                label="Organization"
+                error={errors.authAgentOrganization?.message}
+                {...register("authAgentOrganization")}
+              />
+              <TextInput
+                label="Address"
+                required
+                error={errors.authAgentAddress?.message}
+                {...register("authAgentAddress")}
+              />
+              <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <TextInput
+                  label="Phone Number"
+                  required
+                  error={errors.authAgentPhone?.message}
+                  {...register("authAgentPhone")}
+                />
+                <TextInput
+                  label="Email"
+                  type="email"
+                  error={errors.authAgentEmail?.message}
+                  {...register("authAgentEmail")}
+                />
+              </SimpleGrid>
+            </Stack>
+          </Paper>
+        )}
+
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput
             label="Authorization Expiration Date"

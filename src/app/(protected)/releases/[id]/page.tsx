@@ -29,6 +29,14 @@ export default async function EditReleasePage({
   }
 
   const defaultValues: ReleaseFormData = {
+    releaseAuthAgent: release.releaseAuthAgent,
+    releaseAuthZabaca: release.releaseAuthZabaca,
+    authAgentFirstName: release.authAgentFirstName || undefined,
+    authAgentLastName: release.authAgentLastName || undefined,
+    authAgentOrganization: release.authAgentOrganization || undefined,
+    authAgentAddress: release.authAgentAddress || undefined,
+    authAgentPhone: release.authAgentPhone || undefined,
+    authAgentEmail: release.authAgentEmail || undefined,
     firstName: release.firstName,
     middleName: release.middleName || undefined,
     lastName: release.lastName,
@@ -45,7 +53,9 @@ export default async function EditReleasePage({
     authAgentName: release.authAgentName || undefined,
     providers: release.providers.map((p) => ({
       providerName: p.providerName,
-      providerType: p.providerType as "Insurance" | "Facility",
+      providerType: p.providerType as "Medical Group" | "Facility",
+      physicianName: p.physicianName || undefined,
+      insurance: p.insurance || undefined,
       patientMemberId: p.patientMemberId || undefined,
       groupId: p.groupId || undefined,
       planName: p.planName || undefined,

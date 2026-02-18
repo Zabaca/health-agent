@@ -14,13 +14,17 @@ import AuthorizationSection from "./AuthorizationSection";
 
 const providerSchema = z.object({
   providerName: z.string().min(1, "Provider name is required"),
-  providerType: z.enum(["Insurance", "Facility"]),
+  providerType: z.enum(["Medical Group", "Facility"], {
+    errorMap: () => ({ message: "Please select a provider type" }),
+  }),
+  physicianName: z.string().optional(),
+  insurance: z.string().optional(),
   patientMemberId: z.string().optional(),
   groupId: z.string().optional(),
   planName: z.string().optional(),
   phone: z.string().optional(),
   fax: z.string().optional(),
-  providerEmail: z.string().email("Invalid email").optional().or(z.literal("")),
+  providerEmail: z.string().email("Please enter a valid email address").optional().or(z.literal("")),
   address: z.string().optional(),
   membershipIdFront: z.string().optional(),
   membershipIdBack: z.string().optional(),
@@ -37,6 +41,15 @@ const providerSchema = z.object({
   allAvailableDates: z.boolean(),
   purpose: z.string().optional(),
   purposeOther: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.providerType === "Medical Group") {
+    if (!data.insurance?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Insurance is required", path: ["insurance"] });
+    }
+    if (!data.patientMemberId?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Insurance Member ID is required", path: ["patientMemberId"] });
+    }
+  }
 });
 
 const releaseSchema = z.object({
@@ -46,16 +59,24 @@ const releaseSchema = z.object({
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   mailingAddress: z.string().min(1, "Mailing address is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
-  email: z.string().email("Invalid email"),
+  email: z.string().email("Please enter a valid email address"),
   ssn: z.string().min(1, "SSN is required"),
   providers: z.array(providerSchema),
+  releaseAuthAgent: z.boolean(),
+  releaseAuthZabaca: z.boolean(),
+  authAgentFirstName: z.string().optional(),
+  authAgentLastName: z.string().optional(),
+  authAgentOrganization: z.string().optional(),
+  authAgentAddress: z.string().optional(),
+  authAgentPhone: z.string().optional(),
+  authAgentEmail: z.string().email("Please enter a valid email address").optional().or(z.literal("")),
   authExpirationDate: z
     .string()
     .min(1, "Expiration date is required")
     .refine((val) => {
       const date = new Date(val);
       return !isNaN(date.getTime());
-    }, "Invalid date")
+    }, "Please enter a valid date")
     .refine((val) => {
       const date = new Date(val);
       const today = new Date();
@@ -68,8 +89,30 @@ const releaseSchema = z.object({
   authDate: z
     .string()
     .min(1, "Date is required")
-    .refine((val) => !isNaN(new Date(val).getTime()), "Invalid date"),
+    .refine((val) => !isNaN(new Date(val).getTime()), "Please enter a valid date"),
   authAgentName: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (!data.releaseAuthAgent && !data.releaseAuthZabaca) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one release authorization must be selected",
+      path: ["releaseAuthAgent"],
+    });
+  }
+  if (data.releaseAuthAgent) {
+    if (!data.authAgentFirstName?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "First name is required", path: ["authAgentFirstName"] });
+    }
+    if (!data.authAgentLastName?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Last name is required", path: ["authAgentLastName"] });
+    }
+    if (!data.authAgentAddress?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Address is required", path: ["authAgentAddress"] });
+    }
+    if (!data.authAgentPhone?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Phone number is required", path: ["authAgentPhone"] });
+    }
+  }
 });
 
 interface Props {
@@ -93,6 +136,8 @@ export default function ReleaseForm({ releaseId, defaultValues }: Props) {
       email: "",
       ssn: "",
       providers: [],
+      releaseAuthAgent: false,
+      releaseAuthZabaca: false,
       authPrintedName: "",
       authDate: new Date().toLocaleDateString("en-US", {
         month: "2-digit",
@@ -124,7 +169,7 @@ export default function ReleaseForm({ releaseId, defaultValues }: Props) {
       }
 
       notifications.show({
-        title: "Success",
+        title: "Saved",
         message: releaseId ? "Release updated successfully" : "Release created successfully",
         color: "green",
       });
@@ -140,7 +185,13 @@ export default function ReleaseForm({ releaseId, defaultValues }: Props) {
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={methods.handleSubmit(onSubmit)}>
+      <form onSubmit={methods.handleSubmit(onSubmit, () => {
+          notifications.show({
+            title: "Please fix the errors",
+            message: "Some fields need your attention before the form can be submitted.",
+            color: "red",
+          });
+        })}>
         <Stack gap="xl">
           <Group justify="space-between" align="center">
             <Title order={2}>
