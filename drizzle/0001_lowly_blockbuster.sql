@@ -1,0 +1,1 @@
+ALTER TABLE `User` ADD `type` text DEFAULT 'patient' NOT NULL;

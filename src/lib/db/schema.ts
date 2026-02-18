@@ -5,6 +5,7 @@ export const users = sqliteTable('User', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
+  type: text('type', { enum: ['patient', 'agent', 'admin'] }).notNull().default('patient'),
   createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
