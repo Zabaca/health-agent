@@ -11,7 +11,7 @@ import {
   ActionIcon,
   Tooltip,
 } from "@mantine/core";
-import { IconEdit, IconTrash } from "@tabler/icons-react";
+import { IconEye, IconTrash } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import type { ReleaseSummary } from "@/types/release";
 import Link from "next/link";
@@ -83,13 +83,13 @@ export default function ReleaseList({ releases }: Props) {
       <Table.Td>{new Date(r.updatedAt).toLocaleDateString()}</Table.Td>
       <Table.Td>
         <Group gap="xs">
-          <Tooltip label="Edit">
+          <Tooltip label="View">
             <ActionIcon
               component={Link}
               href={`/releases/${r.id}`}
               variant="light"
             >
-              <IconEdit size={16} />
+              <IconEye size={16} />
             </ActionIcon>
           </Tooltip>
           <Tooltip label="Delete">

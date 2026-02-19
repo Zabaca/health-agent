@@ -56,12 +56,20 @@ const releaseSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   middleName: z.string().optional(),
   lastName: z.string().min(1, "Last name is required"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  dateOfBirth: z.string().min(1, "Date of birth is required").refine((val) => {
+    const date = new Date(val);
+    return !isNaN(date.getTime());
+  }, "Please enter a valid date").refine((val) => {
+    const date = new Date(val);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date <= today;
+  }, "Date of birth cannot be in the future"),
   mailingAddress: z.string().min(1, "Mailing address is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   email: z.string().email("Please enter a valid email address"),
   ssn: z.string().min(1, "SSN is required"),
-  providers: z.array(providerSchema),
+  providers: z.array(providerSchema).min(1, "At least one healthcare provider is required"),
   releaseAuthAgent: z.boolean(),
   releaseAuthZabaca: z.boolean(),
   authAgentFirstName: z.string().optional(),
@@ -79,13 +87,14 @@ const releaseSchema = z.object({
     }, "Please enter a valid date")
     .refine((val) => {
       const date = new Date(val);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return date >= today;
-    }, "Expiration date cannot be in the past"),
+      const minDate = new Date();
+      minDate.setHours(0, 0, 0, 0);
+      minDate.setDate(minDate.getDate() + 90);
+      return date >= minDate;
+    }, "Expiration date must be at least 90 days from today"),
   authExpirationEvent: z.string().optional(),
   authPrintedName: z.string().min(1, "Printed name is required"),
-  authSignatureImage: z.string().optional(),
+  authSignatureImage: z.string({ required_error: "Signature is required" }).min(1, "Signature is required"),
   authDate: z
     .string()
     .min(1, "Date is required")

@@ -66,7 +66,8 @@ export default function ProviderCard({ index, onRemove }: Props) {
                   label="Provider Type"
                   required
                   data={PROVIDER_TYPES}
-                  value={field.value}
+                  placeholder="Select a type"
+                  value={field.value || null}
                   onChange={field.onChange}
                   error={providerErrors?.providerType?.message}
                 />

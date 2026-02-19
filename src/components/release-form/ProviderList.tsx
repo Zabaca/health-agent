@@ -8,7 +8,7 @@ import ProviderCard from "./ProviderCard";
 
 const defaultProvider = {
   providerName: "",
-  providerType: "Facility" as const,
+  providerType: "" as unknown as "Medical Group" | "Facility",
   historyPhysical: false,
   diagnosticResults: false,
   treatmentProcedure: false,
@@ -20,7 +20,7 @@ const defaultProvider = {
 };
 
 export default function ProviderList() {
-  const { control } = useFormContext<ReleaseFormData>();
+  const { control, formState: { errors } } = useFormContext<ReleaseFormData>();
   const { fields, append, remove } = useFieldArray({
     control,
     name: "providers",
@@ -41,8 +41,8 @@ export default function ProviderList() {
       </Title>
 
       {fields.length === 0 && (
-        <Text c="dimmed" size="sm" mb="md">
-          No providers added yet. Click &ldquo;Add Provider&rdquo; to get started.
+        <Text c={errors.providers?.root?.message || errors.providers?.message ? "red" : "dimmed"} size="sm" mb="md">
+          {errors.providers?.root?.message || errors.providers?.message || "No providers added yet. Click \"Add Provider\" to get started."}
         </Text>
       )}
 

@@ -7,6 +7,7 @@ import type { ReleaseFormData } from "@/types/release";
 export default function PatientSection() {
   const {
     register,
+    trigger,
     formState: { errors },
   } = useFormContext<ReleaseFormData>();
 
@@ -40,7 +41,7 @@ export default function PatientSection() {
           placeholder="MM/DD/YYYY"
           required
           error={errors.dateOfBirth?.message}
-          {...register("dateOfBirth")}
+          {...register("dateOfBirth", { onBlur: () => trigger("dateOfBirth") })}
         />
         <TextInput
           label="Social Security Number"

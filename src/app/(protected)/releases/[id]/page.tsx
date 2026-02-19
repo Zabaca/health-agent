@@ -3,12 +3,26 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
 import { and, asc, eq } from "drizzle-orm";
-import ReleaseForm from "@/components/release-form/ReleaseForm";
-import type { ReleaseFormData } from "@/types/release";
+import {
+  Stack, Group, Title, Paper, SimpleGrid, Text, Divider,
+  Badge, Checkbox, Button,
+} from "@mantine/core";
+import Link from "next/link";
+import { IconArrowLeft } from "@tabler/icons-react";
+import DeleteReleaseButton from "@/components/release-view/DeleteReleaseButton";
 
-export const metadata = { title: "Edit Release — Medical Record Release" };
+export const metadata = { title: "View Release — Medical Record Release" };
 
-export default async function EditReleasePage({
+function Field({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <Stack gap={2}>
+      <Text size="xs" c="dimmed" fw={500}>{label}</Text>
+      <Text size="sm">{value || "—"}</Text>
+    </Stack>
+  );
+}
+
+export default async function ViewReleasePage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -24,62 +38,193 @@ export default async function EditReleasePage({
     with: { providers: { orderBy: [asc(providersTable.order)] } },
   });
 
-  if (!release) {
-    notFound();
-  }
+  if (!release) notFound();
 
-  const defaultValues: ReleaseFormData = {
-    releaseAuthAgent: release.releaseAuthAgent,
-    releaseAuthZabaca: release.releaseAuthZabaca,
-    authAgentFirstName: release.authAgentFirstName || undefined,
-    authAgentLastName: release.authAgentLastName || undefined,
-    authAgentOrganization: release.authAgentOrganization || undefined,
-    authAgentAddress: release.authAgentAddress || undefined,
-    authAgentPhone: release.authAgentPhone || undefined,
-    authAgentEmail: release.authAgentEmail || undefined,
-    firstName: release.firstName,
-    middleName: release.middleName || undefined,
-    lastName: release.lastName,
-    dateOfBirth: release.dateOfBirth,
-    mailingAddress: release.mailingAddress,
-    phoneNumber: release.phoneNumber,
-    email: release.email,
-    ssn: release.ssn,
-    authExpirationDate: release.authExpirationDate || "",
-    authExpirationEvent: release.authExpirationEvent || undefined,
-    authPrintedName: release.authPrintedName,
-    authSignatureImage: release.authSignatureImage || undefined,
-    authDate: release.authDate,
-    authAgentName: release.authAgentName || undefined,
-    providers: release.providers.map((p) => ({
-      providerName: p.providerName,
-      providerType: p.providerType as "Medical Group" | "Facility",
-      physicianName: p.physicianName || undefined,
-      insurance: p.insurance || undefined,
-      patientMemberId: p.patientMemberId || undefined,
-      groupId: p.groupId || undefined,
-      planName: p.planName || undefined,
-      phone: p.phone || undefined,
-      fax: p.fax || undefined,
-      providerEmail: p.providerEmail || undefined,
-      address: p.address || undefined,
-      membershipIdFront: p.membershipIdFront || undefined,
-      membershipIdBack: p.membershipIdBack || undefined,
-      historyPhysical: p.historyPhysical,
-      diagnosticResults: p.diagnosticResults,
-      treatmentProcedure: p.treatmentProcedure,
-      prescriptionMedication: p.prescriptionMedication,
-      imagingRadiology: p.imagingRadiology,
-      dischargeSummaries: p.dischargeSummaries,
-      specificRecords: p.specificRecords,
-      specificRecordsDesc: p.specificRecordsDesc || undefined,
-      dateRangeFrom: p.dateRangeFrom || undefined,
-      dateRangeTo: p.dateRangeTo || undefined,
-      allAvailableDates: p.allAvailableDates,
-      purpose: p.purpose || undefined,
-      purposeOther: p.purposeOther || undefined,
-    })),
+  const recordLabels: Record<string, string> = {
+    historyPhysical: "History & Physical",
+    diagnosticResults: "Diagnostic Results",
+    treatmentProcedure: "Treatment/Procedure Notes",
+    prescriptionMedication: "Prescription/Medication",
+    imagingRadiology: "Imaging/Radiology",
+    dischargeSummaries: "Discharge Summaries",
+    specificRecords: "Specific Records",
   };
 
-  return <ReleaseForm releaseId={id} defaultValues={defaultValues} />;
+  return (
+    <Stack gap="xl">
+      <Group justify="space-between" align="center">
+        <Group gap="sm">
+          <Button component={Link} href="/dashboard" variant="subtle" leftSection={<IconArrowLeft size={16} />} px={0}>
+            Dashboard
+          </Button>
+          <Title order={2}>{release.firstName} {release.lastName}</Title>
+        </Group>
+        <DeleteReleaseButton releaseId={id} />
+      </Group>
+
+      {/* Patient Information */}
+      <Paper withBorder p="md" radius="md">
+        <Title order={4} mb="md">Patient Information</Title>
+        <Stack gap="md">
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <Field label="First Name" value={release.firstName} />
+            <Field label="Middle Name" value={release.middleName} />
+            <Field label="Last Name" value={release.lastName} />
+          </SimpleGrid>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <Field label="Date of Birth" value={release.dateOfBirth} />
+            <Field label="Social Security Number" value={release.ssn} />
+          </SimpleGrid>
+          <Field label="Mailing Address" value={release.mailingAddress} />
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <Field label="Phone Number" value={release.phoneNumber} />
+            <Field label="Email" value={release.email} />
+          </SimpleGrid>
+        </Stack>
+      </Paper>
+
+      {/* Healthcare Providers */}
+      <Paper withBorder p="md" radius="md">
+        <Title order={4} mb="md">Healthcare Providers</Title>
+        <Stack gap="lg">
+          {release.providers.map((p, i) => (
+            <Stack key={p.id} gap="md">
+              {i > 0 && <Divider />}
+              <Group gap="sm">
+                <Title order={5}>{p.providerName}</Title>
+                <Badge variant="light">{p.providerType}</Badge>
+              </Group>
+              <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <Field label="Provider Type" value={p.providerType} />
+                {p.physicianName && <Field label="Physician Name" value={p.physicianName} />}
+              </SimpleGrid>
+
+              {p.providerType === "Medical Group" && (
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <Field label="Insurance" value={p.insurance} />
+                  <Field label="Insurance Member ID" value={p.patientMemberId} />
+                  <Field label="Insurance Group ID" value={p.groupId} />
+                  <Field label="Insurance Plan Name" value={p.planName} />
+                </SimpleGrid>
+              )}
+
+              <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                <Field label="Phone" value={p.phone} />
+                <Field label="Fax" value={p.fax} />
+                <Field label="Email" value={p.providerEmail} />
+              </SimpleGrid>
+              <Field label="Address" value={p.address} />
+
+              {(p.membershipIdFront || p.membershipIdBack) && (
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  {p.membershipIdFront && (
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" fw={500}>Membership Card (Front)</Text>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.membershipIdFront} alt="Membership Front" style={{ maxWidth: 200, borderRadius: 4, border: "1px solid #dee2e6" }} />
+                    </Stack>
+                  )}
+                  {p.membershipIdBack && (
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" fw={500}>Membership Card (Back)</Text>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.membershipIdBack} alt="Membership Back" style={{ maxWidth: 200, borderRadius: 4, border: "1px solid #dee2e6" }} />
+                    </Stack>
+                  )}
+                </SimpleGrid>
+              )}
+
+              <Divider variant="dashed" />
+              <Title order={6}>Records to Release</Title>
+              <SimpleGrid cols={{ base: 2, sm: 3 }}>
+                {Object.entries(recordLabels).map(([key, label]) => (
+                  <Checkbox
+                    key={key}
+                    label={label}
+                    checked={!!p[key as keyof typeof p]}
+                    readOnly
+                  />
+                ))}
+              </SimpleGrid>
+              {p.specificRecords && p.specificRecordsDesc && (
+                <Field label="Specific Records Description" value={p.specificRecordsDesc} />
+              )}
+
+              <Title order={6}>Date Range</Title>
+              {p.allAvailableDates ? (
+                <Text size="sm">All available dates</Text>
+              ) : (
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <Field label="From" value={p.dateRangeFrom} />
+                  <Field label="To" value={p.dateRangeTo} />
+                </SimpleGrid>
+              )}
+
+              {p.purpose && <Field label="Purpose of Release" value={p.purpose === "Other" ? `Other — ${p.purposeOther}` : p.purpose} />}
+            </Stack>
+          ))}
+        </Stack>
+      </Paper>
+
+      {/* Authorization */}
+      <Paper withBorder p="md" radius="md">
+        <Title order={4} mb="md">Authorization</Title>
+        <Stack gap="md">
+          <Stack gap="xs">
+            <Text size="xs" c="dimmed" fw={500}>Release Authorization</Text>
+            <Group gap="xl">
+              <Checkbox label="Agent" checked={release.releaseAuthAgent} readOnly />
+              <Checkbox label="Zabaca" checked={release.releaseAuthZabaca} readOnly />
+            </Group>
+          </Stack>
+
+          {release.releaseAuthAgent && (
+            <Paper withBorder p="sm" radius="md">
+              <Stack gap="md">
+                <Title order={6}>Agent Details</Title>
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <Field label="First Name" value={release.authAgentFirstName} />
+                  <Field label="Last Name" value={release.authAgentLastName} />
+                </SimpleGrid>
+                <Field label="Organization" value={release.authAgentOrganization} />
+                <Field label="Address" value={release.authAgentAddress} />
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <Field label="Phone Number" value={release.authAgentPhone} />
+                  <Field label="Email" value={release.authAgentEmail} />
+                </SimpleGrid>
+              </Stack>
+            </Paper>
+          )}
+
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <Field label="Authorization Expiration Date" value={release.authExpirationDate} />
+            <Field label="Expiration Event" value={release.authExpirationEvent} />
+          </SimpleGrid>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <Field label="Printed Name" value={release.authPrintedName} />
+            <Field label="Date" value={release.authDate} />
+          </SimpleGrid>
+          <Field label="Agent / Representative Name" value={release.authAgentName} />
+
+          {release.authSignatureImage && (
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed" fw={500}>Signature</Text>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={release.authSignatureImage}
+                alt="Signature"
+                style={{ border: "1px solid #dee2e6", borderRadius: 4, maxWidth: 400 }}
+              />
+            </Stack>
+          )}
+        </Stack>
+      </Paper>
+
+      <Group justify="flex-end">
+        <Text size="xs" c="dimmed">
+          Created {new Date(release.createdAt).toLocaleDateString()} · Updated {new Date(release.updatedAt).toLocaleDateString()}
+        </Text>
+      </Group>
+    </Stack>
+  );
 }
