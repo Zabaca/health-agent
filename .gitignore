@@ -13,9 +13,19 @@ dist/
 # Environment variables
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.staging
+.env.production
 .env.production.local
+
+# Private keys / certificates
+*.pem
+*.key
+*.cert
+*.crt
 
 # Database
 prisma/dev.db
