@@ -37,6 +37,7 @@ export default function MyProviderCard({ index, onRemove }: Props) {
   const providerType = watch(`providers.${index}.providerType`);
   const isInsurance = providerType === "Medical Group";
   const isFacilityType = providerType === "Hospital" || providerType === "Clinic" || providerType === "Facility";
+  const isClinic = providerType === "Clinic";
   const providerErrors = errors.providers?.[index];
 
   return (
@@ -80,6 +81,14 @@ export default function MyProviderCard({ index, onRemove }: Props) {
               label="Patient ID"
               error={providerErrors?.patientId?.message}
               {...register(`providers.${index}.patientId`)}
+            />
+          )}
+
+          {isClinic && (
+            <TextInput
+              label="Physician Name"
+              error={providerErrors?.physicianName?.message}
+              {...register(`providers.${index}.physicianName`)}
             />
           )}
 
@@ -136,6 +145,11 @@ export default function MyProviderCard({ index, onRemove }: Props) {
             </>
           )}
 
+          <TextInput
+            label="Address"
+            error={providerErrors?.address?.message}
+            {...register(`providers.${index}.address`)}
+          />
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
             <TextInput
               label="Phone"
@@ -154,11 +168,6 @@ export default function MyProviderCard({ index, onRemove }: Props) {
               {...register(`providers.${index}.providerEmail`)}
             />
           </SimpleGrid>
-          <TextInput
-            label="Address"
-            error={providerErrors?.address?.message}
-            {...register(`providers.${index}.address`)}
-          />
 
           <Button
             variant="light"
