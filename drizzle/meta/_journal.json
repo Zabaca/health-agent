@@ -43,6 +43,20 @@
       "when": 1771465351347,
       "tag": "0005_faithful_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1771530321427,
+      "tag": "0006_nostalgic_reavers",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1771539489647,
+      "tag": "0007_clumsy_silver_fox",
+      "breakpoints": true
     }
   ]
 }

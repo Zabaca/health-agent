@@ -8,19 +8,14 @@ import {
   Button,
   Stack,
   Title,
-  Divider,
-  Group,
 } from "@mantine/core";
-import { IconGripVertical } from "@tabler/icons-react";
 import { useFormContext, Controller } from "react-hook-form";
-import type { ReleaseFormData } from "@/types/release";
-import RecordRequestFields from "./RecordRequestFields";
-import FileUploadField from "./FileUploadField";
+import type { MyProvidersFormData } from "@/lib/schemas/release";
+import FileUploadField from "@/components/release-form/FileUploadField";
 
 interface Props {
   index: number;
   onRemove: () => void;
-  dragHandleProps?: object;
 }
 
 const PROVIDER_TYPES = [
@@ -30,13 +25,13 @@ const PROVIDER_TYPES = [
   { value: "Facility", label: "Facility" },
 ];
 
-export default function ProviderCard({ index, onRemove, dragHandleProps }: Props) {
+export default function MyProviderCard({ index, onRemove }: Props) {
   const {
     register,
     control,
     watch,
     formState: { errors },
-  } = useFormContext<ReleaseFormData>();
+  } = useFormContext<MyProvidersFormData>();
 
   const providerName = watch(`providers.${index}.providerName`) || `Provider ${index + 1}`;
   const providerType = watch(`providers.${index}.providerType`);
@@ -47,21 +42,12 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
   return (
     <Accordion.Item value={`provider-${index}`}>
       <Accordion.Control>
-        <Group gap="xs" wrap="nowrap" align="center">
-          <div
-            {...(dragHandleProps as React.HTMLAttributes<HTMLDivElement>)}
-            style={{ display: "flex", alignItems: "center", color: "var(--mantine-color-gray-5)", touchAction: "none", cursor: "grab" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <IconGripVertical size={16} />
-          </div>
-          <Stack gap={0} style={{ flex: 1 }}>
-            <Title order={5} style={{ margin: 0 }}>
-              {providerName}
-            </Title>
-            <span style={{ fontSize: 12, color: "#868e96" }}>{providerType || "Provider"}</span>
-          </Stack>
-        </Group>
+        <Stack gap={0}>
+          <Title order={5} style={{ margin: 0 }}>
+            {providerName}
+          </Title>
+          <span style={{ fontSize: 12, color: "#868e96" }}>{providerType || "Provider"}</span>
+        </Stack>
       </Accordion.Control>
       <Accordion.Panel>
         <Stack gap="md">
@@ -173,9 +159,6 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
             error={providerErrors?.address?.message}
             {...register(`providers.${index}.address`)}
           />
-
-          <Divider />
-          <RecordRequestFields index={index} />
 
           <Button
             variant="light"

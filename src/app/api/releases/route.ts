@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
+import { releases as releasesTable, providers as providersTable, users, userProviders } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { releaseSchema } from "@/lib/schemas/release";
 
@@ -69,6 +69,45 @@ export async function POST(req: NextRequest) {
 
       return { ...newRelease, providers: insertedProviders };
     });
+
+    // Silently backfill empty profile fields from submitted release data
+    try {
+      const userId = session.user.id;
+      const existingUser = await db.query.users.findFirst({ where: eq(users.id, userId) });
+      const patch: Partial<typeof users.$inferInsert> = {};
+      if (!existingUser?.firstName)   patch.firstName   = releaseData.firstName;
+      if (!existingUser?.middleName)  patch.middleName  = releaseData.middleName;
+      if (!existingUser?.lastName)    patch.lastName    = releaseData.lastName;
+      if (!existingUser?.dateOfBirth) patch.dateOfBirth = releaseData.dateOfBirth;
+      if (!existingUser?.address)     patch.address     = releaseData.mailingAddress;
+      if (!existingUser?.phoneNumber) patch.phoneNumber = releaseData.phoneNumber;
+      if (!existingUser?.ssn)         patch.ssn         = releaseData.ssn;
+      if (Object.keys(patch).length > 0) {
+        await db.update(users).set(patch).where(eq(users.id, userId));
+      }
+    } catch {
+      // swallow — do not block the release response
+    }
+
+    // Silently backfill userProviders from submitted release providers
+    try {
+      const userId = session.user.id;
+      await db.transaction(async (tx) => {
+        await tx.delete(userProviders).where(eq(userProviders.userId, userId));
+        if (providers.length > 0) {
+          await tx.insert(userProviders).values(
+            providers.map((p, i) => ({
+              id: crypto.randomUUID(),
+              userId,
+              ...p,
+              order: i,
+            }))
+          );
+        }
+      });
+    } catch {
+      // swallow — do not block the release response
+    }
 
     return NextResponse.json(release, { status: 201 });
   } catch (error) {

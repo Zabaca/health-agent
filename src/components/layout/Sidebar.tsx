@@ -1,7 +1,7 @@
 "use client";
 
 import { NavLink, Stack, Text, Button } from "@mantine/core";
-import { IconLayoutDashboard, IconPlus, IconLogout } from "@tabler/icons-react";
+import { IconLayoutDashboard, IconPlus, IconLogout, IconUser, IconBuildingHospital } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
@@ -21,6 +21,20 @@ export default function Sidebar() {
           label="Dashboard"
           leftSection={<IconLayoutDashboard size={16} />}
           active={pathname === "/dashboard"}
+        />
+        <NavLink
+          component={Link}
+          href="/profile"
+          label="My Profile"
+          leftSection={<IconUser size={16} />}
+          active={pathname === "/profile"}
+        />
+        <NavLink
+          component={Link}
+          href="/my-providers"
+          label="My Providers"
+          leftSection={<IconBuildingHospital size={16} />}
+          active={pathname === "/my-providers"}
         />
         <NavLink
           component={Link}

@@ -7,6 +7,13 @@ export const users = sqliteTable('User', {
   password: text('password').notNull(),
   type: text('type', { enum: ['patient', 'agent', 'admin'] }).notNull().default('patient'),
   createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+  firstName: text('firstName'),
+  middleName: text('middleName'),
+  lastName: text('lastName'),
+  dateOfBirth: text('dateOfBirth'),
+  address: text('address'),
+  phoneNumber: text('phoneNumber'),
+  ssn: text('ssn'),
 });
 
 export const releases = sqliteTable('Release', {
@@ -81,8 +88,46 @@ export const providers = sqliteTable('Provider', {
   purposeOther: text('purposeOther'),
 });
 
+export const userProviders = sqliteTable('UserProvider', {
+  id: text('id').primaryKey(),
+  userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  order: integer('order').notNull().default(0),
+
+  // Provider Info
+  providerName: text('providerName').notNull(),
+  providerType: text('providerType').notNull(),
+  physicianName: text('physicianName'),
+  patientId: text('patientId'),
+  insurance: text('insurance'),
+  patientMemberId: text('patientMemberId'),
+  groupId: text('groupId'),
+  planName: text('planName'),
+  phone: text('phone'),
+  fax: text('fax'),
+  providerEmail: text('providerEmail'),
+  address: text('address'),
+  membershipIdFront: text('membershipIdFront'),
+  membershipIdBack: text('membershipIdBack'),
+
+  // Record Request
+  historyPhysical: integer('historyPhysical', { mode: 'boolean' }).notNull().default(false),
+  diagnosticResults: integer('diagnosticResults', { mode: 'boolean' }).notNull().default(false),
+  treatmentProcedure: integer('treatmentProcedure', { mode: 'boolean' }).notNull().default(false),
+  prescriptionMedication: integer('prescriptionMedication', { mode: 'boolean' }).notNull().default(false),
+  imagingRadiology: integer('imagingRadiology', { mode: 'boolean' }).notNull().default(false),
+  dischargeSummaries: integer('dischargeSummaries', { mode: 'boolean' }).notNull().default(false),
+  specificRecords: integer('specificRecords', { mode: 'boolean' }).notNull().default(false),
+  specificRecordsDesc: text('specificRecordsDesc'),
+  dateRangeFrom: text('dateRangeFrom'),
+  dateRangeTo: text('dateRangeTo'),
+  allAvailableDates: integer('allAvailableDates', { mode: 'boolean' }).notNull().default(false),
+  purpose: text('purpose'),
+  purposeOther: text('purposeOther'),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   releases: many(releases),
+  userProviders: many(userProviders),
 }));
 
 export const releasesRelations = relations(releases, ({ one, many }) => ({
@@ -92,4 +137,8 @@ export const releasesRelations = relations(releases, ({ one, many }) => ({
 
 export const providersRelations = relations(providers, ({ one }) => ({
   release: one(releases, { fields: [providers.releaseId], references: [releases.id] }),
+}));
+
+export const userProvidersRelations = relations(userProviders, ({ one }) => ({
+  user: one(users, { fields: [userProviders.userId], references: [users.id] }),
 }));

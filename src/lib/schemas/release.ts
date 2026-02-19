@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const providerSchema = z.object({
+const providerBaseShape = {
   providerName: z.string().min(1, "Provider name is required"),
   providerType: z.enum(["Medical Group", "Hospital", "Clinic", "Facility"], {
     errorMap: () => ({ message: "Please select a provider type" }),
@@ -30,6 +30,33 @@ export const providerSchema = z.object({
   allAvailableDates: z.boolean(),
   purpose: z.string().optional(),
   purposeOther: z.string().optional(),
+};
+
+export const providerSchema = z.object(providerBaseShape).superRefine((data, ctx) => {
+  if (data.providerType === "Medical Group") {
+    if (!data.insurance?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Insurance is required", path: ["insurance"] });
+    }
+    if (!data.patientMemberId?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Insurance Member ID is required", path: ["patientMemberId"] });
+    }
+  }
+});
+
+export const myProviderSchema = z.object(providerBaseShape).omit({
+  historyPhysical: true,
+  diagnosticResults: true,
+  treatmentProcedure: true,
+  prescriptionMedication: true,
+  imagingRadiology: true,
+  dischargeSummaries: true,
+  specificRecords: true,
+  specificRecordsDesc: true,
+  dateRangeFrom: true,
+  dateRangeTo: true,
+  allAvailableDates: true,
+  purpose: true,
+  purposeOther: true,
 }).superRefine((data, ctx) => {
   if (data.providerType === "Medical Group") {
     if (!data.insurance?.trim()) {
@@ -106,4 +133,6 @@ export const releaseSchema = z.object({
 });
 
 export type ProviderFormData = z.infer<typeof providerSchema>;
+export type MyProviderFormData = z.infer<typeof myProviderSchema>;
 export type ReleaseFormData = z.infer<typeof releaseSchema>;
+export type MyProvidersFormData = { providers: MyProviderFormData[] };
