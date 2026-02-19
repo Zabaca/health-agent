@@ -102,19 +102,6 @@ export default function SignaturePad({ value, onChange, error }: Props) {
           </Text>
         )}
       </Group>
-      {value && !value.startsWith("data:") && (
-        <Box>
-          <Text size="xs" c="dimmed" mb={4}>
-            Current signature:
-          </Text>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={value}
-            alt="Saved signature"
-            style={{ border: "1px solid #dee2e6", borderRadius: 4, maxWidth: "100%" }}
-          />
-        </Box>
-      )}
     </Stack>
   );
 }

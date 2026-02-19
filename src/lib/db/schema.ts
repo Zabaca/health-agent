@@ -53,6 +53,7 @@ export const providers = sqliteTable('Provider', {
   providerName: text('providerName').notNull(),
   providerType: text('providerType').notNull(),
   physicianName: text('physicianName'),
+  patientId: text('patientId'),
   insurance: text('insurance'),
   patientMemberId: text('patientMemberId'),
   groupId: text('groupId'),

@@ -80,7 +80,7 @@ export default function ReleaseList({ releases }: Props) {
         {r.firstName} {r.lastName}
       </Table.Td>
       <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
-      <Table.Td>{new Date(r.updatedAt).toLocaleDateString()}</Table.Td>
+      <Table.Td>{new Date(r.updatedAt).toLocaleString()}</Table.Td>
       <Table.Td>
         <Group gap="xs">
           <Tooltip label="View">

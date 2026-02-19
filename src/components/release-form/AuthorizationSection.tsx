@@ -20,28 +20,9 @@ export default function AuthorizationSection() {
   const sigValue = watch("authSignatureImage");
   const releaseAuthAgent = watch("releaseAuthAgent");
 
-  const handleSignatureChange = async (dataUrl: string) => {
-    if (!dataUrl) {
-      setValue("authSignatureImage", "");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: dataUrl, extension: "png" }),
-      });
-
-      if (res.ok) {
-        const { url } = await res.json();
-        setValue("authSignatureImage", url);
-      } else {
-        setValue("authSignatureImage", dataUrl);
-      }
-    } catch {
-      setValue("authSignatureImage", dataUrl);
-    }
+  const handleSignatureChange = (dataUrl: string) => {
+    setValue("authSignatureImage", dataUrl);
+    trigger("authSignatureImage");
   };
 
   return (

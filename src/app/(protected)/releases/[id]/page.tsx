@@ -94,10 +94,11 @@ export default async function ViewReleasePage({
                 <Title order={5}>{p.providerName}</Title>
                 <Badge variant="light">{p.providerType}</Badge>
               </Group>
-              <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <Field label="Provider Type" value={p.providerType} />
-                {p.physicianName && <Field label="Physician Name" value={p.physicianName} />}
-              </SimpleGrid>
+              <Field label="Provider Type" value={p.providerType} />
+
+              {(p.providerType === "Hospital" || p.providerType === "Clinic" || p.providerType === "Facility") && p.patientId && (
+                <Field label="Patient ID" value={p.patientId} />
+              )}
 
               {p.providerType === "Medical Group" && (
                 <SimpleGrid cols={{ base: 1, sm: 2 }}>

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
+import { releaseSchema } from "@/lib/schemas/release";
 
 export async function GET() {
   const session = await auth();
@@ -32,8 +33,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json();
-    const { providers, ...releaseData } = body;
+    const parsed = releaseSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+    const { providers, ...releaseData } = parsed.data;
 
     const release = await db.transaction(async (tx) => {
       const releaseId = crypto.randomUUID();
@@ -49,11 +53,11 @@ export async function POST(req: NextRequest) {
         })
         .returning();
 
-      const insertedProviders = providers?.length
+      const insertedProviders = providers.length
         ? await tx
             .insert(providersTable)
             .values(
-              providers.map((p: Record<string, unknown>, i: number) => ({
+              providers.map((p, i) => ({
                 id: crypto.randomUUID(),
                 releaseId,
                 ...p,

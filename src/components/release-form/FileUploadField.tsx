@@ -6,50 +6,32 @@ import { FileInput, Text, Stack, Image, Box } from "@mantine/core";
 interface Props {
   label: string;
   value?: string;
-  onChange: (url: string) => void;
+  onChange: (dataUrl: string) => void;
 }
 
 export default function FileUploadField({ label, value, onChange }: Props) {
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleFileChange = async (file: File | null) => {
+  const handleFileChange = (file: File | null) => {
     if (!file) return;
-
-    setUploading(true);
     setError("");
 
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        setError("Upload failed. Please try again.");
-        return;
-      }
-
-      const { url } = await res.json();
-      onChange(url);
-    } catch {
-      setError("Upload failed. Please try again.");
-    } finally {
-      setUploading(false);
-    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) onChange(dataUrl);
+    };
+    reader.onerror = () => setError("Failed to read file. Please try again.");
+    reader.readAsDataURL(file);
   };
 
   return (
     <Stack gap="xs">
       <FileInput
         label={label}
-        placeholder={uploading ? "Uploading..." : "Click to upload"}
+        placeholder="Click to upload"
         accept="image/*"
         onChange={handleFileChange}
-        disabled={uploading}
       />
       {error && (
         <Text size="sm" c="red">
@@ -59,7 +41,7 @@ export default function FileUploadField({ label, value, onChange }: Props) {
       {value && (
         <Box>
           <Text size="xs" c="dimmed" mb={4}>
-            Uploaded:
+            Selected:
           </Text>
           <Image
             src={value}
