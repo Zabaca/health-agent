@@ -35,9 +35,6 @@ prisma/dev.db-journal
 *.db-wal
 *.db-shm
 
-# Claude
-.claude/
-
 # Uploads
 public/uploads/*
 !public/uploads/.gitkeep
