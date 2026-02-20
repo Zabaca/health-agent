@@ -132,6 +132,7 @@ export default function MyProvidersForm({ defaultValues }: Props) {
       });
       if (!res.ok) throw new Error("Failed to save providers");
       setSuccess(true);
+      methods.reset(data);
     } catch {
       setError("Failed to save providers. Please try again.");
     }
@@ -140,7 +141,7 @@ export default function MyProvidersForm({ defaultValues }: Props) {
   return (
     <FormProvider {...methods}>
       <form onSubmit={methods.handleSubmit(onSubmit)}>
-        <Paper withBorder p="md" radius="md">
+        <Paper withBorder p="md" radius="md" maw={700}>
           <Title order={4} mb="md">
             My Providers
           </Title>
@@ -188,7 +189,7 @@ export default function MyProvidersForm({ defaultValues }: Props) {
               </Alert>
             )}
 
-            <Button type="submit" loading={methods.formState.isSubmitting}>
+            <Button type="submit" loading={methods.formState.isSubmitting} disabled={!methods.formState.isDirty}>
               Save Providers
             </Button>
           </Stack>

@@ -27,7 +27,8 @@ export default function ProfileForm({ defaultValues }: ProfileFormProps) {
     register,
     handleSubmit,
     trigger,
-    formState: { errors },
+    reset,
+    formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues,
@@ -49,6 +50,7 @@ export default function ProfileForm({ defaultValues }: ProfileFormProps) {
         setServerError("Failed to save profile. Please try again.");
       } else {
         setSuccess(true);
+        reset(data);
       }
     } catch {
       setServerError("Unexpected error. Please try again.");
@@ -127,7 +129,7 @@ export default function ProfileForm({ defaultValues }: ProfileFormProps) {
             {...register("phoneNumber")}
           />
 
-          <Button type="submit" loading={loading} w="fit-content">
+          <Button type="submit" loading={loading} disabled={!isDirty} w="fit-content">
             Save Profile
           </Button>
         </Stack>
