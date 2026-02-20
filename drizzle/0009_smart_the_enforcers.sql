@@ -1,1 +1,0 @@
-ALTER TABLE `Release` ADD `voided` integer DEFAULT false NOT NULL;

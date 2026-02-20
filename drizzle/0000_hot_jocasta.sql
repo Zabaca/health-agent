@@ -4,6 +4,9 @@ CREATE TABLE `Provider` (
 	`order` integer DEFAULT 0 NOT NULL,
 	`providerName` text NOT NULL,
 	`providerType` text NOT NULL,
+	`physicianName` text,
+	`patientId` text,
+	`insurance` text,
 	`patientMemberId` text,
 	`groupId` text,
 	`planName` text,
@@ -42,12 +45,42 @@ CREATE TABLE `Release` (
 	`phoneNumber` text NOT NULL,
 	`email` text NOT NULL,
 	`ssn` text NOT NULL,
+	`releaseAuthAgent` integer DEFAULT false NOT NULL,
+	`releaseAuthZabaca` integer DEFAULT false NOT NULL,
+	`authAgentFirstName` text,
+	`authAgentLastName` text,
+	`authAgentOrganization` text,
+	`authAgentAddress` text,
+	`authAgentPhone` text,
+	`authAgentEmail` text,
 	`authExpirationDate` text,
 	`authExpirationEvent` text,
 	`authPrintedName` text NOT NULL,
 	`authSignatureImage` text,
 	`authDate` text NOT NULL,
 	`authAgentName` text,
+	`voided` integer DEFAULT false NOT NULL,
+	FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `UserProvider` (
+	`id` text PRIMARY KEY NOT NULL,
+	`userId` text NOT NULL,
+	`order` integer DEFAULT 0 NOT NULL,
+	`providerName` text NOT NULL,
+	`providerType` text NOT NULL,
+	`physicianName` text,
+	`patientId` text,
+	`insurance` text,
+	`patientMemberId` text,
+	`groupId` text,
+	`planName` text,
+	`phone` text,
+	`fax` text,
+	`providerEmail` text,
+	`address` text,
+	`membershipIdFront` text,
+	`membershipIdBack` text,
 	FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
@@ -55,7 +88,15 @@ CREATE TABLE `User` (
 	`id` text PRIMARY KEY NOT NULL,
 	`email` text NOT NULL,
 	`password` text NOT NULL,
-	`createdAt` text NOT NULL
+	`type` text DEFAULT 'patient' NOT NULL,
+	`createdAt` text NOT NULL,
+	`firstName` text,
+	`middleName` text,
+	`lastName` text,
+	`dateOfBirth` text,
+	`address` text,
+	`phoneNumber` text,
+	`ssn` text
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `User_email_unique` ON `User` (`email`);

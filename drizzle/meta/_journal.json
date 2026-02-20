@@ -5,71 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1771454954352,
-      "tag": "0000_eminent_medusa",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1771455895355,
-      "tag": "0001_lowly_blockbuster",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1771456654053,
-      "tag": "0002_amazing_captain_marvel",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1771457077440,
-      "tag": "0003_perpetual_king_bedlam",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1771457682099,
-      "tag": "0004_brown_preak",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1771465351347,
-      "tag": "0005_faithful_genesis",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1771530321427,
-      "tag": "0006_nostalgic_reavers",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1771539489647,
-      "tag": "0007_clumsy_silver_fox",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1771550011194,
-      "tag": "0008_slow_blue_shield",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1771550824346,
-      "tag": "0009_smart_the_enforcers",
+      "when": 1771552203633,
+      "tag": "0000_hot_jocasta",
       "breakpoints": true
     }
   ]
