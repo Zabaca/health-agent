@@ -41,6 +41,24 @@ export const providerSchema = z.object(providerBaseShape).superRefine((data, ctx
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Insurance Member ID is required", path: ["patientMemberId"] });
     }
   }
+
+  const recordFields = ["historyPhysical", "diagnosticResults", "treatmentProcedure", "prescriptionMedication", "imagingRadiology", "dischargeSummaries", "specificRecords"] as const;
+  if (!recordFields.some((f) => data[f])) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select at least one record type", path: ["historyPhysical"] });
+  }
+
+  if (!data.allAvailableDates) {
+    if (!data.dateRangeFrom?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Start date is required", path: ["dateRangeFrom"] });
+    }
+    if (!data.dateRangeTo?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "End date is required", path: ["dateRangeTo"] });
+    }
+  }
+
+  if (!data.purpose?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Purpose of release is required", path: ["purpose"] });
+  }
 });
 
 export const myProviderSchema = z.object(providerBaseShape).omit({

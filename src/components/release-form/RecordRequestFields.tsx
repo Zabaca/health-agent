@@ -9,6 +9,7 @@ import {
   Stack,
   Group,
   Select,
+  Text,
 } from "@mantine/core";
 import { useFormContext, Controller } from "react-hook-form";
 import type { ReleaseFormData } from "@/types/release";
@@ -119,6 +120,9 @@ export default function RecordRequestFields({ index }: Props) {
           )}
         />
       </SimpleGrid>
+      {providerErrors?.historyPhysical?.message && (
+        <Text c="red" size="xs">{providerErrors.historyPhysical.message}</Text>
+      )}
 
       {specificRecords && (
         <Textarea
@@ -170,7 +174,8 @@ export default function RecordRequestFields({ index }: Props) {
             data={PURPOSE_OPTIONS}
             value={field.value || null}
             onChange={field.onChange}
-            clearable
+            error={providerErrors?.purpose?.message}
+            withAsterisk
           />
         )}
       />
