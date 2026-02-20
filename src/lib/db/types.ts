@@ -6,5 +6,5 @@ export type ReleaseRow = InferSelectModel<typeof releases>;
 export type ProviderRow = InferSelectModel<typeof providers>;
 export type UserProviderRow = InferSelectModel<typeof userProviders>;
 
-export type ReleaseSummary = Pick<ReleaseRow, 'id' | 'firstName' | 'lastName' | 'createdAt' | 'updatedAt'>;
+export type ReleaseSummary = Pick<ReleaseRow, 'id' | 'firstName' | 'lastName' | 'createdAt' | 'updatedAt' | 'voided'> & { providerNames: string[] };
 export type ReleaseWithProviders = ReleaseRow & { providers: ProviderRow[] };

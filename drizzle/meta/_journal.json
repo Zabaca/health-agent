@@ -64,6 +64,13 @@
       "when": 1771550011194,
       "tag": "0008_slow_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1771550824346,
+      "tag": "0009_smart_the_enforcers",
+      "breakpoints": true
     }
   ]
 }

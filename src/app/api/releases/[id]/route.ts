@@ -88,7 +88,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
+export async function PATCH(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -103,7 +103,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await db.delete(releasesTable).where(eq(releasesTable.id, id));
+  await db
+    .update(releasesTable)
+    .set({ voided: true, updatedAt: new Date().toISOString() })
+    .where(eq(releasesTable.id, id));
 
   return NextResponse.json({ success: true });
 }

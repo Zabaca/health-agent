@@ -1,13 +1,15 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { releases as releasesTable, users } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Button, Group, Title } from "@mantine/core";
 import Link from "next/link";
 import ReleaseList from "@/components/dashboard/ReleaseList";
+import VoidedReleaseList from "@/components/dashboard/VoidedReleaseList";
 import ProfileCompletionBanner from "@/components/dashboard/ProfileCompletionBanner";
 import type { ReleaseSummary } from "@/types/release";
 
+export const dynamic = 'force-dynamic';
 export const metadata = { title: "Dashboard — Medical Record Release" };
 
 export default async function DashboardPage() {
@@ -16,18 +18,19 @@ export default async function DashboardPage() {
   const userId = session?.user?.id;
   if (!userId) return null;
 
-  const [releases, user] = await Promise.all([
-    db
-      .select({
-        id: releasesTable.id,
-        firstName: releasesTable.firstName,
-        lastName: releasesTable.lastName,
-        createdAt: releasesTable.createdAt,
-        updatedAt: releasesTable.updatedAt,
-      })
-      .from(releasesTable)
-      .where(eq(releasesTable.userId, userId))
-      .orderBy(desc(releasesTable.updatedAt)),
+  const [activeReleases, voidedReleases, user] = await Promise.all([
+    db.query.releases.findMany({
+      where: and(eq(releasesTable.userId, userId), eq(releasesTable.voided, false)),
+      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true },
+      with: { providers: { columns: { providerName: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
+      orderBy: [desc(releasesTable.updatedAt)],
+    }),
+    db.query.releases.findMany({
+      where: and(eq(releasesTable.userId, userId), eq(releasesTable.voided, true)),
+      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true },
+      with: { providers: { columns: { providerName: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
+      orderBy: [desc(releasesTable.updatedAt)],
+    }),
     db.query.users.findFirst({ where: eq(users.id, userId) }),
   ]);
 
@@ -39,11 +42,8 @@ export default async function DashboardPage() {
     !user?.address ||
     !user?.ssn;
 
-  const serialized: ReleaseSummary[] = releases.map((r) => ({
-    ...r,
-    createdAt: r.createdAt,
-    updatedAt: r.updatedAt,
-  }));
+  const active: ReleaseSummary[] = activeReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerName) }));
+  const voided: ReleaseSummary[] = voidedReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerName) }));
 
   return (
     <>
@@ -54,7 +54,13 @@ export default async function DashboardPage() {
           + New Release
         </Button>
       </Group>
-      <ReleaseList releases={serialized} />
+      <ReleaseList releases={active} />
+      {voided.length > 0 && (
+        <>
+          <Title order={3} mt="xl" mb="lg">Voided Releases</Title>
+          <VoidedReleaseList releases={voided} />
+        </>
+      )}
     </>
   );
 }

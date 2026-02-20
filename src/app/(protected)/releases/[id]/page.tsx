@@ -5,12 +5,13 @@ import { releases as releasesTable, providers as providersTable } from "@/lib/db
 import { and, asc, eq } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Divider,
-  Badge, Checkbox, Button,
+  Badge, Checkbox, Button, Alert,
 } from "@mantine/core";
 import Link from "next/link";
-import { IconArrowLeft } from "@tabler/icons-react";
-import DeleteReleaseButton from "@/components/release-view/DeleteReleaseButton";
+import { IconArrowLeft, IconBan } from "@tabler/icons-react";
+import VoidReleaseButton from "@/components/release-view/VoidReleaseButton";
 
+export const dynamic = 'force-dynamic';
 export const metadata = { title: "View Release — Medical Record Release" };
 
 function Field({ label, value }: { label: string; value?: string | null }) {
@@ -59,8 +60,14 @@ export default async function ViewReleasePage({
           </Button>
           <Title order={2}>{release.firstName} {release.lastName}</Title>
         </Group>
-        <DeleteReleaseButton releaseId={id} />
+        {!release.voided && <VoidReleaseButton releaseId={id} />}
       </Group>
+
+      {release.voided && (
+        <Alert icon={<IconBan size={16} />} color="orange" variant="light">
+          This release was voided on {new Date(release.updatedAt).toLocaleString()}.
+        </Alert>
+      )}
 
       {/* Patient Information */}
       <Paper withBorder p="md" radius="md">

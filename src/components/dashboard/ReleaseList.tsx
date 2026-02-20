@@ -11,7 +11,7 @@ import {
   ActionIcon,
   Tooltip,
 } from "@mantine/core";
-import { IconEye, IconTrash } from "@tabler/icons-react";
+import { IconEye, IconBan } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import type { ReleaseSummary } from "@/types/release";
 import Link from "next/link";
@@ -22,34 +22,34 @@ interface Props {
 
 export default function ReleaseList({ releases }: Props) {
   const router = useRouter();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [voidId, setVoidId] = useState<string | null>(null);
+  const [voiding, setVoiding] = useState(false);
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    setDeleting(true);
+  const handleVoid = async () => {
+    if (!voidId) return;
+    setVoiding(true);
 
     try {
-      const res = await fetch(`/api/releases/${deleteId}`, {
-        method: "DELETE",
+      const res = await fetch(`/api/releases/${voidId}`, {
+        method: "PATCH",
       });
 
       if (!res.ok) {
         notifications.show({
           title: "Error",
-          message: "Failed to delete release",
+          message: "Failed to void release",
           color: "red",
         });
         return;
       }
 
       notifications.show({
-        title: "Deleted",
-        message: "Release deleted successfully",
-        color: "green",
+        title: "Voided",
+        message: "Release has been voided",
+        color: "orange",
       });
 
-      setDeleteId(null);
+      setVoidId(null);
       router.refresh();
     } catch {
       notifications.show({
@@ -58,7 +58,7 @@ export default function ReleaseList({ releases }: Props) {
         color: "red",
       });
     } finally {
-      setDeleting(false);
+      setVoiding(false);
     }
   };
 
@@ -79,6 +79,13 @@ export default function ReleaseList({ releases }: Props) {
       <Table.Td>
         {r.firstName} {r.lastName}
       </Table.Td>
+      <Table.Td>
+        {r.providerNames.length > 0 ? (
+          <Text size="sm">{r.providerNames.join(", ")}</Text>
+        ) : (
+          <Text size="sm" c="dimmed">—</Text>
+        )}
+      </Table.Td>
       <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
       <Table.Td>{new Date(r.updatedAt).toLocaleString()}</Table.Td>
       <Table.Td>
@@ -92,13 +99,13 @@ export default function ReleaseList({ releases }: Props) {
               <IconEye size={16} />
             </ActionIcon>
           </Tooltip>
-          <Tooltip label="Delete">
+          <Tooltip label="Void">
             <ActionIcon
               variant="light"
-              color="red"
-              onClick={() => setDeleteId(r.id)}
+              color="orange"
+              onClick={() => setVoidId(r.id)}
             >
-              <IconTrash size={16} />
+              <IconBan size={16} />
             </ActionIcon>
           </Tooltip>
         </Group>
@@ -112,6 +119,7 @@ export default function ReleaseList({ releases }: Props) {
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Patient Name</Table.Th>
+            <Table.Th>Providers</Table.Th>
             <Table.Th>Created</Table.Th>
             <Table.Th>Last Updated</Table.Th>
             <Table.Th>Actions</Table.Th>
@@ -121,21 +129,23 @@ export default function ReleaseList({ releases }: Props) {
       </Table>
 
       <Modal
-        opened={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        title="Confirm Deletion"
+        opened={!!voidId}
+        onClose={() => setVoidId(null)}
+        title="Void Release"
         centered
       >
-        <Text mb="lg">
-          Are you sure you want to delete this release? This action cannot be
-          undone.
+        <Text mb="xs">
+          Are you sure you want to void this release form?
+        </Text>
+        <Text mb="lg" c="dimmed" size="sm">
+          This action cannot be undone. If you need to submit a new request, you will need to create a new release form.
         </Text>
         <Group justify="flex-end">
-          <Button variant="default" onClick={() => setDeleteId(null)}>
+          <Button variant="default" onClick={() => setVoidId(null)}>
             Cancel
           </Button>
-          <Button color="red" loading={deleting} onClick={handleDelete}>
-            Delete
+          <Button color="orange" loading={voiding} onClick={handleVoid}>
+            Void
           </Button>
         </Group>
       </Modal>

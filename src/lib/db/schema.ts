@@ -49,6 +49,7 @@ export const releases = sqliteTable('Release', {
   authSignatureImage: text('authSignatureImage'),
   authDate: text('authDate').notNull(),
   authAgentName: text('authAgentName'),
+  voided: integer('voided', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const providers = sqliteTable('Provider', {
