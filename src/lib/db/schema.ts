@@ -108,21 +108,6 @@ export const userProviders = sqliteTable('UserProvider', {
   address: text('address'),
   membershipIdFront: text('membershipIdFront'),
   membershipIdBack: text('membershipIdBack'),
-
-  // Record Request
-  historyPhysical: integer('historyPhysical', { mode: 'boolean' }).notNull().default(false),
-  diagnosticResults: integer('diagnosticResults', { mode: 'boolean' }).notNull().default(false),
-  treatmentProcedure: integer('treatmentProcedure', { mode: 'boolean' }).notNull().default(false),
-  prescriptionMedication: integer('prescriptionMedication', { mode: 'boolean' }).notNull().default(false),
-  imagingRadiology: integer('imagingRadiology', { mode: 'boolean' }).notNull().default(false),
-  dischargeSummaries: integer('dischargeSummaries', { mode: 'boolean' }).notNull().default(false),
-  specificRecords: integer('specificRecords', { mode: 'boolean' }).notNull().default(false),
-  specificRecordsDesc: text('specificRecordsDesc'),
-  dateRangeFrom: text('dateRangeFrom'),
-  dateRangeTo: text('dateRangeTo'),
-  allAvailableDates: integer('allAvailableDates', { mode: 'boolean' }).notNull().default(false),
-  purpose: text('purpose'),
-  purposeOther: text('purposeOther'),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({

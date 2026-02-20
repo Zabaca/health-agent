@@ -96,12 +96,15 @@ export async function POST(req: NextRequest) {
         await tx.delete(userProviders).where(eq(userProviders.userId, userId));
         if (providers.length > 0) {
           await tx.insert(userProviders).values(
-            providers.map((p, i) => ({
-              id: crypto.randomUUID(),
-              userId,
-              ...p,
-              order: i,
-            }))
+            providers.map((p, i) => {
+              const { historyPhysical, diagnosticResults, treatmentProcedure, prescriptionMedication, imagingRadiology, dischargeSummaries, specificRecords, specificRecordsDesc, dateRangeFrom, dateRangeTo, allAvailableDates, purpose, purposeOther, ...providerInfo } = p;
+              return {
+                id: crypto.randomUUID(),
+                userId,
+                ...providerInfo,
+                order: i,
+              };
+            })
           );
         }
       });
