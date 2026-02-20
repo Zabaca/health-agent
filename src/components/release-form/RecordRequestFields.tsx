@@ -40,7 +40,7 @@ export default function RecordRequestFields({ index }: Props) {
 
   return (
     <Stack gap="sm">
-      <Title order={6}>Records to Release</Title>
+      <Title order={6}>Records to Release <span style={{ color: "var(--mantine-color-error)" }}>*</span></Title>
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
         <Controller
           name={`providers.${index}.historyPhysical`}
@@ -134,7 +134,7 @@ export default function RecordRequestFields({ index }: Props) {
       )}
 
       <Title order={6} mt="sm">
-        Date Range
+        Date Range <span style={{ color: "var(--mantine-color-error)" }}>*</span>
       </Title>
       <Controller
         name={`providers.${index}.allAvailableDates`}

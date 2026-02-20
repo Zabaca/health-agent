@@ -8,7 +8,9 @@ import {
   Button,
   Stack,
   Title,
+  Group,
 } from "@mantine/core";
+import { IconGripVertical } from "@tabler/icons-react";
 import { useFormContext, Controller } from "react-hook-form";
 import type { MyProvidersFormData } from "@/lib/schemas/release";
 import FileUploadField from "@/components/release-form/FileUploadField";
@@ -16,6 +18,7 @@ import FileUploadField from "@/components/release-form/FileUploadField";
 interface Props {
   index: number;
   onRemove: () => void;
+  dragHandleProps?: object;
 }
 
 const PROVIDER_TYPES = [
@@ -25,7 +28,7 @@ const PROVIDER_TYPES = [
   { value: "Facility", label: "Facility" },
 ];
 
-export default function MyProviderCard({ index, onRemove }: Props) {
+export default function MyProviderCard({ index, onRemove, dragHandleProps }: Props) {
   const {
     register,
     control,
@@ -43,12 +46,17 @@ export default function MyProviderCard({ index, onRemove }: Props) {
   return (
     <Accordion.Item value={`provider-${index}`}>
       <Accordion.Control>
-        <Stack gap={0}>
-          <Title order={5} style={{ margin: 0 }}>
-            {providerName}
-          </Title>
-          <span style={{ fontSize: 12, color: "#868e96" }}>{providerType || "Provider"}</span>
-        </Stack>
+        <Group gap="xs" wrap="nowrap">
+          <span {...(dragHandleProps ?? {})} style={{ cursor: "grab", display: "flex", color: "#868e96" }} onClick={(e) => e.stopPropagation()}>
+            <IconGripVertical size={16} />
+          </span>
+          <Stack gap={0}>
+            <Title order={5} style={{ margin: 0 }}>
+              {providerName}
+            </Title>
+            <span style={{ fontSize: 12, color: "#868e96" }}>{providerType || "Provider"}</span>
+          </Stack>
+        </Group>
       </Accordion.Control>
       <Accordion.Panel>
         <Stack gap="md">
