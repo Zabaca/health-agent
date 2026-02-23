@@ -1,53 +1,34 @@
 "use client";
 
 import { NavLink, Stack, Button } from "@mantine/core";
-import { IconLayoutDashboard, IconPlus, IconLogout, IconUser, IconBuildingHospital } from "@tabler/icons-react";
+import { IconLogout } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import type { NavItem } from "./AppShell";
 
 interface Props {
   onNavLinkClick?: () => void;
+  navItems: NavItem[];
 }
 
-export default function Sidebar({ onNavLinkClick }: Props) {
+export default function Sidebar({ onNavLinkClick, navItems }: Props) {
   const pathname = usePathname();
 
   return (
     <Stack h="100%" justify="space-between" p="md">
       <Stack gap={4}>
-        <NavLink
-          component={Link}
-          href="/dashboard"
-          label="Dashboard"
-          leftSection={<IconLayoutDashboard size={16} />}
-          active={pathname === "/dashboard"}
-          onClick={onNavLinkClick}
-        />
-        <NavLink
-          component={Link}
-          href="/profile"
-          label="My Profile"
-          leftSection={<IconUser size={16} />}
-          active={pathname === "/profile"}
-          onClick={onNavLinkClick}
-        />
-        <NavLink
-          component={Link}
-          href="/my-providers"
-          label="My Providers"
-          leftSection={<IconBuildingHospital size={16} />}
-          active={pathname === "/my-providers"}
-          onClick={onNavLinkClick}
-        />
-        <NavLink
-          component={Link}
-          href="/releases/new"
-          label="New Release"
-          leftSection={<IconPlus size={16} />}
-          active={pathname === "/releases/new"}
-          onClick={onNavLinkClick}
-        />
+        {navItems.map((item) => (
+          <NavLink
+            key={item.href}
+            component={Link}
+            href={item.href}
+            label={item.label}
+            leftSection={item.icon}
+            active={pathname === item.href}
+            onClick={onNavLinkClick}
+          />
+        ))}
       </Stack>
       <Button
         variant="subtle"

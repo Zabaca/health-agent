@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, patientAssignments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "@/lib/auth-helpers";
 import { z } from "zod";
@@ -37,6 +37,16 @@ export async function POST(req: NextRequest) {
       .insert(users)
       .values({ id: crypto.randomUUID(), email, password: hashed })
       .returning();
+
+    const admins = await db.query.users.findMany({ where: eq(users.type, 'admin') });
+    if (admins.length > 0) {
+      const picked = admins[Math.floor(Math.random() * admins.length)];
+      await db.insert(patientAssignments).values({
+        id: crypto.randomUUID(),
+        patientId: user.id,
+        assignedToId: picked.id,
+      });
+    }
 
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
   } catch (error) {

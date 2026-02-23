@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { userProviders } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
-import { z } from "zod";
-import { myProviderSchema } from "@/lib/schemas/release";
+import { contractRoute } from "@/lib/api/contract-handler";
+import { contract } from "@/lib/api/contract";
 
-export async function GET() {
+export const GET = contractRoute(contract.myProviders.list, async () => {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,20 +19,15 @@ export async function GET() {
     .orderBy(asc(userProviders.order));
 
   return NextResponse.json(providers);
-}
+});
 
-export async function PUT(req: NextRequest) {
+export const PUT = contractRoute(contract.myProviders.replace, async ({ body }) => {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const parsed = z.object({ providers: z.array(myProviderSchema) }).safeParse(await req.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-
-  const { providers } = parsed.data;
+  const { providers } = body;
   const userId = session.user.id;
 
   await db.transaction(async (tx) => {
@@ -50,4 +45,4 @@ export async function PUT(req: NextRequest) {
   });
 
   return NextResponse.json({ success: true });
-}
+});

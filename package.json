@@ -9,6 +9,7 @@
     "start": "next start",
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate",
+    "seed:staff": "bun run scripts/seed-admins.ts",
     "type-check": "tsc --noEmit",
     "lint": "oxlint src/",
     "lint:fix": "oxlint src/ --fix"

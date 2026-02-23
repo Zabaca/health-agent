@@ -86,7 +86,7 @@ export const myProviderSchema = z.object(providerBaseShape).omit({
   }
 });
 
-export const releaseSchema = z.object({
+const releaseBaseObject = z.object({
   firstName: z.string().min(1, "First name is required"),
   middleName: z.string().optional(),
   lastName: z.string().min(1, "Last name is required"),
@@ -126,7 +126,11 @@ export const releaseSchema = z.object({
   authDate: z.string().min(1, "Date is required")
     .refine((val) => !isNaN(new Date(val).getTime()), "Please enter a valid date"),
   authAgentName: z.string().optional(),
-}).superRefine((data, ctx) => {
+});
+
+type ReleaseBaseData = z.infer<typeof releaseBaseObject>;
+
+function releaseRefinement(data: ReleaseBaseData, ctx: z.RefinementCtx) {
   if (!data.releaseAuthAgent && !data.releaseAuthZabaca) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -148,9 +152,16 @@ export const releaseSchema = z.object({
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Phone number is required", path: ["authAgentPhone"] });
     }
   }
-});
+}
+
+export const releaseSchema = releaseBaseObject.superRefine(releaseRefinement);
+
+export const staffReleaseSchema = releaseBaseObject.extend({
+  authSignatureImage: z.string().optional().default(''),
+}).superRefine(releaseRefinement);
 
 export type ProviderFormData = z.infer<typeof providerSchema>;
 export type MyProviderFormData = z.infer<typeof myProviderSchema>;
 export type ReleaseFormData = z.infer<typeof releaseSchema>;
+export type StaffReleaseFormData = z.infer<typeof staffReleaseSchema>;
 export type MyProvidersFormData = { providers: MyProviderFormData[] };

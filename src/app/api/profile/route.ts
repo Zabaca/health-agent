@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { profileSchema } from "@/lib/schemas/profile";
+import { contractRoute } from "@/lib/api/contract-handler";
+import { contract } from "@/lib/api/contract";
 
-export async function GET() {
+export const GET = contractRoute(contract.profile.get, async () => {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,20 +25,15 @@ export async function GET() {
     phoneNumber: user?.phoneNumber ?? "",
     ssn:         user?.ssn         ?? "",
   });
-}
+});
 
-export async function PUT(req: NextRequest) {
+export const PUT = contractRoute(contract.profile.update, async ({ body }) => {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const parsed = profileSchema.safeParse(await req.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid request body", details: parsed.error.flatten() }, { status: 400 });
-  }
-
-  await db.update(users).set(parsed.data).where(eq(users.id, session.user.id));
+  await db.update(users).set(body).where(eq(users.id, session.user.id));
 
   return NextResponse.json({ success: true });
-}
+});

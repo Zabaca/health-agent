@@ -1,11 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable, users, userProviders } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { releaseSchema } from "@/lib/schemas/release";
+import { type ProviderFormData } from "@/lib/schemas/release";
+import { contractRoute } from "@/lib/api/contract-handler";
+import { contract } from "@/lib/api/contract";
 
-export async function GET() {
+export const GET = contractRoute(contract.releases.list, async () => {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,26 +20,23 @@ export async function GET() {
       lastName: releasesTable.lastName,
       createdAt: releasesTable.createdAt,
       updatedAt: releasesTable.updatedAt,
+      voided: releasesTable.voided,
     })
     .from(releasesTable)
     .where(eq(releasesTable.userId, session.user.id))
     .orderBy(desc(releasesTable.updatedAt));
 
   return NextResponse.json(releases);
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = contractRoute(contract.releases.create, async ({ body }) => {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const parsed = releaseSchema.safeParse(await req.json());
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-    }
-    const { providers, ...releaseData } = parsed.data;
+    const { providers, ...releaseData } = body;
 
     const release = await db.transaction(async (tx) => {
       const releaseId = crypto.randomUUID();
@@ -57,7 +56,7 @@ export async function POST(req: NextRequest) {
         ? await tx
             .insert(providersTable)
             .values(
-              providers.map((p, i) => ({
+              providers.map((p: ProviderFormData, i: number) => ({
                 id: crypto.randomUUID(),
                 releaseId,
                 ...p,
@@ -96,7 +95,8 @@ export async function POST(req: NextRequest) {
         await tx.delete(userProviders).where(eq(userProviders.userId, userId));
         if (providers.length > 0) {
           await tx.insert(userProviders).values(
-            providers.map((p, i) => {
+            providers.map((p: ProviderFormData, i: number) => {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               const { historyPhysical, diagnosticResults, treatmentProcedure, prescriptionMedication, imagingRadiology, dischargeSummaries, specificRecords, specificRecordsDesc, dateRangeFrom, dateRangeTo, allAvailableDates, purpose, purposeOther, ...providerInfo } = p;
               return {
                 id: crypto.randomUUID(),
@@ -117,4 +117,4 @@ export async function POST(req: NextRequest) {
     console.error("Create release error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}
+});

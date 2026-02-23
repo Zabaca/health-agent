@@ -6,6 +6,7 @@ export const users = sqliteTable('User', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
   type: text('type', { enum: ['patient', 'agent', 'admin'] }).notNull().default('patient'),
+  mustChangePassword: integer('mustChangePassword', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
   firstName: text('firstName'),
   middleName: text('middleName'),
@@ -114,6 +115,8 @@ export const userProviders = sqliteTable('UserProvider', {
 export const usersRelations = relations(users, ({ many }) => ({
   releases: many(releases),
   userProviders: many(userProviders),
+  patientAssignment: many(patientAssignments, { relationName: 'patientAssignment' }),
+  staffAssignments: many(patientAssignments, { relationName: 'staffAssignment' }),
 }));
 
 export const releasesRelations = relations(releases, ({ one, many }) => ({
@@ -127,4 +130,16 @@ export const providersRelations = relations(providers, ({ one }) => ({
 
 export const userProvidersRelations = relations(userProviders, ({ one }) => ({
   user: one(users, { fields: [userProviders.userId], references: [users.id] }),
+}));
+
+export const patientAssignments = sqliteTable('PatientAssignment', {
+  id: text('id').primaryKey(),
+  patientId: text('patientId').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  assignedToId: text('assignedToId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const patientAssignmentsRelations = relations(patientAssignments, ({ one }) => ({
+  patient: one(users, { fields: [patientAssignments.patientId], references: [users.id], relationName: 'patientAssignment' }),
+  assignedTo: one(users, { fields: [patientAssignments.assignedToId], references: [users.id], relationName: 'staffAssignment' }),
 }));

@@ -5,8 +5,8 @@ declare module "next-auth" {
     user: {
       id: string;
       email?: string | null;
-      name?: string | null;
-      image?: string | null;
+      type: 'patient' | 'agent' | 'admin';
+      mustChangePassword: boolean;
     };
   }
 }

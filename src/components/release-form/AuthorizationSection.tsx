@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { TextInput, Title, Paper, Stack, SimpleGrid, Checkbox, Group, Text } from "@mantine/core";
 import { useFormContext, Controller } from "react-hook-form";
 import dynamic from "next/dynamic";
@@ -7,7 +8,23 @@ import type { ReleaseFormData } from "@/types/release";
 
 const SignaturePad = dynamic(() => import("./SignaturePad"), { ssr: false });
 
-export default function AuthorizationSection() {
+interface StaffModeProps {
+  mode: 'admin' | 'agent';
+  agentInfo: {
+    firstName: string;
+    lastName: string;
+    organization?: string;
+    address: string;
+    phone: string;
+    email: string;
+  };
+}
+
+interface Props {
+  staffMode?: StaffModeProps;
+}
+
+export default function AuthorizationSection({ staffMode }: Props) {
   const {
     register,
     control,
@@ -19,6 +36,21 @@ export default function AuthorizationSection() {
 
   const sigValue = watch("authSignatureImage");
   const releaseAuthAgent = watch("releaseAuthAgent");
+
+  useEffect(() => {
+    if (!staffMode) return;
+    setValue("releaseAuthAgent", true);
+    setValue("authAgentFirstName", staffMode.agentInfo.firstName);
+    setValue("authAgentLastName", staffMode.agentInfo.lastName);
+    setValue("authAgentOrganization", staffMode.agentInfo.organization ?? "");
+    setValue("authAgentAddress", staffMode.agentInfo.address);
+    setValue("authAgentPhone", staffMode.agentInfo.phone);
+    setValue("authAgentEmail", staffMode.agentInfo.email);
+    setValue("authSignatureImage", "");
+    if (staffMode.mode === 'admin') {
+      setValue("releaseAuthZabaca", true);
+    }
+  }, [staffMode, setValue]);
 
   const handleSignatureChange = (dataUrl: string) => {
     setValue("authSignatureImage", dataUrl);
@@ -44,6 +76,7 @@ export default function AuthorizationSection() {
                   label="Agent"
                   checked={field.value}
                   onChange={(e) => field.onChange(e.currentTarget.checked)}
+                  disabled={!!staffMode}
                 />
               )}
             />
@@ -55,6 +88,7 @@ export default function AuthorizationSection() {
                   label="Zabaca"
                   checked={field.value}
                   onChange={(e) => field.onChange(e.currentTarget.checked)}
+                  disabled={staffMode?.mode === 'admin'}
                 />
               )}
             />
@@ -64,7 +98,7 @@ export default function AuthorizationSection() {
           )}
         </Stack>
 
-        {releaseAuthAgent && (
+        {(releaseAuthAgent || staffMode) && (
           <Paper withBorder p="sm" radius="md">
             <Stack gap="md">
               <Title order={6}>Agent Details</Title>
@@ -73,24 +107,28 @@ export default function AuthorizationSection() {
                   label="First Name"
                   required
                   error={errors.authAgentFirstName?.message}
+                  disabled={!!staffMode}
                   {...register("authAgentFirstName")}
                 />
                 <TextInput
                   label="Last Name"
                   required
                   error={errors.authAgentLastName?.message}
+                  disabled={!!staffMode}
                   {...register("authAgentLastName")}
                 />
               </SimpleGrid>
               <TextInput
                 label="Organization"
                 error={errors.authAgentOrganization?.message}
+                disabled={!!staffMode}
                 {...register("authAgentOrganization")}
               />
               <TextInput
                 label="Address"
                 required
                 error={errors.authAgentAddress?.message}
+                disabled={!!staffMode}
                 {...register("authAgentAddress")}
               />
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -98,12 +136,14 @@ export default function AuthorizationSection() {
                   label="Phone Number"
                   required
                   error={errors.authAgentPhone?.message}
+                  disabled={!!staffMode}
                   {...register("authAgentPhone")}
                 />
                 <TextInput
                   label="Email"
                   type="email"
                   error={errors.authAgentEmail?.message}
+                  disabled={!!staffMode}
                   {...register("authAgentEmail")}
                 />
               </SimpleGrid>
@@ -168,17 +208,21 @@ export default function AuthorizationSection() {
           {...register("authAgentName")}
         />
 
-        <Controller
-          name="authSignatureImage"
-          control={control}
-          render={() => (
-            <SignaturePad
-              value={sigValue}
-              onChange={handleSignatureChange}
-              error={errors.authSignatureImage?.message}
-            />
-          )}
-        />
+        {staffMode ? (
+          <TextInput label="Patient Signature" disabled placeholder="Patient Signature" />
+        ) : (
+          <Controller
+            name="authSignatureImage"
+            control={control}
+            render={() => (
+              <SignaturePad
+                value={sigValue}
+                onChange={handleSignatureChange}
+                error={errors.authSignatureImage?.message}
+              />
+            )}
+          />
+        )}
       </Stack>
     </Paper>
   );

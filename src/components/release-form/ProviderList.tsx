@@ -71,7 +71,11 @@ function SortableItem({ id, index, onRemove }: SortableItemProps) {
   );
 }
 
-export default function ProviderList() {
+interface ProviderListProps {
+  savedProviders?: UserProviderRow[];
+}
+
+export default function ProviderList({ savedProviders: savedProvidersProp }: ProviderListProps) {
   const { control, formState: { errors } } = useFormContext<ReleaseFormData>();
   const { fields, append, remove, move } = useFieldArray({
     control,
@@ -81,16 +85,17 @@ export default function ProviderList() {
   const [openItems, setOpenItems] = useState<string[]>([]);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [usedProviderIds, setUsedProviderIds] = useState<(string | null)[]>([]);
-  const [savedProviders, setSavedProviders] = useState<UserProviderRow[]>([]);
+  const [savedProviders, setSavedProviders] = useState<UserProviderRow[]>(savedProvidersProp ?? []);
 
   useEffect(() => {
+    if (savedProvidersProp !== undefined) return;
     apiClient.myProviders.list({})
       .then((result) => {
         if (result.status === 200) setSavedProviders(result.body);
         else setSavedProviders([]);
       })
       .catch(() => setSavedProviders([]));
-  }, []);
+  }, [savedProvidersProp]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

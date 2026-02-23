@@ -70,6 +70,7 @@ export const releaseSummarySchema = z.object({
   lastName: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  voided: z.boolean(),
 });
 
 export const userProviderRowSchema = z.object({
@@ -94,6 +95,28 @@ export const userProviderRowSchema = z.object({
 
 export const errorSchema = z.object({ error: z.string() });
 export const successSchema = z.object({ success: z.boolean() });
+
+export const patientSummarySchema = z.object({
+  id: z.string(),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  email: z.string(),
+  createdAt: z.string(),
+  assignedTo: z.object({
+    id: z.string(),
+    firstName: z.string().nullable(),
+    lastName: z.string().nullable(),
+    type: z.string(),
+  }).nullable(),
+});
+
+export const staffProfileResponseSchema = z.object({
+  firstName: z.string(),
+  middleName: z.string(),
+  lastName: z.string(),
+  phoneNumber: z.string(),
+  address: z.string(),
+});
 
 export const profileResponseSchema = z.object({
   firstName: z.string(),

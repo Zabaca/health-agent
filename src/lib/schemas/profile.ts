@@ -13,3 +13,13 @@ export const profileSchema = z.object({
 });
 
 export type ProfileFormData = z.infer<typeof profileSchema>;
+
+export const staffProfileSchema = z.object({
+  firstName:   z.string().min(1, "Required"),
+  middleName:  z.string().optional(),
+  lastName:    z.string().min(1, "Required"),
+  phoneNumber: z.string().min(1, "Required"),
+  address:     z.string().min(1, "Required"),
+});
+
+export type StaffProfileFormData = z.infer<typeof staffProfileSchema>;

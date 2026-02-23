@@ -1,7 +1,7 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
-import { releaseSchema, myProviderSchema } from '@/lib/schemas/release';
-import { profileSchema } from '@/lib/schemas/profile';
+import { releaseSchema, myProviderSchema, staffReleaseSchema } from '@/lib/schemas/release';
+import { profileSchema, staffProfileSchema } from '@/lib/schemas/profile';
 import {
   releaseSummarySchema,
   releaseWithProvidersSchema,
@@ -9,6 +9,8 @@ import {
   errorSchema,
   successSchema,
   profileResponseSchema,
+  patientSummarySchema,
+  staffProfileResponseSchema,
 } from './response-schemas';
 
 const c = initContract();
@@ -72,5 +74,163 @@ export const contract = c.router({
       body: profileSchema,
       responses: { 200: successSchema, 400: errorSchema, 401: errorSchema },
     },
+  }),
+  admin: c.router({
+    patients: c.router({
+      list: {
+        method: 'GET',
+        path: '/api/admin/patients',
+        responses: { 200: z.array(patientSummarySchema), 401: errorSchema, 403: errorSchema },
+      },
+      getById: {
+        method: 'GET',
+        path: '/api/admin/patients/:id',
+        pathParams: z.object({ id: z.string() }),
+        responses: { 200: patientSummarySchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+    }),
+    patientReleases: c.router({
+      list: {
+        method: 'GET',
+        path: '/api/admin/patients/:id/releases',
+        pathParams: z.object({ id: z.string() }),
+        responses: { 200: z.array(releaseSummarySchema), 401: errorSchema, 403: errorSchema },
+      },
+      create: {
+        method: 'POST',
+        path: '/api/admin/patients/:id/releases',
+        pathParams: z.object({ id: z.string() }),
+        body: staffReleaseSchema,
+        responses: { 201: releaseWithProvidersSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 500: errorSchema },
+      },
+      getById: {
+        method: 'GET',
+        path: '/api/admin/patients/:id/releases/:releaseId',
+        pathParams: z.object({ id: z.string(), releaseId: z.string() }),
+        responses: { 200: releaseWithProvidersSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+      update: {
+        method: 'PUT',
+        path: '/api/admin/patients/:id/releases/:releaseId',
+        pathParams: z.object({ id: z.string(), releaseId: z.string() }),
+        body: staffReleaseSchema,
+        responses: { 200: releaseWithProvidersSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema, 500: errorSchema },
+      },
+      void: {
+        method: 'PATCH',
+        path: '/api/admin/patients/:id/releases/:releaseId',
+        pathParams: z.object({ id: z.string(), releaseId: z.string() }),
+        body: c.noBody(),
+        responses: { 200: successSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+    }),
+    patientProviders: c.router({
+      list: {
+        method: 'GET',
+        path: '/api/admin/patients/:id/providers',
+        pathParams: z.object({ id: z.string() }),
+        responses: { 200: z.array(userProviderRowSchema), 401: errorSchema, 403: errorSchema },
+      },
+    }),
+    profile: c.router({
+      get: {
+        method: 'GET',
+        path: '/api/admin/profile',
+        responses: { 200: staffProfileResponseSchema, 401: errorSchema, 403: errorSchema },
+      },
+      update: {
+        method: 'PUT',
+        path: '/api/admin/profile',
+        body: staffProfileSchema,
+        responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema },
+      },
+    }),
+    changePassword: c.router({
+      update: {
+        method: 'PUT',
+        path: '/api/admin/change-password',
+        body: z.object({ password: z.string().min(8) }),
+        responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema },
+      },
+    }),
+  }),
+  agent: c.router({
+    patients: c.router({
+      list: {
+        method: 'GET',
+        path: '/api/agent/patients',
+        responses: { 200: z.array(patientSummarySchema), 401: errorSchema, 403: errorSchema },
+      },
+      getById: {
+        method: 'GET',
+        path: '/api/agent/patients/:id',
+        pathParams: z.object({ id: z.string() }),
+        responses: { 200: patientSummarySchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+    }),
+    patientReleases: c.router({
+      list: {
+        method: 'GET',
+        path: '/api/agent/patients/:id/releases',
+        pathParams: z.object({ id: z.string() }),
+        responses: { 200: z.array(releaseSummarySchema), 401: errorSchema, 403: errorSchema },
+      },
+      create: {
+        method: 'POST',
+        path: '/api/agent/patients/:id/releases',
+        pathParams: z.object({ id: z.string() }),
+        body: staffReleaseSchema,
+        responses: { 201: releaseWithProvidersSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 500: errorSchema },
+      },
+      getById: {
+        method: 'GET',
+        path: '/api/agent/patients/:id/releases/:releaseId',
+        pathParams: z.object({ id: z.string(), releaseId: z.string() }),
+        responses: { 200: releaseWithProvidersSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+      update: {
+        method: 'PUT',
+        path: '/api/agent/patients/:id/releases/:releaseId',
+        pathParams: z.object({ id: z.string(), releaseId: z.string() }),
+        body: staffReleaseSchema,
+        responses: { 200: releaseWithProvidersSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema, 500: errorSchema },
+      },
+      void: {
+        method: 'PATCH',
+        path: '/api/agent/patients/:id/releases/:releaseId',
+        pathParams: z.object({ id: z.string(), releaseId: z.string() }),
+        body: c.noBody(),
+        responses: { 200: successSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+    }),
+    patientProviders: c.router({
+      list: {
+        method: 'GET',
+        path: '/api/agent/patients/:id/providers',
+        pathParams: z.object({ id: z.string() }),
+        responses: { 200: z.array(userProviderRowSchema), 401: errorSchema, 403: errorSchema },
+      },
+    }),
+    profile: c.router({
+      get: {
+        method: 'GET',
+        path: '/api/agent/profile',
+        responses: { 200: staffProfileResponseSchema, 401: errorSchema, 403: errorSchema },
+      },
+      update: {
+        method: 'PUT',
+        path: '/api/agent/profile',
+        body: staffProfileSchema,
+        responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema },
+      },
+    }),
+    changePassword: c.router({
+      update: {
+        method: 'PUT',
+        path: '/api/agent/change-password',
+        body: z.object({ password: z.string().min(8) }),
+        responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema },
+      },
+    }),
   }),
 });
