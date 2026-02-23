@@ -23,6 +23,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { ReleaseFormData, ProviderFormData } from "@/types/release";
 import type { UserProviderRow } from "@/lib/db/types";
+import { apiClient } from "@/lib/api/client";
 import ProviderCard from "./ProviderCard";
 import AddProviderModal from "./AddProviderModal";
 
@@ -83,9 +84,11 @@ export default function ProviderList() {
   const [savedProviders, setSavedProviders] = useState<UserProviderRow[]>([]);
 
   useEffect(() => {
-    fetch("/api/my-providers")
-      .then((r) => r.json())
-      .then((data) => setSavedProviders(data))
+    apiClient.myProviders.list({})
+      .then((result) => {
+        if (result.status === 200) setSavedProviders(result.body);
+        else setSavedProviders([]);
+      })
       .catch(() => setSavedProviders([]));
   }, []);
 

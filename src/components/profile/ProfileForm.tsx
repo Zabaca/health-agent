@@ -13,6 +13,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, type ProfileFormData } from "@/lib/schemas/profile";
+import { apiClient } from "@/lib/api/client";
 
 interface ProfileFormProps {
   defaultValues: ProfileFormData;
@@ -40,13 +41,9 @@ export default function ProfileForm({ defaultValues }: ProfileFormProps) {
     setServerError("");
 
     try {
-      const res = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      const result = await apiClient.profile.update({ body: data });
 
-      if (!res.ok) {
+      if (result.status !== 200) {
         setServerError("Failed to save profile. Please try again.");
       } else {
         setSuccess(true);

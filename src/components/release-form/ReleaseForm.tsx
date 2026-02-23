@@ -7,6 +7,7 @@ import { notifications } from "@mantine/notifications";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { releaseSchema, type ReleaseFormData } from "@/lib/schemas/release";
+import { apiClient } from "@/lib/api/client";
 import PatientSection from "./PatientSection";
 import ProviderList from "./ProviderList";
 import AuthorizationSection from "./AuthorizationSection";
@@ -81,19 +82,20 @@ export default function ReleaseForm({ releaseId, defaultValues }: Props) {
         membershipIdBack: providerImageResults[i]?.[1],
       }));
 
-      const url = releaseId ? `/api/releases/${releaseId}` : "/api/releases";
-      const method = releaseId ? "PUT" : "POST";
+      const payload = { ...data, authSignatureImage: signatureUrl, providers };
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, authSignatureImage: signatureUrl, providers }),
-      });
-
-      if (!res.ok) {
-        const json = await res.json();
-        setServerError(json.error || "Failed to save. Please try again.");
-        return;
+      if (releaseId) {
+        const result = await apiClient.releases.update({ params: { id: releaseId }, body: payload });
+        if (result.status !== 200) {
+          setServerError((result.body as { error: string }).error || "Failed to save. Please try again.");
+          return;
+        }
+      } else {
+        const result = await apiClient.releases.create({ body: payload });
+        if (result.status !== 201) {
+          setServerError((result.body as { error: string }).error || "Failed to save. Please try again.");
+          return;
+        }
       }
 
       notifications.show({

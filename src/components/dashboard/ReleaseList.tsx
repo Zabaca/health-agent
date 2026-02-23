@@ -15,6 +15,7 @@ import { IconEye, IconBan } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import type { ReleaseSummary } from "@/types/release";
 import Link from "next/link";
+import { apiClient } from "@/lib/api/client";
 
 interface Props {
   releases: ReleaseSummary[];
@@ -30,11 +31,9 @@ export default function ReleaseList({ releases }: Props) {
     setVoiding(true);
 
     try {
-      const res = await fetch(`/api/releases/${voidId}`, {
-        method: "PATCH",
-      });
+      const result = await apiClient.releases.void({ params: { id: voidId } });
 
-      if (!res.ok) {
+      if (result.status !== 200) {
         notifications.show({
           title: "Error",
           message: "Failed to void release",

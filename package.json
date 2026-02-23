@@ -24,6 +24,8 @@
     "@mantine/hooks": "^7.15.0",
     "@mantine/notifications": "^7.15.0",
     "@tabler/icons-react": "^3.36.1",
+    "@ts-rest/core": "^3.52.1",
+    "@ts-rest/next": "^3.52.1",
     "bcryptjs": "^2.4.3",
     "dayjs": "^1.11.0",
     "drizzle-orm": "^0.38.0",

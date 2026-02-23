@@ -23,6 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { myProviderSchema, type MyProvidersFormData, type MyProviderFormData } from "@/lib/schemas/release";
+import { apiClient } from "@/lib/api/client";
 import MyProviderCard from "./MyProviderCard";
 
 const schema = z.object({ providers: z.array(myProviderSchema) });
@@ -125,12 +126,8 @@ export default function MyProvidersForm({ defaultValues }: Props) {
     setSuccess(false);
     setError(null);
     try {
-      const res = await fetch("/api/my-providers", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providers: data.providers }),
-      });
-      if (!res.ok) throw new Error("Failed to save providers");
+      const result = await apiClient.myProviders.replace({ body: { providers: data.providers } });
+      if (result.status !== 200) throw new Error("Failed to save providers");
       setSuccess(true);
       methods.reset(data);
     } catch {

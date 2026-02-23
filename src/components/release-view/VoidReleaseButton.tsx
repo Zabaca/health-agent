@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Modal, Text, Group } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconBan } from "@tabler/icons-react";
+import { apiClient } from "@/lib/api/client";
 
 interface Props {
   releaseId: string;
@@ -18,8 +19,8 @@ export default function VoidReleaseButton({ releaseId }: Props) {
   const handleVoid = async () => {
     setVoiding(true);
     try {
-      const res = await fetch(`/api/releases/${releaseId}`, { method: "PATCH" });
-      if (!res.ok) {
+      const result = await apiClient.releases.void({ params: { id: releaseId } });
+      if (result.status !== 200) {
         notifications.show({ title: "Error", message: "Failed to void release", color: "red" });
         return;
       }
