@@ -11,6 +11,8 @@ import {
   profileResponseSchema,
   patientSummarySchema,
   staffProfileResponseSchema,
+  scheduledCallSchema,
+  staffScheduledCallSchema,
 } from './response-schemas';
 
 const c = initContract();
@@ -153,6 +155,50 @@ export const contract = c.router({
         responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema },
       },
     }),
+  }),
+  staffScheduledCalls: c.router({
+    getById: {
+      method: 'GET',
+      path: '/api/staff/scheduled-calls/:id',
+      pathParams: z.object({ id: z.string() }),
+      responses: { 200: staffScheduledCallSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+    },
+    cancel: {
+      method: 'PATCH',
+      path: '/api/staff/scheduled-calls/:id',
+      pathParams: z.object({ id: z.string() }),
+      body: z.object({ status: z.enum(['cancelled']) }),
+      responses: { 200: staffScheduledCallSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+    },
+  }),
+  scheduledCalls: c.router({
+    list: {
+      method: 'GET',
+      path: '/api/scheduled-calls',
+      responses: { 200: z.array(scheduledCallSchema), 401: errorSchema },
+    },
+    create: {
+      method: 'POST',
+      path: '/api/scheduled-calls',
+      body: z.object({ scheduledAt: z.string() }),
+      responses: { 201: scheduledCallSchema, 400: errorSchema, 401: errorSchema, 404: errorSchema },
+    },
+    getById: {
+      method: 'GET',
+      path: '/api/scheduled-calls/:id',
+      pathParams: z.object({ id: z.string() }),
+      responses: { 200: scheduledCallSchema, 401: errorSchema, 404: errorSchema },
+    },
+    update: {
+      method: 'PATCH',
+      path: '/api/scheduled-calls/:id',
+      pathParams: z.object({ id: z.string() }),
+      body: z.object({
+        scheduledAt: z.string().optional(),
+        status: z.enum(['cancelled']).optional(),
+      }),
+      responses: { 200: scheduledCallSchema, 400: errorSchema, 401: errorSchema, 404: errorSchema },
+    },
   }),
   agent: c.router({
     patients: c.router({

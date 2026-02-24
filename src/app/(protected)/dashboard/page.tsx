@@ -7,6 +7,7 @@ import Link from "next/link";
 import ReleaseList from "@/components/dashboard/ReleaseList";
 import VoidedReleaseList from "@/components/dashboard/VoidedReleaseList";
 import ProfileCompletionBanner from "@/components/dashboard/ProfileCompletionBanner";
+import ScheduleCallBanner from "@/components/dashboard/ScheduleCallBanner";
 import type { ReleaseSummary } from "@/types/release";
 
 export const dynamic = 'force-dynamic';
@@ -34,13 +35,7 @@ export default async function DashboardPage() {
     db.query.users.findFirst({ where: eq(users.id, userId) }),
   ]);
 
-  const profileIncomplete =
-    !user?.firstName ||
-    !user?.middleName ||
-    !user?.lastName ||
-    !user?.dateOfBirth ||
-    !user?.address ||
-    !user?.ssn;
+  const profileIncomplete = !user?.profileComplete;
 
   const active: ReleaseSummary[] = activeReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerName) }));
   const voided: ReleaseSummary[] = voidedReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerName) }));
@@ -48,6 +43,7 @@ export default async function DashboardPage() {
   return (
     <>
       {profileIncomplete && <ProfileCompletionBanner />}
+      <ScheduleCallBanner disabled={profileIncomplete} />
       <Group justify="space-between" mb="lg">
         <Title order={2}>My Releases</Title>
         <Button component={Link} href="/releases/new">

@@ -28,6 +28,8 @@ type NextHandler = (
  *
  * - Automatically awaits and validates path params against the contract's pathParams schema.
  * - Automatically parses and validates the request body against the contract's body schema.
+ * - Validates the response body against the contract's declared response schema for the
+ *   returned status code, returning 500 if the handler produces a non-conforming response.
  * - Passes typed `{ params, body, req }` to the handler.
  */
 export function contractRoute<T extends AppRoute>(
@@ -57,6 +59,24 @@ export function contractRoute<T extends AppRoute>(
       body = result.data as InferBody<T>;
     }
 
-    return handler({ params, body, req });
+    const response = await handler({ params, body, req });
+
+    // Validate response body against the contract's declared schema for this status code
+    const responseSchema = (route.responses as Record<number, unknown>)[response.status];
+    if (responseSchema instanceof z.ZodType) {
+      const rawResponseBody = await response.clone().json().catch(() => null);
+      const result = responseSchema.safeParse(rawResponseBody);
+      if (!result.success) {
+        console.error(
+          `[contractRoute] Response for ${route.method} ${route.path} (status ${response.status}) does not match contract schema:`,
+          result.error.flatten()
+        );
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      }
+      // Return the schema-parsed body to strip any extra fields
+      return NextResponse.json(result.data, { status: response.status });
+    }
+
+    return response;
   };
 }

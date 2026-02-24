@@ -8,6 +8,7 @@ import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { staffReleaseSchema, type StaffReleaseFormData, type ProviderFormData } from "@/lib/schemas/release";
 import { apiClient } from "@/lib/api/client";
+import { errorSchema } from "@/lib/api/response-schemas";
 import PatientSection from "@/components/release-form/PatientSection";
 import ProviderList from "@/components/release-form/ProviderList";
 import AuthorizationSection from "@/components/release-form/AuthorizationSection";
@@ -111,7 +112,7 @@ export default function StaffReleaseForm({
             body: payload,
           });
           if (result.status !== 200) {
-            setServerError((result.body as { error: string }).error || "Failed to save.");
+            setServerError(errorSchema.safeParse(result.body).data?.error || "Failed to save.");
             return;
           }
         } else {
@@ -120,7 +121,7 @@ export default function StaffReleaseForm({
             body: payload,
           });
           if (result.status !== 201) {
-            setServerError((result.body as { error: string }).error || "Failed to save.");
+            setServerError(errorSchema.safeParse(result.body).data?.error || "Failed to save.");
             return;
           }
         }
@@ -131,7 +132,7 @@ export default function StaffReleaseForm({
             body: payload,
           });
           if (result.status !== 200) {
-            setServerError((result.body as { error: string }).error || "Failed to save.");
+            setServerError(errorSchema.safeParse(result.body).data?.error || "Failed to save.");
             return;
           }
         } else {
@@ -140,7 +141,7 @@ export default function StaffReleaseForm({
             body: payload,
           });
           if (result.status !== 201) {
-            setServerError((result.body as { error: string }).error || "Failed to save.");
+            setServerError(errorSchema.safeParse(result.body).data?.error || "Failed to save.");
             return;
           }
         }

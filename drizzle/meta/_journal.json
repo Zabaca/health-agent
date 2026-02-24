@@ -15,6 +15,20 @@
       "when": 1771878446736,
       "tag": "0001_late_nighthawk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771885345772,
+      "tag": "0002_freezing_ricochet",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1771886752120,
+      "tag": "0003_warm_blue_shield",
+      "breakpoints": true
     }
   ]
 }

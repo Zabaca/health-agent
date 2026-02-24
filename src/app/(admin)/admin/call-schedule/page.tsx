@@ -1,12 +1,37 @@
-import { Title, Text, Paper } from "@mantine/core";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { scheduledCalls } from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
+import { Title } from "@mantine/core";
+import StaffScheduledCallsTable from "@/components/schedule-call/StaffScheduledCallsTable";
 
+export const dynamic = 'force-dynamic';
 export const metadata = { title: "Call Schedule — Admin Portal" };
 
-export default function AdminCallSchedulePage() {
+export default async function AdminCallSchedulePage() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return null;
+
+  const calls = await db.query.scheduledCalls.findMany({
+    where: eq(scheduledCalls.agentId, userId),
+    with: {
+      patient: {
+        columns: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: [desc(scheduledCalls.scheduledAt)],
+  });
+
   return (
-    <Paper withBorder p="xl" radius="md" maw={480}>
-      <Title order={3} mb="xs">Call Schedule</Title>
-      <Text c="dimmed">Coming soon.</Text>
-    </Paper>
+    <>
+      <Title order={2} mb="lg">Call Schedule</Title>
+      <StaffScheduledCallsTable calls={calls} basePath="/admin/call-schedule" />
+    </>
   );
 }

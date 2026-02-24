@@ -1,0 +1,1 @@
+ALTER TABLE `User` ADD `profileComplete` integer DEFAULT false NOT NULL;

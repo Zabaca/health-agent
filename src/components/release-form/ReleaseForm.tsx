@@ -8,6 +8,7 @@ import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { releaseSchema, type ReleaseFormData } from "@/lib/schemas/release";
 import { apiClient } from "@/lib/api/client";
+import { errorSchema } from "@/lib/api/response-schemas";
 import PatientSection from "./PatientSection";
 import ProviderList from "./ProviderList";
 import AuthorizationSection from "./AuthorizationSection";
@@ -87,13 +88,13 @@ export default function ReleaseForm({ releaseId, defaultValues }: Props) {
       if (releaseId) {
         const result = await apiClient.releases.update({ params: { id: releaseId }, body: payload });
         if (result.status !== 200) {
-          setServerError((result.body as { error: string }).error || "Failed to save. Please try again.");
+          setServerError(errorSchema.safeParse(result.body).data?.error || "Failed to save. Please try again.");
           return;
         }
       } else {
         const result = await apiClient.releases.create({ body: payload });
         if (result.status !== 201) {
-          setServerError((result.body as { error: string }).error || "Failed to save. Please try again.");
+          setServerError(errorSchema.safeParse(result.body).data?.error || "Failed to save. Please try again.");
           return;
         }
       }

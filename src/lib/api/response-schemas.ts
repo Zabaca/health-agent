@@ -96,6 +96,41 @@ export const userProviderRowSchema = z.object({
 export const errorSchema = z.object({ error: z.string() });
 export const successSchema = z.object({ success: z.boolean() });
 
+export const scheduledCallSchema = z.object({
+  id: z.string(),
+  scheduledAt: z.string(),
+  status: z.enum(['scheduled', 'cancelled']),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  agent: z.object({
+    id: z.string(),
+    firstName: z.string().nullable(),
+    lastName: z.string().nullable(),
+    email: z.string(),
+    phoneNumber: z.string().nullable(),
+    address: z.string().nullable(),
+  }),
+});
+
+export const staffScheduledCallSchema = z.object({
+  id: z.string(),
+  scheduledAt: z.string(),
+  status: z.enum(['scheduled', 'cancelled']),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  patient: z.object({
+    id: z.string(),
+    firstName: z.string().nullable(),
+    middleName: z.string().nullable(),
+    lastName: z.string().nullable(),
+    email: z.string(),
+    dateOfBirth: z.string().nullable(),
+    address: z.string().nullable(),
+    phoneNumber: z.string().nullable(),
+    ssn: z.string().nullable(),
+  }),
+});
+
 export const patientSummarySchema = z.object({
   id: z.string(),
   firstName: z.string().nullable(),

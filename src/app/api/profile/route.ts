@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -33,7 +34,9 @@ export const PUT = contractRoute(contract.profile.update, async ({ body }) => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await db.update(users).set(body).where(eq(users.id, session.user.id));
+  await db.update(users).set({ ...body, profileComplete: true }).where(eq(users.id, session.user.id));
+
+  revalidatePath('/dashboard');
 
   return NextResponse.json({ success: true });
 });

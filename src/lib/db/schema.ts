@@ -15,6 +15,7 @@ export const users = sqliteTable('User', {
   address: text('address'),
   phoneNumber: text('phoneNumber'),
   ssn: text('ssn'),
+  profileComplete: integer('profileComplete', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const releases = sqliteTable('Release', {
@@ -117,6 +118,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   userProviders: many(userProviders),
   patientAssignment: many(patientAssignments, { relationName: 'patientAssignment' }),
   staffAssignments: many(patientAssignments, { relationName: 'staffAssignment' }),
+  scheduledCallsAsPatient: many(scheduledCalls, { relationName: 'scheduledCallPatient' }),
+  scheduledCallsAsAgent: many(scheduledCalls, { relationName: 'scheduledCallAgent' }),
 }));
 
 export const releasesRelations = relations(releases, ({ one, many }) => ({
@@ -142,4 +145,19 @@ export const patientAssignments = sqliteTable('PatientAssignment', {
 export const patientAssignmentsRelations = relations(patientAssignments, ({ one }) => ({
   patient: one(users, { fields: [patientAssignments.patientId], references: [users.id], relationName: 'patientAssignment' }),
   assignedTo: one(users, { fields: [patientAssignments.assignedToId], references: [users.id], relationName: 'staffAssignment' }),
+}));
+
+export const scheduledCalls = sqliteTable('ScheduledCall', {
+  id: text('id').primaryKey(),
+  patientId: text('patientId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  agentId: text('agentId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  scheduledAt: text('scheduledAt').notNull(),
+  status: text('status', { enum: ['scheduled', 'cancelled'] }).notNull().default('scheduled'),
+  createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updatedAt').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const scheduledCallsRelations = relations(scheduledCalls, ({ one }) => ({
+  patient: one(users, { fields: [scheduledCalls.patientId], references: [users.id], relationName: 'scheduledCallPatient' }),
+  agent: one(users, { fields: [scheduledCalls.agentId], references: [users.id], relationName: 'scheduledCallAgent' }),
 }));
