@@ -118,9 +118,9 @@ export default function OnboardingModal({
     >
       {/* Top container: title + stepper + nav — never scrolls */}
       <Box
-        px="md"
-        pt="md"
-        pb="sm"
+        px="xl"
+        pt="xl"
+        pb="md"
         style={{ borderBottom: "1px solid var(--mantine-color-gray-2)", flexShrink: 0 }}
       >
         <Title order={3} mb="md">Welcome to Your Health Portal</Title>
@@ -160,7 +160,7 @@ export default function OnboardingModal({
       </Box>
 
       {/* Bottom container: scrollable form content */}
-      <Box style={{ flex: 1, minHeight: 0, overflowY: "auto" }} p="md">
+      <Box style={{ flex: 1, minHeight: 0, overflowY: "auto" }} p="xl">
         <Stack w="100%" gap="md">
           {/* Step 0: Welcome */}
           {activeStep === 0 && (
@@ -210,32 +210,52 @@ export default function OnboardingModal({
 
           {/* Step 1: Profile */}
           {activeStep === 1 && (
-            <ProfileForm
-              defaultValues={profileValues}
-              maw="100%"
-              onComplete={(data) => {
-                setProfileValues(data);
-                setProfileSaved(true);
-                setActiveStep(2);
-              }}
-            />
+            <Stack gap="md">
+              <Text c="dimmed">
+                To get started, we need a few personal details so we can contact your healthcare
+                providers on your behalf and accurately identify you in their records.
+              </Text>
+              <ProfileForm
+                defaultValues={profileValues}
+                maw="100%"
+                onComplete={(data) => {
+                  setProfileValues(data);
+                  setProfileSaved(true);
+                  setActiveStep(2);
+                }}
+              />
+            </Stack>
           )}
 
           {/* Step 2: Providers */}
           {activeStep === 2 && (
-            <MyProvidersForm
-              defaultValues={providerValues}
-              maw="100%"
-              onComplete={(providers) => {
-                setProviderValues(providers);
-                setActiveStep(3);
-              }}
-            />
+            <Stack gap="md">
+              <Text c="dimmed">
+                Add the healthcare providers whose records we&apos;ll be requesting. This includes your
+                primary care medical group, hospitals or urgent-care facilities you&apos;ve visited,
+                specialty clinics (cardiology, orthopedics, dermatology, etc.), diagnostic labs,
+                and any insurance plans associated with those providers.
+              </Text>
+              <MyProvidersForm
+                defaultValues={providerValues}
+                maw="100%"
+                onComplete={(providers) => {
+                  setProviderValues(providers);
+                  setActiveStep(3);
+                }}
+              />
+            </Stack>
           )}
 
           {/* Step 3: Release */}
           {activeStep === 3 && (
-            <ReleaseForm
+            <Stack gap="md">
+              <Text c="dimmed">
+                A medical release authorization gives your agent the legal permission to contact
+                your healthcare providers and retrieve your medical records on your behalf. Your
+                information is kept secure and used only for this purpose.
+              </Text>
+              <ReleaseForm
               key={savedReleaseId ?? "new"}
               releaseId={savedReleaseId}
               defaultValues={
@@ -262,15 +282,22 @@ export default function OnboardingModal({
               }}
               onBack={goBack}
             />
+            </Stack>
           )}
 
           {/* Step 4: Schedule */}
           {activeStep === 4 && assignedAgent && (
-            <ScheduleCallForm
-              agentInfo={assignedAgent}
-              onComplete={handleComplete}
-              maw="100%"
-            />
+            <Stack gap="md">
+              <Text c="dimmed">
+                Schedule a call with your agent to review your records, ask questions, and get
+                guidance on next steps for your healthcare journey.
+              </Text>
+              <ScheduleCallForm
+                agentInfo={assignedAgent}
+                onComplete={handleComplete}
+                maw="100%"
+              />
+            </Stack>
           )}
         </Stack>
       </Box>
