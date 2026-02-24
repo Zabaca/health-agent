@@ -4,6 +4,7 @@ import { users, patientAssignments } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { Title, Text } from "@mantine/core";
 import PatientsTable from "@/components/staff/PatientsTable";
+import { decrypt } from "@/lib/crypto";
 
 export const metadata = { title: "Dashboard — Agent Portal" };
 
@@ -16,12 +17,18 @@ export default async function AgentDashboardPage() {
       })
     : [];
 
-  const patients =
+  const rawPatients =
     assignments.length > 0
       ? await db.query.users.findMany({
           where: inArray(users.id, assignments.map((a) => a.patientId)),
         })
       : [];
+
+  const patients = rawPatients.map((p) => {
+    const decryptedSsn = p.ssn ? decrypt(p.ssn) : null;
+    const ssnLast4 = decryptedSsn && decryptedSsn.length >= 4 ? decryptedSsn.slice(-4) : null;
+    return { ...p, ssn: undefined, ssnLast4 };
+  });
 
   return (
     <>

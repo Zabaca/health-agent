@@ -4,6 +4,7 @@ import { users, patientAssignments } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { Title, Text } from "@mantine/core";
 import PatientsTable from "@/components/staff/PatientsTable";
+import { decrypt } from "@/lib/crypto";
 
 export const metadata = { title: "Dashboard — Admin Portal" };
 
@@ -26,7 +27,9 @@ export default async function AdminDashboardPage() {
   const patients = allPatients.map((p) => {
     const assignment = assignmentMap.get(p.id);
     const assignee = assignment ? assigneeMap.get(assignment.assignedToId) : undefined;
-    return { ...p, assignedTo: assignee ?? null };
+    const decryptedSsn = p.ssn ? decrypt(p.ssn) : null;
+    const ssnLast4 = decryptedSsn && decryptedSsn.length >= 4 ? decryptedSsn.slice(-4) : null;
+    return { ...p, ssn: undefined, ssnLast4, assignedTo: assignee ?? null };
   });
 
   return (
