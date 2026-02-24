@@ -26,6 +26,7 @@ export const GET = contractRoute(contract.profile.get, async () => {
     address:     user?.address     ?? "",
     phoneNumber: user?.phoneNumber ?? "",
     ssn:         user?.ssn         ? decrypt(user.ssn) : "",
+    avatarUrl:   user?.avatarUrl   ?? null,
   });
 });
 
@@ -35,9 +36,10 @@ export const PUT = contractRoute(contract.profile.update, async ({ body }) => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { avatarUrl, ...rest } = body;
   await db
     .update(users)
-    .set({ ...encryptPii(body), profileComplete: true })
+    .set({ ...encryptPii(rest), profileComplete: true, avatarUrl: avatarUrl || null })
     .where(eq(users.id, session.user.id));
 
   revalidatePath('/dashboard');

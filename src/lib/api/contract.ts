@@ -237,6 +237,14 @@ export const contract = c.router({
       responses: { 200: scheduledCallSchema, 400: errorSchema, 401: errorSchema, 404: errorSchema },
     },
   }),
+  onboarding: c.router({
+    complete: {
+      method: 'PATCH',
+      path: '/api/onboarding/complete',
+      body: c.noBody(),
+      responses: { 200: successSchema, 401: errorSchema },
+    },
+  }),
   agent: c.router({
     patients: c.router({
       list: {

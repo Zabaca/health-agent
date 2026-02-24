@@ -19,6 +19,8 @@ interface AgentInfo {
 
 interface Props {
   agentInfo: AgentInfo;
+  onComplete?: () => void | Promise<void>;
+  maw?: number | string;
 }
 
 function isSameDay(a: Date, b: Date) {
@@ -35,7 +37,7 @@ function minTimeForDate(date: Date | null): string | undefined {
   return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
 }
 
-export default function ScheduleCallForm({ agentInfo }: Props) {
+export default function ScheduleCallForm({ agentInfo, onComplete, maw = 500 }: Props) {
   const router = useRouter();
   const [date, setDate] = useState<Date | null>(null);
   const [time, setTime] = useState<string>('');
@@ -72,7 +74,11 @@ export default function ScheduleCallForm({ agentInfo }: Props) {
       });
 
       if (result.status === 201) {
-        router.push('/scheduled-calls');
+        if (onComplete) {
+          await onComplete();
+        } else {
+          router.push('/scheduled-calls');
+        }
       } else {
         setError(errorSchema.safeParse(result.body).data?.error ?? 'Failed to schedule call. Please try again.');
       }
@@ -84,8 +90,8 @@ export default function ScheduleCallForm({ agentInfo }: Props) {
   };
 
   return (
-    <Stack>
-      <Paper withBorder p="lg" radius="md" maw={500}>
+    <Stack w="100%">
+      <Paper withBorder p="lg" radius="md" maw={maw} w="100%">
         <Title order={4} mb="sm">Your Agent</Title>
         <Stack gap="xs">
           <Text fw={500}>{agentName}</Text>
@@ -95,7 +101,7 @@ export default function ScheduleCallForm({ agentInfo }: Props) {
         </Stack>
       </Paper>
 
-      <Paper withBorder p="lg" radius="md" maw={500}>
+      <Paper withBorder p="lg" radius="md" maw={maw} w="100%">
         <Title order={4} mb="sm">Select Date & Time</Title>
 
         {error && (
@@ -121,7 +127,7 @@ export default function ScheduleCallForm({ agentInfo }: Props) {
             minTime={minTimeForDate(date)}
           />
 
-          <Group>
+          <Group justify="flex-end">
             <Button onClick={onSubmit} loading={loading}>
               Schedule Call
             </Button>

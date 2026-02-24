@@ -25,6 +25,7 @@ export const GET = contractRoute(contract.admin.profile.get, async () => {
     lastName:    user?.lastName    ?? "",
     phoneNumber: user?.phoneNumber ?? "",
     address:     user?.address     ?? "",
+    avatarUrl:   user?.avatarUrl   ?? null,
   });
 });
 
@@ -37,7 +38,8 @@ export const PUT = contractRoute(contract.admin.profile.update, async ({ body })
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  await db.update(users).set(body).where(eq(users.id, session.user.id));
+  const { avatarUrl, ...rest } = body;
+  await db.update(users).set({ ...rest, avatarUrl: avatarUrl ?? null }).where(eq(users.id, session.user.id));
 
   return NextResponse.json({ success: true });
 });

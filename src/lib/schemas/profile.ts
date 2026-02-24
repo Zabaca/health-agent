@@ -10,6 +10,7 @@ export const profileSchema = z.object({
   address:     z.string().min(1, "Address is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   ssn:         z.string().min(1, "SSN is required"),
+  avatarUrl:   z.string().optional(),
 });
 
 export type ProfileFormData = z.infer<typeof profileSchema>;
@@ -20,6 +21,7 @@ export const staffProfileSchema = z.object({
   lastName:    z.string().min(1, "Required"),
   phoneNumber: z.string().min(1, "Required"),
   address:     z.string().min(1, "Required"),
+  avatarUrl:   z.string().optional(),
 });
 
 export type StaffProfileFormData = z.infer<typeof staffProfileSchema>;

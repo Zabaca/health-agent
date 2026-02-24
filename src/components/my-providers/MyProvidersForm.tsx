@@ -35,6 +35,8 @@ const defaultProvider: MyProviderFormData = {
 
 interface Props {
   defaultValues: MyProviderFormData[];
+  onComplete?: (providers: MyProviderFormData[]) => void;
+  maw?: number | string;
 }
 
 interface SortableItemProps {
@@ -68,7 +70,7 @@ function SortableItem({ id, index, onRemove }: SortableItemProps) {
   );
 }
 
-export default function MyProvidersForm({ defaultValues }: Props) {
+export default function MyProvidersForm({ defaultValues, onComplete, maw = 700 }: Props) {
   const methods = useForm<MyProvidersFormData>({
     resolver: zodResolver(schema),
     defaultValues: { providers: defaultValues },
@@ -128,8 +130,12 @@ export default function MyProvidersForm({ defaultValues }: Props) {
     try {
       const result = await apiClient.myProviders.replace({ body: { providers: data.providers } });
       if (result.status !== 200) throw new Error("Failed to save providers");
-      setSuccess(true);
-      methods.reset(data);
+      if (onComplete) {
+        onComplete(data.providers);
+      } else {
+        setSuccess(true);
+        methods.reset(data);
+      }
     } catch {
       setError("Failed to save providers. Please try again.");
     }
@@ -138,7 +144,7 @@ export default function MyProvidersForm({ defaultValues }: Props) {
   return (
     <FormProvider {...methods}>
       <form onSubmit={methods.handleSubmit(onSubmit)}>
-        <Paper withBorder p="md" radius="md" maw={700}>
+        <Paper withBorder p="md" radius="md" maw={maw} w="100%">
           <Title order={4} mb="md">
             My Providers
           </Title>

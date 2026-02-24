@@ -19,6 +19,7 @@ export default async function AgentProfilePage() {
     lastName: user?.lastName ?? "",
     phoneNumber: user?.phoneNumber ?? "",
     address: user?.address ?? "",
+    avatarUrl: user?.avatarUrl ?? undefined,
   };
 
   return <StaffProfileFormClient defaultValues={defaultValues} mode="agent" />;

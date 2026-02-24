@@ -9,17 +9,21 @@ import {
   SimpleGrid,
   Stack,
   Alert,
+  Group,
 } from "@mantine/core";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, type ProfileFormData } from "@/lib/schemas/profile";
 import { apiClient } from "@/lib/api/client";
+import AvatarUpload from "@/components/shared/AvatarUpload";
 
 interface ProfileFormProps {
   defaultValues: ProfileFormData;
+  onComplete?: (data: ProfileFormData) => void;
+  maw?: number | string;
 }
 
-export default function ProfileForm({ defaultValues }: ProfileFormProps) {
+export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: ProfileFormProps) {
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,11 +33,17 @@ export default function ProfileForm({ defaultValues }: ProfileFormProps) {
     handleSubmit,
     trigger,
     reset,
+    control,
+    watch,
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues,
   });
+
+  const firstName = watch("firstName");
+  const lastName = watch("lastName");
+  const nameForInitials = [firstName, lastName].filter(Boolean).join(" ");
 
   const onSubmit = async (data: ProfileFormData) => {
     setLoading(true);
@@ -45,6 +55,8 @@ export default function ProfileForm({ defaultValues }: ProfileFormProps) {
 
       if (result.status !== 200) {
         setServerError("Failed to save profile. Please try again.");
+      } else if (onComplete) {
+        onComplete(data);
       } else {
         setSuccess(true);
         reset(data);
@@ -57,7 +69,7 @@ export default function ProfileForm({ defaultValues }: ProfileFormProps) {
   };
 
   return (
-    <Paper withBorder p="xl" radius="md" maw={700}>
+    <Paper withBorder p="xl" radius="md" maw={maw} w="100%">
       <Title order={3} mb="lg">
         My Profile
       </Title>
@@ -75,6 +87,18 @@ export default function ProfileForm({ defaultValues }: ProfileFormProps) {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack>
+          <Controller
+            name="avatarUrl"
+            control={control}
+            render={({ field }) => (
+              <AvatarUpload
+                value={field.value}
+                onChange={field.onChange}
+                name={nameForInitials}
+              />
+            )}
+          />
+
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
             <TextInput
               label="First Name"
@@ -126,9 +150,11 @@ export default function ProfileForm({ defaultValues }: ProfileFormProps) {
             {...register("phoneNumber")}
           />
 
-          <Button type="submit" loading={loading} disabled={!isDirty} w="fit-content">
-            Save Profile
-          </Button>
+          <Group justify="flex-end">
+            <Button type="submit" loading={loading} disabled={!isDirty}>
+              Save Profile
+            </Button>
+          </Group>
         </Stack>
       </form>
     </Paper>

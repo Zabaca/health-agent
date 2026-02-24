@@ -7,6 +7,7 @@ declare module "next-auth" {
       email?: string | null;
       type: 'patient' | 'agent' | 'admin';
       mustChangePassword: boolean;
+      onboarded?: boolean;
     };
   }
 }

@@ -46,6 +46,11 @@ export default auth((req) => {
   } else {
     if (nextUrl.pathname.startsWith('/admin') || nextUrl.pathname.startsWith('/agent'))
       return NextResponse.redirect(new URL('/dashboard', nextUrl));
+
+    // Unboarded patients may only access /dashboard
+    if (!session?.user?.onboarded && !nextUrl.pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/dashboard', nextUrl));
+    }
   }
 
   return NextResponse.next();

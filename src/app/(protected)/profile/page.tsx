@@ -26,6 +26,7 @@ export default async function ProfilePage() {
         address:     user?.address     ?? "",
         phoneNumber: user?.phoneNumber ?? "",
         ssn:         user?.ssn         ? decrypt(user.ssn) : "",
+        avatarUrl:   user?.avatarUrl   ?? "",
       }}
     />
   );

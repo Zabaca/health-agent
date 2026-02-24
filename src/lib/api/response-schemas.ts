@@ -161,6 +161,7 @@ export const staffProfileResponseSchema = z.object({
   lastName: z.string(),
   phoneNumber: z.string(),
   address: z.string(),
+  avatarUrl: z.string().nullable(),
 });
 
 export const profileResponseSchema = z.object({
@@ -171,4 +172,5 @@ export const profileResponseSchema = z.object({
   address: z.string(),
   phoneNumber: z.string(),
   ssn: z.string(),
+  avatarUrl: z.string().nullable(),
 });

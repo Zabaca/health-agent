@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Paper, Title, TextInput, Button, Stack, SimpleGrid, Text } from "@mantine/core";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { staffProfileSchema, type StaffProfileFormData } from "@/lib/schemas/profile";
+import AvatarUpload from "@/components/shared/AvatarUpload";
 
 interface Props {
   defaultValues?: Partial<StaffProfileFormData>;
@@ -19,11 +20,17 @@ export default function StaffProfileForm({ defaultValues, onSave }: Props) {
   const {
     register,
     handleSubmit,
+    control,
+    watch,
     formState: { errors, isDirty },
   } = useForm<StaffProfileFormData>({
     resolver: zodResolver(staffProfileSchema),
     defaultValues: defaultValues ?? {},
   });
+
+  const firstName = watch("firstName");
+  const lastName = watch("lastName");
+  const nameForInitials = [firstName, lastName].filter(Boolean).join(" ");
 
   const onSubmit = async (data: StaffProfileFormData) => {
     setSaving(true);
@@ -48,6 +55,17 @@ export default function StaffProfileForm({ defaultValues, onSave }: Props) {
       <Title order={4} mb="md">My Profile</Title>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="md">
+          <Controller
+            name="avatarUrl"
+            control={control}
+            render={({ field }) => (
+              <AvatarUpload
+                value={field.value}
+                onChange={field.onChange}
+                name={nameForInitials}
+              />
+            )}
+          />
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
             <TextInput
               label="First Name"

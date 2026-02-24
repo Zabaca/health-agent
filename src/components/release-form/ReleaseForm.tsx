@@ -25,9 +25,11 @@ interface Props {
   releaseId?: string;
   defaultValues?: Partial<ReleaseFormData>;
   assignedAgent?: AssignedAgent | null;
+  onComplete?: (releaseId: string) => void;
+  onBack?: () => void;
 }
 
-export default function ReleaseForm({ releaseId, defaultValues, assignedAgent }: Props) {
+export default function ReleaseForm({ releaseId, defaultValues, assignedAgent, onComplete, onBack }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -89,6 +91,8 @@ export default function ReleaseForm({ releaseId, defaultValues, assignedAgent }:
 
       const payload = { ...data, authSignatureImage: signatureUrl, providers };
 
+      let savedReleaseId = releaseId;
+
       if (releaseId) {
         const result = await apiClient.releases.update({ params: { id: releaseId }, body: payload });
         if (result.status !== 200) {
@@ -101,16 +105,23 @@ export default function ReleaseForm({ releaseId, defaultValues, assignedAgent }:
           setServerError(errorSchema.safeParse(result.body).data?.error || "Failed to save. Please try again.");
           return;
         }
+        savedReleaseId = result.body.id;
       }
 
-      notifications.show({
-        title: "Saved",
-        message: releaseId ? "Release updated successfully" : "Release created successfully",
-        color: "green",
-      });
+      if (!onComplete) {
+        notifications.show({
+          title: "Saved",
+          message: releaseId ? "Release updated successfully" : "Release created successfully",
+          color: "green",
+        });
+      }
 
-      router.push("/dashboard");
-      router.refresh();
+      if (onComplete && savedReleaseId) {
+        onComplete(savedReleaseId);
+      } else {
+        router.push("/dashboard");
+        router.refresh();
+      }
     } catch {
       setServerError("Unexpected error. Please try again.");
     } finally {
@@ -141,7 +152,7 @@ export default function ReleaseForm({ releaseId, defaultValues, assignedAgent }:
           <AuthorizationSection assignedAgent={assignedAgent} />
 
           <Group justify="flex-end">
-            <Button variant="default" onClick={() => router.back()}>
+            <Button variant="default" onClick={() => onBack ? onBack() : router.back()}>
               Cancel
             </Button>
             <Button type="submit" loading={loading}>

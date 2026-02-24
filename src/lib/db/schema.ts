@@ -16,6 +16,8 @@ export const users = sqliteTable('User', {
   phoneNumber: text('phoneNumber'),
   ssn: text('ssn'),
   profileComplete: integer('profileComplete', { mode: 'boolean' }).notNull().default(false),
+  onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
+  avatarUrl: text('avatarUrl'),
 });
 
 export const releases = sqliteTable('Release', {
