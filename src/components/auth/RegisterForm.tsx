@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { apiClient } from "@/lib/api/client";
 
 const schema = z
   .object({
@@ -47,15 +48,12 @@ export default function RegisterForm() {
     setServerError("");
 
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: data.email, password: data.password }),
+      const result = await apiClient.register({
+        body: { email: data.email, password: data.password },
       });
 
-      if (!res.ok) {
-        const json = await res.json();
-        setServerError(json.error || "Registration failed");
+      if (result.status !== 201) {
+        setServerError((result.body as { error: string }).error || "Registration failed");
         return;
       }
 

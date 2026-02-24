@@ -5,6 +5,8 @@ import { users, releases as releasesTable, patientAssignments } from "@/lib/db/s
 import { and, desc, eq } from "drizzle-orm";
 import { Title, Text, Stack } from "@mantine/core";
 import PatientReleasesPanel from "@/components/staff/PatientReleasesPanel";
+import PatientInfoCard from "@/components/staff/PatientInfoCard";
+import { decryptPii } from "@/lib/crypto";
 
 export default async function AgentPatientPage({
   params,
@@ -26,6 +28,8 @@ export default async function AgentPatientPage({
 
   const patient = await db.query.users.findFirst({ where: eq(users.id, patientId) });
   if (!patient) notFound();
+
+  const decryptedPatient = decryptPii(patient);
 
   const releases = await db
     .select({
@@ -59,12 +63,13 @@ export default async function AgentPatientPage({
         <Title order={2}>{patientName}</Title>
         <Text c="dimmed" size="sm">{patient.email}</Text>
       </div>
+      <PatientInfoCard patient={decryptedPatient} />
       <PatientReleasesPanel
         patientId={patientId}
         activeReleases={activeReleases}
         voidedReleases={voidedReleases}
         newReleaseHref={`/agent/patients/${patientId}/releases/new`}
-        viewReleaseHref={(releaseId) => `/agent/patients/${patientId}/releases/${releaseId}`}
+        releaseHrefBase={`/agent/patients/${patientId}/releases`}
         onVoid={voidRelease}
       />
     </Stack>

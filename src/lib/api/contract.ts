@@ -13,11 +13,35 @@ import {
   staffProfileResponseSchema,
   scheduledCallSchema,
   staffScheduledCallSchema,
+  uploadResponseSchema,
+  registerResponseSchema,
 } from './response-schemas';
 
 const c = initContract();
 
 export const contract = c.router({
+  register: {
+    method: 'POST',
+    path: '/api/register',
+    body: z.object({ email: z.string().email(), password: z.string().min(8) }),
+    responses: {
+      201: registerResponseSchema,
+      400: errorSchema,
+      409: errorSchema,
+      500: errorSchema,
+    },
+  },
+  upload: {
+    method: 'POST',
+    path: '/api/upload',
+    body: z.object({ data: z.string(), extension: z.string().optional() }),
+    responses: {
+      200: uploadResponseSchema,
+      400: errorSchema,
+      401: errorSchema,
+      500: errorSchema,
+    },
+  },
   releases: c.router({
     list: {
       method: 'GET',

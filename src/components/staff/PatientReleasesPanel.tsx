@@ -11,7 +11,7 @@ interface Props {
   activeReleases: ReleaseSummary[];
   voidedReleases: ReleaseSummary[];
   newReleaseHref: string;
-  viewReleaseHref: (releaseId: string) => string;
+  releaseHrefBase: string;
   onVoid: (releaseId: string) => Promise<void>;
 }
 
@@ -19,7 +19,7 @@ export default function PatientReleasesPanel({
   activeReleases,
   voidedReleases,
   newReleaseHref,
-  viewReleaseHref,
+  releaseHrefBase,
   onVoid,
 }: Props) {
   const [voidingId, setVoidingId] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export default function PatientReleasesPanel({
                     <Group gap="xs">
                       <ActionIcon
                         component={Link}
-                        href={viewReleaseHref(r.id)}
+                        href={`${releaseHrefBase}/${r.id}`}
                         variant="subtle"
                         size="sm"
                       >
@@ -118,7 +118,7 @@ export default function PatientReleasesPanel({
                   <Table.Td>
                     <ActionIcon
                       component={Link}
-                      href={viewReleaseHref(r.id)}
+                      href={`${releaseHrefBase}/${r.id}`}
                       variant="subtle"
                       size="sm"
                     >

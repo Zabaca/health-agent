@@ -71,14 +71,9 @@ export default function StaffReleaseForm({
   const uploadDataUrl = async (dataUrl: string): Promise<string> => {
     if (!dataUrl || !dataUrl.startsWith("data:")) return dataUrl;
     const ext = dataUrl.startsWith("data:image/png") ? "png" : "jpg";
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: dataUrl, extension: ext }),
-    });
-    if (res.ok) {
-      const { url } = await res.json();
-      return url;
+    const result = await apiClient.upload({ body: { data: dataUrl, extension: ext } });
+    if (result.status === 200) {
+      return result.body.url;
     }
     return dataUrl;
   };

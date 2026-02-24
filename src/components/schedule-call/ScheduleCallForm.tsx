@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Paper, Title, Text, Stack, Alert, Group } from "@mantine/core";
+import { Button, Paper, Title, Text, Stack, Alert, Group, SimpleGrid } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import TimeGrid from "./TimeGrid";
 import { useRouter } from "next/navigation";
