@@ -93,6 +93,14 @@ export const userProviderRowSchema = z.object({
   membershipIdBack: z.string().nullable(),
 });
 
+export const staffMemberSchema = z.object({
+  id: z.string(),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  email: z.string(),
+  type: z.enum(['admin', 'agent']),
+});
+
 export const errorSchema = z.object({ error: z.string() });
 export const successSchema = z.object({ success: z.boolean() });
 export const uploadResponseSchema = z.object({ url: z.string() });

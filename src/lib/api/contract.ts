@@ -10,6 +10,7 @@ import {
   successSchema,
   profileResponseSchema,
   patientSummarySchema,
+  staffMemberSchema,
   staffProfileResponseSchema,
   scheduledCallSchema,
   staffScheduledCallSchema,
@@ -113,6 +114,18 @@ export const contract = c.router({
         path: '/api/admin/patients/:id',
         pathParams: z.object({ id: z.string() }),
         responses: { 200: patientSummarySchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+      reassign: {
+        method: 'PATCH',
+        path: '/api/admin/patients/:id',
+        pathParams: z.object({ id: z.string() }),
+        body: z.object({ assignedToId: z.string() }),
+        responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+      listStaff: {
+        method: 'GET',
+        path: '/api/admin/staff',
+        responses: { 200: z.array(staffMemberSchema), 401: errorSchema, 403: errorSchema },
       },
     }),
     patientReleases: c.router({
@@ -236,6 +249,13 @@ export const contract = c.router({
         path: '/api/agent/patients/:id',
         pathParams: z.object({ id: z.string() }),
         responses: { 200: patientSummarySchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+      reassign: {
+        method: 'PATCH',
+        path: '/api/agent/patients/:id',
+        pathParams: z.object({ id: z.string() }),
+        body: z.object({ assignedToId: z.string() }),
+        responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
       },
     }),
     patientReleases: c.router({
