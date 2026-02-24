@@ -10,6 +10,8 @@ import {
 import Link from "next/link";
 import { IconArrowLeft, IconBan } from "@tabler/icons-react";
 import StaffVoidReleaseButton from "@/components/staff/StaffVoidReleaseButton";
+import SsnDisplay from "@/components/fields/SsnDisplay";
+import { decryptPii } from "@/lib/crypto";
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +38,8 @@ export default async function AdminReleaseViewPage({
   });
 
   if (!release) notFound();
+
+  const { ssn, dateOfBirth } = decryptPii(release);
 
   const recordLabels: Record<string, string> = {
     historyPhysical: "History & Physical",
@@ -74,8 +78,11 @@ export default async function AdminReleaseViewPage({
             <Field label="Last Name" value={release.lastName} />
           </SimpleGrid>
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <Field label="Date of Birth" value={release.dateOfBirth} />
-            <Field label="Social Security Number" value={release.ssn} />
+            <Field label="Date of Birth" value={dateOfBirth} />
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed" fw={500}>Social Security Number</Text>
+              {ssn ? <SsnDisplay ssn={ssn} /> : <Text size="sm">—</Text>}
+            </Stack>
           </SimpleGrid>
           <Field label="Mailing Address" value={release.mailingAddress} />
           <SimpleGrid cols={{ base: 1, sm: 2 }}>

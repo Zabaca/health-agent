@@ -6,6 +6,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { type ProviderFormData } from "@/lib/schemas/release";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
+import { encryptPii, decryptPii } from "@/lib/crypto";
 
 async function verifyAssignment(agentId: string, patientId: string) {
   return db.query.patientAssignments.findFirst({
@@ -62,6 +63,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
 
   try {
     const { providers, ...releaseData } = body;
+    const encryptedReleaseData = encryptPii(releaseData);
 
     const release = await db.transaction(async (tx) => {
       const releaseId = crypto.randomUUID();
@@ -71,7 +73,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
         .values({
           id: releaseId,
           userId: params.id,
-          ...releaseData,
+          ...encryptedReleaseData,
           createdAt: now,
           updatedAt: now,
         })
@@ -94,7 +96,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
       return { ...newRelease, providers: insertedProviders };
     });
 
-    return NextResponse.json(release, { status: 201 });
+    return NextResponse.json(decryptPii(release), { status: 201 });
   } catch (error) {
     console.error("Create release error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

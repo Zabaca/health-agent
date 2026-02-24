@@ -15,9 +15,10 @@ interface Props {
   title?: string;
   primaryColor?: string;
   navItems: NavItem[];
+  bottomNavItems?: NavItem[];
 }
 
-export default function AppShell({ children, title = "Medical Records", primaryColor = "blue", navItems }: Props) {
+export default function AppShell({ children, title = "Medical Records", primaryColor = "blue", navItems, bottomNavItems }: Props) {
   const [opened, { toggle, close }] = useDisclosure();
   const theme = createTheme({ primaryColor: primaryColor as any });
 
@@ -36,7 +37,7 @@ export default function AppShell({ children, title = "Medical Records", primaryC
         </MantineAppShell.Header>
 
         <MantineAppShell.Navbar>
-          <Sidebar onNavLinkClick={close} navItems={navItems} />
+          <Sidebar onNavLinkClick={close} navItems={navItems} bottomNavItems={bottomNavItems} />
         </MantineAppShell.Navbar>
 
         <MantineAppShell.Main>{children}</MantineAppShell.Main>

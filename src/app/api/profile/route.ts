@@ -6,6 +6,7 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
+import { decrypt, encryptPii } from "@/lib/crypto";
 
 export const GET = contractRoute(contract.profile.get, async () => {
   const session = await auth();
@@ -21,10 +22,10 @@ export const GET = contractRoute(contract.profile.get, async () => {
     firstName:   user?.firstName   ?? "",
     middleName:  user?.middleName  ?? "",
     lastName:    user?.lastName    ?? "",
-    dateOfBirth: user?.dateOfBirth ?? "",
+    dateOfBirth: user?.dateOfBirth ? decrypt(user.dateOfBirth) : "",
     address:     user?.address     ?? "",
     phoneNumber: user?.phoneNumber ?? "",
-    ssn:         user?.ssn         ?? "",
+    ssn:         user?.ssn         ? decrypt(user.ssn) : "",
   });
 });
 
@@ -34,7 +35,10 @@ export const PUT = contractRoute(contract.profile.update, async ({ body }) => {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await db.update(users).set({ ...body, profileComplete: true }).where(eq(users.id, session.user.id));
+  await db
+    .update(users)
+    .set({ ...encryptPii(body), profileComplete: true })
+    .where(eq(users.id, session.user.id));
 
   revalidatePath('/dashboard');
 

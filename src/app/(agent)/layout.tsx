@@ -18,12 +18,15 @@ export default async function AgentLayout({
 
   const navItems = [
     { href: "/agent/dashboard", label: "Dashboard", icon: <IconUsers size={16} /> },
-    { href: "/agent/profile", label: "My Profile", icon: <IconUser size={16} /> },
     { href: "/agent/call-schedule", label: "Call Schedule", icon: <IconCalendar size={16} /> },
   ];
 
+  const bottomNavItems = [
+    { href: "/agent/profile", label: "My Profile", icon: <IconUser size={16} /> },
+  ];
+
   return (
-    <AppShell navItems={navItems} primaryColor="violet" title="Agent Portal">
+    <AppShell navItems={navItems} bottomNavItems={bottomNavItems} primaryColor="violet" title="Agent Portal">
       {children}
     </AppShell>
   );

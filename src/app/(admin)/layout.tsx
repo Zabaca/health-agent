@@ -18,12 +18,15 @@ export default async function AdminLayout({
 
   const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: <IconUsers size={16} /> },
-    { href: "/admin/profile", label: "My Profile", icon: <IconUser size={16} /> },
     { href: "/admin/call-schedule", label: "Call Schedule", icon: <IconCalendar size={16} /> },
   ];
 
+  const bottomNavItems = [
+    { href: "/admin/profile", label: "My Profile", icon: <IconUser size={16} /> },
+  ];
+
   return (
-    <AppShell navItems={navItems} primaryColor="teal" title="Admin Portal">
+    <AppShell navItems={navItems} bottomNavItems={bottomNavItems} primaryColor="teal" title="Admin Portal">
       {children}
     </AppShell>
   );

@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Title } from "@mantine/core";
 import StaffCallDetail from "@/components/schedule-call/StaffCallDetail";
+import { decryptPii } from "@/lib/crypto";
 
 export const dynamic = 'force-dynamic';
 
@@ -45,10 +46,11 @@ export default async function AgentCallDetailPage({ params }: Props) {
       <Title order={2} mb="lg">Call Details</Title>
       <StaffCallDetail
         callId={call.id}
-        patient={call.patient}
+        patient={decryptPii(call.patient)}
         scheduledAt={call.scheduledAt}
         status={call.status}
         backHref="/agent/call-schedule"
+        patientHref={`/agent/patients/${call.patient.id}`}
       />
     </>
   );

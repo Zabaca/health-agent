@@ -5,6 +5,7 @@ import { releases as releasesTable, providers as providersTable } from "@/lib/db
 import { and, asc, eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
+import { encryptPii, decryptPii } from "@/lib/crypto";
 
 async function getRelease(id: string, userId: string) {
   return db.query.releases.findFirst({
@@ -24,7 +25,7 @@ export const GET = contractRoute(contract.releases.getById, async ({ params }) =
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(release);
+  return NextResponse.json(decryptPii(release));
 });
 
 export const PUT = contractRoute(contract.releases.update, async ({ params, body }) => {
@@ -40,13 +41,14 @@ export const PUT = contractRoute(contract.releases.update, async ({ params, body
 
   try {
     const { providers, ...updateData } = body;
+    const encryptedUpdateData = encryptPii(updateData);
 
     const release = await db.transaction(async (tx) => {
       await tx.delete(providersTable).where(eq(providersTable.releaseId, params.id));
 
       const [updated] = await tx
         .update(releasesTable)
-        .set({ ...updateData, updatedAt: new Date().toISOString() })
+        .set({ ...encryptedUpdateData, updatedAt: new Date().toISOString() })
         .where(eq(releasesTable.id, params.id))
         .returning();
 
@@ -67,7 +69,7 @@ export const PUT = contractRoute(contract.releases.update, async ({ params, body
       return { ...updated, providers: insertedProviders };
     });
 
-    return NextResponse.json(release);
+    return NextResponse.json(decryptPii(release));
   } catch (error) {
     console.error("Update release error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

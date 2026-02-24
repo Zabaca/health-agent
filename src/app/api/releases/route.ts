@@ -6,6 +6,7 @@ import { desc, eq } from "drizzle-orm";
 import { type ProviderFormData } from "@/lib/schemas/release";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
+import { encrypt, encryptPii, decryptPii } from "@/lib/crypto";
 
 export const GET = contractRoute(contract.releases.list, async () => {
   const session = await auth();
@@ -37,6 +38,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
 
   try {
     const { providers, ...releaseData } = body;
+    const encryptedReleaseData = encryptPii(releaseData);
 
     const release = await db.transaction(async (tx) => {
       const releaseId = crypto.randomUUID();
@@ -46,7 +48,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
         .values({
           id: releaseId,
           userId: session.user.id,
-          ...releaseData,
+          ...encryptedReleaseData,
           createdAt: now,
           updatedAt: now,
         })
@@ -69,7 +71,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
       return { ...newRelease, providers: insertedProviders };
     });
 
-    // Silently backfill empty profile fields from submitted release data
+    // Silently backfill empty profile fields from submitted release data (plaintext)
     try {
       const userId = session.user.id;
       const existingUser = await db.query.users.findFirst({ where: eq(users.id, userId) });
@@ -77,10 +79,10 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
       if (!existingUser?.firstName)   patch.firstName   = releaseData.firstName;
       if (!existingUser?.middleName)  patch.middleName  = releaseData.middleName;
       if (!existingUser?.lastName)    patch.lastName    = releaseData.lastName;
-      if (!existingUser?.dateOfBirth) patch.dateOfBirth = releaseData.dateOfBirth;
+      if (!existingUser?.dateOfBirth) patch.dateOfBirth = encrypt(releaseData.dateOfBirth);
       if (!existingUser?.address)     patch.address     = releaseData.mailingAddress;
       if (!existingUser?.phoneNumber) patch.phoneNumber = releaseData.phoneNumber;
-      if (!existingUser?.ssn)         patch.ssn         = releaseData.ssn;
+      if (!existingUser?.ssn)         patch.ssn         = encrypt(releaseData.ssn);
       if (Object.keys(patch).length > 0) {
         await db.update(users).set(patch).where(eq(users.id, userId));
       }
@@ -112,7 +114,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
       // swallow — do not block the release response
     }
 
-    return NextResponse.json(release, { status: 201 });
+    return NextResponse.json(decryptPii(release), { status: 201 });
   } catch (error) {
     console.error("Create release error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

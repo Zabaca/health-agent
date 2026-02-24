@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Paper, Title, Text, Badge, Stack, Group, Button, Modal, Alert, ActionIcon, Tooltip } from "@mantine/core";
+import { Paper, Title, Text, Badge, Stack, Group, Button, Modal, Alert, SimpleGrid } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconEye, IconEyeOff } from "@tabler/icons-react";
+import SsnDisplay from "@/components/fields/SsnDisplay";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiClient } from "@/lib/api/client";
@@ -27,14 +27,7 @@ interface Props {
   scheduledAt: string;
   status: 'scheduled' | 'cancelled';
   backHref: string;
-}
-
-function maskSsn(ssn: string): string {
-  const digits = ssn.replace(/\D/g, '');
-  if (digits.length === 9) {
-    return `***-**-${digits.slice(5)}`;
-  }
-  return `***-**-${ssn.slice(-4)}`;
+  patientHref: string;
 }
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -47,9 +40,8 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-export default function StaffCallDetail({ callId, patient, scheduledAt, status, backHref }: Props) {
+export default function StaffCallDetail({ callId, patient, scheduledAt, status, backHref, patientHref }: Props) {
   const router = useRouter();
-  const [ssnVisible, setSsnVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [opened, { open, close }] = useDisclosure(false);
@@ -92,12 +84,17 @@ export default function StaffCallDetail({ callId, patient, scheduledAt, status, 
         </Group>
       </Modal>
 
-      <Stack gap="md" maw={520}>
+      <Stack gap="md" maw={720}>
         {error && <Alert color="red">{error}</Alert>}
 
         <Paper withBorder p="lg" radius="md">
-          <Title order={4} mb="md">Patient Information</Title>
-          <Stack gap="sm">
+          <Group justify="space-between" align="center" mb="md">
+            <Title order={4}>Patient Information</Title>
+            <Button component={Link} href={patientHref} variant="light" size="xs">
+              View Profile
+            </Button>
+          </Group>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
             <InfoRow label="Full Name" value={fullName} />
             <InfoRow label="Email" value={patient.email} />
             <InfoRow label="Phone" value={patient.phoneNumber} />
@@ -107,25 +104,10 @@ export default function StaffCallDetail({ callId, patient, scheduledAt, status, 
             {patient.ssn && (
               <div>
                 <Text size="xs" fw={500} c="dimmed" mb={2}>SSN</Text>
-                <Group gap="xs" align="center">
-                  <Text size="sm" style={{ fontFamily: 'monospace' }}>
-                    {ssnVisible ? patient.ssn : maskSsn(patient.ssn)}
-                  </Text>
-                  <Tooltip label={ssnVisible ? 'Hide SSN' : 'Show SSN'}>
-                    <ActionIcon
-                      variant="subtle"
-                      size="sm"
-                      color="gray"
-                      onClick={() => setSsnVisible((v) => !v)}
-                      aria-label={ssnVisible ? 'Hide SSN' : 'Show SSN'}
-                    >
-                      {ssnVisible ? <IconEyeOff size={14} /> : <IconEye size={14} />}
-                    </ActionIcon>
-                  </Tooltip>
-                </Group>
+                <SsnDisplay ssn={patient.ssn} />
               </div>
             )}
-          </Stack>
+          </SimpleGrid>
         </Paper>
 
         <Paper withBorder p="lg" radius="md">

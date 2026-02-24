@@ -10,9 +10,10 @@ import type { NavItem } from "./AppShell";
 interface Props {
   onNavLinkClick?: () => void;
   navItems: NavItem[];
+  bottomNavItems?: NavItem[];
 }
 
-export default function Sidebar({ onNavLinkClick, navItems }: Props) {
+export default function Sidebar({ onNavLinkClick, navItems, bottomNavItems }: Props) {
   const pathname = usePathname();
 
   return (
@@ -30,15 +31,28 @@ export default function Sidebar({ onNavLinkClick, navItems }: Props) {
           />
         ))}
       </Stack>
-      <Button
-        variant="subtle"
-        color="gray"
-        leftSection={<IconLogout size={16} />}
-        onClick={() => signOut({ callbackUrl: "/login" })}
-        fullWidth
-      >
-        Sign Out
-      </Button>
+      <Stack gap={4}>
+        {bottomNavItems?.map((item) => (
+          <NavLink
+            key={item.href}
+            component={Link}
+            href={item.href}
+            label={item.label}
+            leftSection={item.icon}
+            active={pathname === item.href}
+            onClick={onNavLinkClick}
+          />
+        ))}
+        <Button
+          variant="subtle"
+          color="gray"
+          leftSection={<IconLogout size={16} />}
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          fullWidth
+        >
+          Sign Out
+        </Button>
+      </Stack>
     </Stack>
   );
 }

@@ -5,6 +5,7 @@ import { scheduledCalls } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
+import { decryptPii } from "@/lib/crypto";
 
 async function getCallWithPatient(id: string, agentId: string) {
   return db.query.scheduledCalls.findFirst({
@@ -44,7 +45,7 @@ export const GET = contractRoute(contract.staffScheduledCalls.getById, async ({ 
     status: call.status,
     createdAt: call.createdAt,
     updatedAt: call.updatedAt,
-    patient: call.patient,
+    patient: decryptPii(call.patient),
   });
 });
 
@@ -76,6 +77,6 @@ export const PATCH = contractRoute(contract.staffScheduledCalls.cancel, async ({
     status: updated!.status,
     createdAt: updated!.createdAt,
     updatedAt: updated!.updatedAt,
-    patient: updated!.patient,
+    patient: decryptPii(updated!.patient),
   });
 });

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users, userProviders } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import StaffReleaseForm from "@/components/staff/StaffReleaseForm";
+import { decrypt } from "@/lib/crypto";
 
 export const metadata = { title: "New Release — Admin Portal" };
 
@@ -43,11 +44,11 @@ export default async function AdminNewReleasePage({
         firstName: patient.firstName ?? "",
         middleName: patient.middleName ?? "",
         lastName: patient.lastName ?? "",
-        dateOfBirth: patient.dateOfBirth ?? "",
+        dateOfBirth: patient.dateOfBirth ? decrypt(patient.dateOfBirth) : "",
         mailingAddress: patient.address ?? "",
         phoneNumber: patient.phoneNumber ?? "",
         email: patient.email,
-        ssn: patient.ssn ?? "",
+        ssn: patient.ssn ? decrypt(patient.ssn) : "",
       }}
     />
   );
