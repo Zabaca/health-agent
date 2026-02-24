@@ -130,28 +130,8 @@ const releaseBaseObject = z.object({
 
 type ReleaseBaseData = z.infer<typeof releaseBaseObject>;
 
-function releaseRefinement(data: ReleaseBaseData, ctx: z.RefinementCtx) {
-  if (!data.releaseAuthAgent && !data.releaseAuthZabaca) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "At least one release authorization must be selected",
-      path: ["releaseAuthAgent"],
-    });
-  }
-  if (data.releaseAuthAgent) {
-    if (!data.authAgentFirstName?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "First name is required", path: ["authAgentFirstName"] });
-    }
-    if (!data.authAgentLastName?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Last name is required", path: ["authAgentLastName"] });
-    }
-    if (!data.authAgentAddress?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Address is required", path: ["authAgentAddress"] });
-    }
-    if (!data.authAgentPhone?.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Phone number is required", path: ["authAgentPhone"] });
-    }
-  }
+function releaseRefinement(_data: ReleaseBaseData, _ctx: z.RefinementCtx) {
+  // Agent details are auto-populated from the patient's assigned agent — no manual validation needed.
 }
 
 export const releaseSchema = releaseBaseObject.superRefine(releaseRefinement);

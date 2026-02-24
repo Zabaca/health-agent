@@ -13,12 +13,21 @@ import PatientSection from "./PatientSection";
 import ProviderList from "./ProviderList";
 import AuthorizationSection from "./AuthorizationSection";
 
+interface AssignedAgent {
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  address: string | null;
+}
+
 interface Props {
   releaseId?: string;
   defaultValues?: Partial<ReleaseFormData>;
+  assignedAgent?: AssignedAgent | null;
 }
 
-export default function ReleaseForm({ releaseId, defaultValues }: Props) {
+export default function ReleaseForm({ releaseId, defaultValues, assignedAgent }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -129,7 +138,7 @@ export default function ReleaseForm({ releaseId, defaultValues }: Props) {
 
           <PatientSection />
           <ProviderList />
-          <AuthorizationSection />
+          <AuthorizationSection assignedAgent={assignedAgent} />
 
           <Group justify="flex-end">
             <Button variant="default" onClick={() => router.back()}>

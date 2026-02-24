@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
-import { TextInput, Title, Paper, Stack, SimpleGrid, Checkbox, Group, Text } from "@mantine/core";
+import { TextInput, Title, Paper, Stack, SimpleGrid, Text } from "@mantine/core";
 import { useFormContext, Controller } from "react-hook-form";
 import dynamic from "next/dynamic";
 import type { ReleaseFormData } from "@/types/release";
 
 const SignaturePad = dynamic(() => import("./SignaturePad"), { ssr: false });
+
+interface AssignedAgent {
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  address: string | null;
+}
 
 interface StaffModeProps {
   mode: 'admin' | 'agent';
@@ -21,10 +29,20 @@ interface StaffModeProps {
 }
 
 interface Props {
+  assignedAgent?: AssignedAgent | null;
   staffMode?: StaffModeProps;
 }
 
-export default function AuthorizationSection({ staffMode }: Props) {
+function AgentField({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <Stack gap={2}>
+      <Text size="xs" c="dimmed" fw={500}>{label}</Text>
+      <Text size="sm">{value || "—"}</Text>
+    </Stack>
+  );
+}
+
+export default function AuthorizationSection({ assignedAgent, staffMode }: Props) {
   const {
     register,
     control,
@@ -35,8 +53,19 @@ export default function AuthorizationSection({ staffMode }: Props) {
   } = useFormContext<ReleaseFormData>();
 
   const sigValue = watch("authSignatureImage");
-  const releaseAuthAgent = watch("releaseAuthAgent");
 
+  // Patient mode: auto-populate agent fields from the assigned agent
+  useEffect(() => {
+    if (!assignedAgent || staffMode) return;
+    setValue("releaseAuthAgent", true);
+    setValue("authAgentFirstName", assignedAgent.firstName ?? "");
+    setValue("authAgentLastName", assignedAgent.lastName ?? "");
+    setValue("authAgentAddress", assignedAgent.address ?? "");
+    setValue("authAgentPhone", assignedAgent.phoneNumber ?? "");
+    setValue("authAgentEmail", assignedAgent.email);
+  }, [assignedAgent, staffMode, setValue]);
+
+  // Staff mode: pre-populate from logged-in staff member's info
   useEffect(() => {
     if (!staffMode) return;
     setValue("releaseAuthAgent", true);
@@ -63,89 +92,38 @@ export default function AuthorizationSection({ staffMode }: Props) {
         Authorization
       </Title>
       <Stack gap="md">
-        <Stack gap="xs">
-          <Text fw={500} size="sm">
-            Release Authorization <Text component="span" c="red">*</Text>
-          </Text>
-          <Group gap="xl">
-            <Controller
-              name="releaseAuthAgent"
-              control={control}
-              render={({ field }) => (
-                <Checkbox
-                  label="Agent"
-                  checked={field.value}
-                  onChange={(e) => field.onChange(e.currentTarget.checked)}
-                  disabled={!!staffMode}
-                />
-              )}
-            />
-            <Controller
-              name="releaseAuthZabaca"
-              control={control}
-              render={({ field }) => (
-                <Checkbox
-                  label="Zabaca"
-                  checked={field.value}
-                  onChange={(e) => field.onChange(e.currentTarget.checked)}
-                  disabled={staffMode?.mode === 'admin'}
-                />
-              )}
-            />
-          </Group>
-          {errors.releaseAuthAgent && (
-            <Text c="red" size="xs">{errors.releaseAuthAgent.message}</Text>
-          )}
-        </Stack>
-
-        {(releaseAuthAgent || staffMode) && (
+        {/* Patient mode: show assigned agent as read-only text */}
+        {assignedAgent && !staffMode && (
           <Paper withBorder p="sm" radius="md">
             <Stack gap="md">
               <Title order={6}>Agent Details</Title>
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <TextInput
-                  label="First Name"
-                  required
-                  error={errors.authAgentFirstName?.message}
-                  disabled={!!staffMode}
-                  {...register("authAgentFirstName")}
-                />
-                <TextInput
-                  label="Last Name"
-                  required
-                  error={errors.authAgentLastName?.message}
-                  disabled={!!staffMode}
-                  {...register("authAgentLastName")}
-                />
+                <AgentField label="First Name" value={assignedAgent.firstName} />
+                <AgentField label="Last Name" value={assignedAgent.lastName} />
               </SimpleGrid>
-              <TextInput
-                label="Organization"
-                error={errors.authAgentOrganization?.message}
-                disabled={!!staffMode}
-                {...register("authAgentOrganization")}
-              />
-              <TextInput
-                label="Address"
-                required
-                error={errors.authAgentAddress?.message}
-                disabled={!!staffMode}
-                {...register("authAgentAddress")}
-              />
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <TextInput
-                  label="Phone Number"
-                  required
-                  error={errors.authAgentPhone?.message}
-                  disabled={!!staffMode}
-                  {...register("authAgentPhone")}
-                />
-                <TextInput
-                  label="Email"
-                  type="email"
-                  error={errors.authAgentEmail?.message}
-                  disabled={!!staffMode}
-                  {...register("authAgentEmail")}
-                />
+                <AgentField label="Phone Number" value={assignedAgent.phoneNumber} />
+                <AgentField label="Email" value={assignedAgent.email} />
+              </SimpleGrid>
+              <AgentField label="Address" value={assignedAgent.address} />
+            </Stack>
+          </Paper>
+        )}
+
+        {/* Staff mode: disabled inputs pre-filled from logged-in staff member */}
+        {staffMode && (
+          <Paper withBorder p="sm" radius="md">
+            <Stack gap="md">
+              <Title order={6}>Agent Details</Title>
+              <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <TextInput label="First Name" disabled {...register("authAgentFirstName")} />
+                <TextInput label="Last Name" disabled {...register("authAgentLastName")} />
+              </SimpleGrid>
+              <TextInput label="Organization" disabled {...register("authAgentOrganization")} />
+              <TextInput label="Address" disabled {...register("authAgentAddress")} />
+              <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <TextInput label="Phone Number" disabled {...register("authAgentPhone")} />
+                <TextInput label="Email" type="email" disabled {...register("authAgentEmail")} />
               </SimpleGrid>
             </Stack>
           </Paper>
