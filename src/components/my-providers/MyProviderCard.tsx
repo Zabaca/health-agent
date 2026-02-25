@@ -24,7 +24,6 @@ interface Props {
 const PROVIDER_TYPES = [
   { value: "Medical Group", label: "Medical Group" },
   { value: "Hospital", label: "Hospital" },
-  { value: "Clinic", label: "Clinic" },
   { value: "Facility", label: "Facility" },
 ];
 
@@ -39,8 +38,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
   const providerName = watch(`providers.${index}.providerName`) || `Provider ${index + 1}`;
   const providerType = watch(`providers.${index}.providerType`);
   const isInsurance = providerType === "Medical Group";
-  const isFacilityType = providerType === "Hospital" || providerType === "Clinic" || providerType === "Facility";
-  const isClinic = providerType === "Clinic";
+  const isFacilityType = providerType === "Hospital" || providerType === "Facility";
   const providerErrors = errors.providers?.[index];
 
   return (
@@ -76,7 +74,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
                   required
                   data={PROVIDER_TYPES}
                   placeholder="Select a type"
-                  value={field.value || null}
+                  value={field.value || "Medical Group"}
                   onChange={field.onChange}
                   error={providerErrors?.providerType?.message}
                 />
@@ -89,14 +87,6 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
               label="Patient ID"
               error={providerErrors?.patientId?.message}
               {...register(`providers.${index}.patientId`)}
-            />
-          )}
-
-          {isClinic && (
-            <TextInput
-              label="Physician Name"
-              error={providerErrors?.physicianName?.message}
-              {...register(`providers.${index}.physicianName`)}
             />
           )}
 
