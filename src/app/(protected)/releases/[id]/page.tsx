@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { IconArrowLeft, IconBan } from "@tabler/icons-react";
 import VoidReleaseButton from "@/components/release-view/VoidReleaseButton";
+import PrintButton from "@/components/release-view/PrintButton";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
 
@@ -57,14 +58,20 @@ export default async function ViewReleasePage({
 
   return (
     <Stack gap="xl">
-      <Group justify="space-between" align="center">
+      <Title order={2} ta="center" className="print-only">Medical Record Release</Title>
+      <Group justify="space-between" align="center" className="no-print">
         <Group gap="sm">
           <Button component={Link} href="/dashboard" variant="subtle" leftSection={<IconArrowLeft size={16} />} px={0}>
             Dashboard
           </Button>
           <Title order={2}>{release.firstName} {release.lastName}</Title>
         </Group>
-        {!release.voided && <VoidReleaseButton releaseId={id} />}
+        {!release.voided && (
+          <Group gap="xs">
+            <PrintButton />
+            <VoidReleaseButton releaseId={id} />
+          </Group>
+        )}
       </Group>
 
       {release.voided && (
@@ -74,31 +81,25 @@ export default async function ViewReleasePage({
       )}
 
       {/* Patient Information */}
-      <Paper withBorder p="md" radius="md">
+      <Paper withBorder p="md" radius="md" className="section-patient-info">
         <Title order={4} mb="md">Patient Information</Title>
-        <Stack gap="md">
-          <SimpleGrid cols={{ base: 1, sm: 3 }}>
-            <Field label="First Name" value={release.firstName} />
-            <Field label="Middle Name" value={release.middleName} />
-            <Field label="Last Name" value={release.lastName} />
-          </SimpleGrid>
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <Field label="Date of Birth" value={dateOfBirth} />
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed" fw={500}>Social Security Number</Text>
-              {ssn ? <SsnDisplay ssn={ssn} /> : <Text size="sm">—</Text>}
-            </Stack>
-          </SimpleGrid>
+        <SimpleGrid cols={3}>
+          <Field label="First Name" value={release.firstName} />
+          <Field label="Middle Name" value={release.middleName} />
+          <Field label="Last Name" value={release.lastName} />
+          <Field label="Date of Birth" value={dateOfBirth} />
+          <Stack gap={2}>
+            <Text size="xs" c="dimmed" fw={500}>Social Security Number</Text>
+            {ssn ? <SsnDisplay ssn={ssn} /> : <Text size="sm">—</Text>}
+          </Stack>
           <Field label="Mailing Address" value={release.mailingAddress} />
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <Field label="Phone Number" value={release.phoneNumber} />
-            <Field label="Email" value={release.email} />
-          </SimpleGrid>
-        </Stack>
+          <Field label="Phone Number" value={release.phoneNumber} />
+          <Field label="Email" value={release.email} />
+        </SimpleGrid>
       </Paper>
 
       {/* Healthcare Providers */}
-      <Paper withBorder p="md" radius="md">
+      <Paper withBorder p="md" radius="md" className="section-providers">
         <Title order={4} mb="md">Healthcare Providers</Title>
         <Stack gap="lg">
           {release.providers.map((p, i) => (
@@ -110,12 +111,12 @@ export default async function ViewReleasePage({
               </Group>
               <Field label="Provider Type" value={p.providerType} />
 
-              {(p.providerType === "Hospital" || p.providerType === "Clinic" || p.providerType === "Facility") && p.patientId && (
+              {(p.providerType === "Hospital" || p.providerType === "Facility") && p.patientId && (
                 <Field label="Patient ID" value={p.patientId} />
               )}
 
               {p.providerType === "Medical Group" && (
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <SimpleGrid cols={3}>
                   <Field label="Insurance" value={p.insurance} />
                   <Field label="Insurance Member ID" value={p.patientMemberId} />
                   <Field label="Insurance Group ID" value={p.groupId} />
@@ -123,7 +124,7 @@ export default async function ViewReleasePage({
                 </SimpleGrid>
               )}
 
-              <SimpleGrid cols={{ base: 1, sm: 3 }}>
+              <SimpleGrid cols={3}>
                 <Field label="Phone" value={p.phone} />
                 <Field label="Fax" value={p.fax} />
                 <Field label="Email" value={p.providerEmail} />
@@ -131,7 +132,7 @@ export default async function ViewReleasePage({
               <Field label="Address" value={p.address} />
 
               {(p.membershipIdFront || p.membershipIdBack) && (
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <SimpleGrid cols={2}>
                   {p.membershipIdFront && (
                     <Stack gap={2}>
                       <Text size="xs" c="dimmed" fw={500}>Membership Card (Front)</Text>
@@ -151,7 +152,7 @@ export default async function ViewReleasePage({
 
               <Divider variant="dashed" />
               <Title order={6}>Records to Release</Title>
-              <SimpleGrid cols={{ base: 2, sm: 3 }}>
+              <SimpleGrid cols={3}>
                 {Object.entries(recordLabels).map(([key, label]) => (
                   <Checkbox
                     key={key}
@@ -169,7 +170,7 @@ export default async function ViewReleasePage({
               {p.allAvailableDates ? (
                 <Text size="sm">All available dates</Text>
               ) : (
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <SimpleGrid cols={2}>
                   <Field label="From" value={p.dateRangeFrom} />
                   <Field label="To" value={p.dateRangeTo} />
                 </SimpleGrid>
@@ -182,40 +183,42 @@ export default async function ViewReleasePage({
       </Paper>
 
       {/* Authorization */}
-      <Paper withBorder p="md" radius="md">
+      <Paper withBorder p="md" radius="md" className="section-authorization">
         <Title order={4} mb="md">Authorization</Title>
         <Stack gap="md">
-          <Stack gap="xs">
-            <Text size="xs" c="dimmed" fw={500}>Release Authorization</Text>
-            <Group gap="xl">
-              <Checkbox label="Agent" checked={release.releaseAuthAgent} readOnly />
-              <Checkbox label="Zabaca" checked={release.releaseAuthZabaca} readOnly />
-            </Group>
-          </Stack>
+          <Text size="sm" fs="italic">
+            {release.firstName} {release.lastName} hereby authorizes{" "}
+            {release.releaseAuthAgent
+              ? <>
+                  {[release.authAgentFirstName, release.authAgentLastName].filter(Boolean).join(" ")}
+                  {release.authAgentOrganization ? ` of ${release.authAgentOrganization}` : ""}{" "}
+                  as the acting agent for {release.firstName} {release.lastName} in requesting medical records on the patient&apos;s behalf.
+                </>
+              : <>the release of their medical records as described in this document.</>
+            }
+          </Text>
 
           {release.releaseAuthAgent && (
             <Paper withBorder p="sm" radius="md">
               <Stack gap="md">
                 <Title order={6}>Agent Details</Title>
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <SimpleGrid cols={3}>
                   <Field label="First Name" value={release.authAgentFirstName} />
                   <Field label="Last Name" value={release.authAgentLastName} />
-                </SimpleGrid>
-                <Field label="Organization" value={release.authAgentOrganization} />
-                <Field label="Address" value={release.authAgentAddress} />
-                <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                  <Field label="Organization" value={release.authAgentOrganization} />
                   <Field label="Phone Number" value={release.authAgentPhone} />
                   <Field label="Email" value={release.authAgentEmail} />
                 </SimpleGrid>
+                <Field label="Address" value={release.authAgentAddress} />
               </Stack>
             </Paper>
           )}
 
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <SimpleGrid cols={2}>
             <Field label="Authorization Expiration Date" value={release.authExpirationDate} />
             <Field label="Expiration Event" value={release.authExpirationEvent} />
           </SimpleGrid>
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <SimpleGrid cols={2}>
             <Field label="Printed Name" value={release.authPrintedName} />
             <Field label="Date" value={release.authDate} />
           </SimpleGrid>
@@ -228,14 +231,15 @@ export default async function ViewReleasePage({
               <img
                 src={release.authSignatureImage}
                 alt="Signature"
-                style={{ border: "1px solid #dee2e6", borderRadius: 4, maxWidth: 400 }}
+                className="signature-img"
+                style={{ maxWidth: 400 }}
               />
             </Stack>
           )}
         </Stack>
       </Paper>
 
-      <Group justify="flex-end">
+      <Group justify="flex-end" className="section-footer">
         <Text size="xs" c="dimmed">
           Created {new Date(release.createdAt).toLocaleDateString()} · Updated {new Date(release.updatedAt).toLocaleDateString()}
         </Text>

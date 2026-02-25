@@ -2,7 +2,129 @@
   box-sizing: border-box;
 }
 
+.print-only { display: none; }
+
 body {
   margin: 0;
   padding: 0;
+}
+
+@media print {
+  /* Hide in-page nav buttons and print button itself */
+  .no-print { display: none !important; }
+
+  /* Show print-only elements */
+  .print-only { display: block !important; }
+
+  /* Section ordering: Authorization moves above Healthcare Providers */
+  .section-patient-info  { order: 1; }
+  .section-authorization { order: 2; }
+  .section-providers     { order: 3; }
+  .section-footer        { order: 4; }
+
+  /* Hide Mantine AppShell header and navbar */
+  .mantine-AppShell-header,
+  .mantine-AppShell-navbar { display: none !important; }
+
+  /* Remove the padding offsets that compensate for sidebar + header */
+  .mantine-AppShell-main {
+    padding: 0 !important;
+    --app-shell-header-offset: 0px !important;
+    --app-shell-navbar-offset: 0px !important;
+  }
+
+  body { background: white !important; }
+
+  /* Force background/colour printing for all elements */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* Paper cards: flat, light blue border, no shadows, avoid page splits */
+  .mantine-Paper-root {
+    box-shadow: none !important;
+    border: 1px solid #c4d9ee !important;
+    break-inside: avoid;
+  }
+
+  /* Badges: navy outline text */
+  .mantine-Badge-root {
+    background: none !important;
+    color: #1e3a5f !important;
+    border: 1px solid #2d6da4 !important;
+  }
+
+  /* Checkboxes: white fill with black border; overlay a ✓ for checked state */
+  .mantine-Checkbox-inner {
+    position: relative;
+  }
+  .mantine-Checkbox-input {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: white !important;
+    border: 1.5px solid #000 !important;
+  }
+  .mantine-Checkbox-icon {
+    display: none;
+  }
+  /* Signature image: half size in print */
+  .signature-img { max-width: 200px !important; }
+
+  .mantine-Checkbox-inner:has(.mantine-Checkbox-input:checked)::after {
+    content: "✓";
+    position: absolute;
+    top: -1px;
+    left: 2px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #000;
+    line-height: 1;
+  }
+
+  /* ── Colour theme ──────────────────────────────────────── */
+
+  /* Document title: deep navy, letter-spaced, underlined */
+  .print-only {
+    color: #1e3a5f !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    border-bottom: 2px solid #1e3a5f !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* Section papers: navy accent top border */
+  .section-patient-info,
+  .section-providers,
+  .section-authorization {
+    border-top: 3px solid #1e3a5f !important;
+  }
+
+  /* Section h4 titles: navy with a light-blue rule beneath */
+  .section-patient-info h4,
+  .section-providers h4,
+  .section-authorization h4 {
+    color: #1e3a5f !important;
+    border-bottom: 1px solid #c4d9ee !important;
+    padding-bottom: 8px !important;
+  }
+
+  /* Sub-section h5 (provider name) and h6 (Records to Release, Agent Details, etc.) */
+  .section-providers h5,
+  .section-authorization h5 { color: #1e3a5f !important; }
+
+  .section-providers h6,
+  .section-authorization h6 { color: #2d6da4 !important; }
+
+  /* Dividers: light blue */
+  .mantine-Divider-root { border-color: #c4d9ee !important; }
+
+  /* Agent Details inner paper: tinted background */
+  .section-authorization .mantine-Paper-root {
+    background: #f0f7fd !important;
+    border-color: #2d6da4 !important;
+  }
+
+  /* Footer: subdued with a light top rule */
+  .section-footer {
+    border-top: 1px solid #c4d9ee !important;
+    padding-top: 6px !important;
+  }
 }
