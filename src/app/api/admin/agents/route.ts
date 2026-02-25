@@ -18,10 +18,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { firstName, lastName, email } = await req.json();
+  const { firstName, middleName, lastName, email, phoneNumber, address } = await req.json();
 
   if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
-    return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    return NextResponse.json({ error: "First name, last name, and email are required" }, { status: 400 });
   }
 
   const existing = await db.query.users.findFirst({
@@ -46,7 +46,10 @@ export async function POST(req: Request) {
     type: "agent",
     mustChangePassword: true,
     firstName: firstName.trim(),
+    middleName: middleName?.trim() || null,
     lastName: lastName.trim(),
+    phoneNumber: phoneNumber?.trim() || null,
+    address: address?.trim() || null,
   });
 
   return NextResponse.json(

@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { Title, Text, Group } from "@mantine/core";
 import CreateAgentModal from "@/components/admin/CreateAgentModal";
 import AgentsTable from "@/components/admin/AgentsTable";
@@ -13,7 +13,7 @@ export default async function AgentsPage() {
   await auth();
 
   const agents = await db.query.users.findMany({
-    where: eq(users.type, "agent"),
+    where: or(eq(users.type, "agent"), eq(users.type, "admin")),
   });
 
   return (

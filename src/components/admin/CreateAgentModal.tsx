@@ -20,8 +20,11 @@ interface CreatedAgent {
 export default function CreateAgentModal() {
   const [opened, { open, close }] = useDisclosure(false);
   const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedAgent | null>(null);
@@ -32,8 +35,11 @@ export default function CreateAgentModal() {
     close();
     setTimeout(() => {
       setFirstName("");
+      setMiddleName("");
       setLastName("");
       setEmail("");
+      setPhoneNumber("");
+      setAddress("");
       setError(null);
       setCreated(null);
     }, 300);
@@ -47,7 +53,7 @@ export default function CreateAgentModal() {
     const res = await fetch("/api/admin/agents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firstName, lastName, email }),
+      body: JSON.stringify({ firstName, middleName, lastName, email, phoneNumber, address }),
     });
 
     const data = await res.json();
@@ -86,6 +92,12 @@ export default function CreateAgentModal() {
                   onChange={(e) => setFirstName(e.target.value)}
                 />
                 <TextInput
+                  label="Middle Name"
+                  placeholder="Marie"
+                  value={middleName}
+                  onChange={(e) => setMiddleName(e.target.value)}
+                />
+                <TextInput
                   label="Last Name"
                   placeholder="Smith"
                   required
@@ -100,6 +112,18 @@ export default function CreateAgentModal() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+              />
+              <TextInput
+                label="Address"
+                placeholder="123 Main St"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+              <TextInput
+                label="Phone Number"
+                placeholder="(555) 000-0000"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
               />
               <Group justify="flex-end" mt="xs">
                 <Button variant="subtle" onClick={close}>Cancel</Button>

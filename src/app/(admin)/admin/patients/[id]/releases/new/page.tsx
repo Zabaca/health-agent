@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, userProviders } from "@/lib/db/schema";
+import { users, userProviders, patientAssignments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import StaffReleaseForm from "@/components/staff/StaffReleaseForm";
 import { decrypt } from "@/lib/crypto";
@@ -16,21 +16,25 @@ export default async function AdminNewReleasePage({
   const session = await auth();
   const { id: patientId } = await params;
 
-  const [patient, adminUser, providers] = await Promise.all([
+  const [patient, providers, assignment] = await Promise.all([
     db.query.users.findFirst({ where: eq(users.id, patientId) }),
-    session?.user?.id ? db.query.users.findFirst({ where: eq(users.id, session.user.id) }) : null,
     db.query.userProviders.findMany({ where: eq(userProviders.userId, patientId) }),
+    db.query.patientAssignments.findFirst({ where: eq(patientAssignments.patientId, patientId) }),
   ]);
 
   if (!patient) notFound();
 
+  const assignedAgent = assignment
+    ? await db.query.users.findFirst({ where: eq(users.id, assignment.assignedToId) })
+    : null;
+
   const agentInfo = {
-    firstName: adminUser?.firstName ?? "",
-    lastName: adminUser?.lastName ?? "",
+    firstName: assignedAgent?.firstName ?? "",
+    lastName: assignedAgent?.lastName ?? "",
     organization: undefined as string | undefined,
-    address: adminUser?.address ?? "",
-    phone: adminUser?.phoneNumber ?? "",
-    email: adminUser?.email ?? "",
+    address: assignedAgent?.address ?? "",
+    phone: assignedAgent?.phoneNumber ?? "",
+    email: assignedAgent?.email ?? "",
   };
 
   return (
