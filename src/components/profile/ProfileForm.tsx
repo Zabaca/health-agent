@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   TextInput,
+  PasswordInput,
   Button,
   Paper,
   Title,
@@ -127,7 +128,7 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
               error={errors.dateOfBirth?.message}
               {...register("dateOfBirth", { onBlur: () => trigger("dateOfBirth") })}
             />
-            <TextInput
+            <PasswordInput
               label="Social Security Number"
               placeholder="XXX-XX-XXXX"
               required
