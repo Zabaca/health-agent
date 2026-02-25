@@ -12,6 +12,7 @@ import {
   Alert,
   Group,
 } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, type ProfileFormData } from "@/lib/schemas/profile";
@@ -32,7 +33,6 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
   const {
     register,
     handleSubmit,
-    trigger,
     reset,
     control,
     watch,
@@ -121,12 +121,26 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
           </SimpleGrid>
 
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <TextInput
-              label="Date of Birth"
-              placeholder="MM/DD/YYYY"
-              required
-              error={errors.dateOfBirth?.message}
-              {...register("dateOfBirth", { onBlur: () => trigger("dateOfBirth") })}
+            <Controller
+              name="dateOfBirth"
+              control={control}
+              render={({ field }) => (
+                <DatePickerInput
+                  label="Date of Birth"
+                  placeholder="MM/DD/YYYY"
+                  required
+                  maxDate={new Date()}
+                  error={errors.dateOfBirth?.message}
+                  value={field.value ? new Date(field.value) : null}
+                  onChange={(date) =>
+                    field.onChange(
+                      date
+                        ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+                        : ""
+                    )
+                  }
+                />
+              )}
             />
             <PasswordInput
               label="Social Security Number"

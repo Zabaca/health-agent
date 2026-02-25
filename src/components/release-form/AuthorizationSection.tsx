@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { TextInput, Title, Paper, Stack, SimpleGrid, Text } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { useFormContext, Controller } from "react-hook-form";
 import dynamic from "next/dynamic";
 import type { ReleaseFormData } from "@/types/release";
@@ -51,6 +52,19 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
     trigger,
     formState: { errors },
   } = useFormContext<ReleaseFormData>();
+
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const minExpirationDate = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 90);
+    return d;
+  }, []);
 
   const sigValue = watch("authSignatureImage");
 
@@ -130,14 +144,26 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
         )}
 
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <TextInput
-            label="Authorization Expiration Date"
-            placeholder="MM/DD/YYYY"
-            required
-            error={errors.authExpirationDate?.message}
-            {...register("authExpirationDate", {
-              onBlur: () => trigger("authExpirationDate"),
-            })}
+          <Controller
+            name="authExpirationDate"
+            control={control}
+            render={({ field }) => (
+              <DatePickerInput
+                label="Authorization Expiration Date"
+                placeholder="MM/DD/YYYY"
+                required
+                minDate={minExpirationDate}
+                error={errors.authExpirationDate?.message}
+                value={field.value ? new Date(field.value) : null}
+                onChange={(date) =>
+                  field.onChange(
+                    date
+                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+                      : ""
+                  )
+                }
+              />
+            )}
           />
           <TextInput
             label="Expiration Event"
@@ -154,37 +180,28 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
             error={errors.authPrintedName?.message}
             {...register("authPrintedName")}
           />
-          <TextInput
-            label="Date"
-            placeholder="MM/DD/YYYY"
-            required
-            error={errors.authDate?.message}
-            {...register("authDate", {
-              onBlur: (e) => {
-                const date = new Date(e.target.value);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                if (isNaN(date.getTime()) || date < today) {
-                  setValue(
-                    "authDate",
-                    today.toLocaleDateString("en-US", {
-                      month: "2-digit",
-                      day: "2-digit",
-                      year: "numeric",
-                    })
-                  );
+          <Controller
+            name="authDate"
+            control={control}
+            render={({ field }) => (
+              <DatePickerInput
+                label="Date"
+                placeholder="MM/DD/YYYY"
+                required
+                minDate={today}
+                error={errors.authDate?.message}
+                value={field.value ? new Date(field.value) : null}
+                onChange={(date) =>
+                  field.onChange(
+                    date
+                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+                      : ""
+                  )
                 }
-                trigger("authDate");
-              },
-            })}
+              />
+            )}
           />
         </SimpleGrid>
-
-        <TextInput
-          label="Agent / Representative Name (if applicable)"
-          error={errors.authAgentName?.message}
-          {...register("authAgentName")}
-        />
 
         {staffMode ? (
           <TextInput label="Patient Signature" disabled placeholder="Patient Signature" />

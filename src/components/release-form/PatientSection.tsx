@@ -1,13 +1,14 @@
 "use client";
 
 import { SimpleGrid, TextInput, Title, Paper } from "@mantine/core";
-import { useFormContext } from "react-hook-form";
+import { DatePickerInput } from "@mantine/dates";
+import { useFormContext, Controller } from "react-hook-form";
 import type { ReleaseFormData } from "@/types/release";
 
 export default function PatientSection() {
   const {
     register,
-    trigger,
+    control,
     formState: { errors },
   } = useFormContext<ReleaseFormData>();
 
@@ -36,12 +37,26 @@ export default function PatientSection() {
         />
       </SimpleGrid>
       <SimpleGrid cols={{ base: 1, sm: 2 }} mb="md">
-        <TextInput
-          label="Date of Birth"
-          placeholder="MM/DD/YYYY"
-          required
-          error={errors.dateOfBirth?.message}
-          {...register("dateOfBirth", { onBlur: () => trigger("dateOfBirth") })}
+        <Controller
+          name="dateOfBirth"
+          control={control}
+          render={({ field }) => (
+            <DatePickerInput
+              label="Date of Birth"
+              placeholder="MM/DD/YYYY"
+              required
+              maxDate={new Date()}
+              error={errors.dateOfBirth?.message}
+              value={field.value ? new Date(field.value) : null}
+              onChange={(date) =>
+                field.onChange(
+                  date
+                    ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+                    : ""
+                )
+              }
+            />
+          )}
         />
         <TextInput
           label="Social Security Number"

@@ -11,6 +11,7 @@ import {
   Select,
   Text,
 } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import { useFormContext, Controller } from "react-hook-form";
 import type { ReleaseFormData } from "@/types/release";
 
@@ -149,17 +150,43 @@ export default function RecordRequestFields({ index }: Props) {
       />
       {!allAvailableDates && (
         <Group>
-          <TextInput
-            label="From"
-            placeholder="MM/DD/YYYY"
-            error={providerErrors?.dateRangeFrom?.message}
-            {...register(`providers.${index}.dateRangeFrom`)}
+          <Controller
+            name={`providers.${index}.dateRangeFrom`}
+            control={control}
+            render={({ field }) => (
+              <DatePickerInput
+                label="From"
+                placeholder="MM/DD/YYYY"
+                error={providerErrors?.dateRangeFrom?.message}
+                value={field.value ? new Date(field.value) : null}
+                onChange={(date) =>
+                  field.onChange(
+                    date
+                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+                      : ""
+                  )
+                }
+              />
+            )}
           />
-          <TextInput
-            label="To"
-            placeholder="MM/DD/YYYY"
-            error={providerErrors?.dateRangeTo?.message}
-            {...register(`providers.${index}.dateRangeTo`)}
+          <Controller
+            name={`providers.${index}.dateRangeTo`}
+            control={control}
+            render={({ field }) => (
+              <DatePickerInput
+                label="To"
+                placeholder="MM/DD/YYYY"
+                error={providerErrors?.dateRangeTo?.message}
+                value={field.value ? new Date(field.value) : null}
+                onChange={(date) =>
+                  field.onChange(
+                    date
+                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+                      : ""
+                  )
+                }
+              />
+            )}
           />
         </Group>
       )}
