@@ -138,6 +138,8 @@ export const releaseSchema = releaseBaseObject.superRefine(releaseRefinement);
 
 export const staffReleaseSchema = releaseBaseObject.extend({
   authSignatureImage: z.string().optional().default(''),
+  authPrintedName: z.string().default(''),
+  authDate: z.string().default(''),
 }).superRefine(releaseRefinement);
 
 export type ProviderFormData = z.infer<typeof providerSchema>;

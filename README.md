@@ -13,6 +13,7 @@ A Next.js web app for managing medical record release forms across three roles: 
 - **Drag & drop**: dnd-kit (provider reordering)
 - **Signature**: react-signature-canvas
 - **PII encryption**: Node.js built-in `crypto` (AES-256-GCM) for SSN, address, phone
+- **Release codes**: Short, time-based human-readable identifiers for each release form (see [Release Codes](#release-codes))
 - **Dates**: dayjs
 - **Linter**: oxlint
 
@@ -101,11 +102,33 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Dashboard lists assigned patients
 - View patient detail, profile, releases, and scheduled calls
 - Cancel scheduled calls
+- Look up any of their patient's releases by release code (`/agent/releases/lookup`)
 
 ### Admin (`/admin/`)
 
 - Full access to all patients, agents, and scheduled calls
 - Same patient detail views as agents
+- Look up any release by release code regardless of assigned agent (`/admin/releases/lookup`)
+
+---
+
+## Release Codes
+
+Every release form is assigned a short, human-readable **release code** at creation time. Codes are generated in `src/lib/utils/releaseCode.ts`:
+
+```ts
+// base36(unix_seconds_since_epoch) + 2 random chars → e.g. "LMQ3X8K2"
+const timePart   = Math.floor(Date.now() / 1000).toString(36).toUpperCase(); // ~7 chars
+const randomPart = Math.random().toString(36).substring(2, 4).toUpperCase(); // 2 chars
+return timePart + randomPart;
+```
+
+**Properties:**
+- **Time-based** — the timestamp component is monotonically increasing, making collisions extremely unlikely without needing UUID-length strings.
+- **Short** — typically 8–9 characters, easy to read aloud or type.
+- **Unique** — enforced at the database level via a `UNIQUE` index on the `releaseCode` column.
+
+Codes are stored on the `Release` row, displayed in the Authorization section of every release view/print page, and used by the admin and agent lookup pages to quickly retrieve a specific release.
 
 ---
 
@@ -144,10 +167,12 @@ src/
 │   ├── (admin)/admin/          # Admin-only pages
 │   │   ├── dashboard           # All patients
 │   │   ├── patients/[id]       # Patient detail + releases
+│   │   ├── releases/lookup     # Look up any release by code
 │   │   ├── call-schedule/      # Admin call management
 │   │   ├── profile             # Admin profile
 │   │   └── change-password
 │   ├── (agent)/agent/          # Agent-only pages (mirrors admin)
+│   │   └── releases/lookup     # Look up assigned-patient releases by code
 │   └── api/                    # API routes (ts-rest contract handlers)
 ├── components/
 │   ├── auth/                   # LoginForm, RegisterForm
@@ -163,7 +188,9 @@ src/
 │   │   └── response-schemas.ts # Shared Zod response shapes
 │   ├── crypto.ts               # AES-256-GCM encrypt/decrypt for PII
 │   ├── db/                     # Drizzle client, schema, and inferred DB types
-│   └── schemas/                # Zod schemas (single source of truth for form types)
+│   ├── schemas/                # Zod schemas (single source of truth for form types)
+│   └── utils/
+│       └── releaseCode.ts      # Time-based short release code generator
 └── types/                      # Re-export barrel for shared types
 scripts/
 ├── seed-admins.ts              # Seeds admin/agent accounts

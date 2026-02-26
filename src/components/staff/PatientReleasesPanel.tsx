@@ -55,6 +55,7 @@ export default function PatientReleasesPanel({
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Name</Table.Th>
+                <Table.Th>Code</Table.Th>
                 <Table.Th>Created</Table.Th>
                 <Table.Th>Updated</Table.Th>
                 <Table.Th>Actions</Table.Th>
@@ -64,6 +65,7 @@ export default function PatientReleasesPanel({
               {visibleActive.map((r) => (
                 <Table.Tr key={r.id}>
                   <Table.Td>{r.firstName} {r.lastName}</Table.Td>
+                  <Table.Td><Text size="sm" ff="monospace">{r.releaseCode ?? "—"}</Text></Table.Td>
                   <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
                   <Table.Td>{new Date(r.updatedAt).toLocaleDateString()}</Table.Td>
                   <Table.Td>
@@ -101,6 +103,7 @@ export default function PatientReleasesPanel({
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Name</Table.Th>
+                <Table.Th>Code</Table.Th>
                 <Table.Th>Created</Table.Th>
                 <Table.Th>Status</Table.Th>
                 <Table.Th>Actions</Table.Th>
@@ -113,6 +116,7 @@ export default function PatientReleasesPanel({
               ].map((r) => (
                 <Table.Tr key={r.id}>
                   <Table.Td>{r.firstName} {r.lastName}</Table.Td>
+                  <Table.Td><Text size="sm" ff="monospace">{r.releaseCode ?? "—"}</Text></Table.Td>
                   <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
                   <Table.Td><Badge color="red">Voided</Badge></Table.Td>
                   <Table.Td>

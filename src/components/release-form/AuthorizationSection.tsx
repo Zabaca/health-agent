@@ -177,7 +177,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput
             label="Printed Name"
-            required
+            required={!staffMode}
             error={errors.authPrintedName?.message}
             {...register("authPrintedName")}
           />
@@ -188,7 +188,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
               <DatePickerInput
                 label="Date"
                 placeholder="MM/DD/YYYY"
-                required
+                required={!staffMode}
                 minDate={today}
                 popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={errors.authDate?.message}

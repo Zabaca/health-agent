@@ -24,13 +24,13 @@ export default async function DashboardPage() {
   const [activeReleases, voidedReleases, user] = await Promise.all([
     db.query.releases.findMany({
       where: and(eq(releasesTable.userId, userId), eq(releasesTable.voided, false)),
-      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true },
+      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true, releaseCode: true },
       with: { providers: { columns: { providerName: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
       orderBy: [desc(releasesTable.updatedAt)],
     }),
     db.query.releases.findMany({
       where: and(eq(releasesTable.userId, userId), eq(releasesTable.voided, true)),
-      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true },
+      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true, releaseCode: true },
       with: { providers: { columns: { providerName: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
       orderBy: [desc(releasesTable.updatedAt)],
     }),

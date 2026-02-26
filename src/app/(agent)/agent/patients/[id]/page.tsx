@@ -44,6 +44,8 @@ export default async function AgentPatientPage({
       createdAt: releasesTable.createdAt,
       updatedAt: releasesTable.updatedAt,
       voided: releasesTable.voided,
+      authSignatureImage: releasesTable.authSignatureImage,
+      releaseCode: releasesTable.releaseCode,
     })
     .from(releasesTable)
     .where(eq(releasesTable.userId, patientId))

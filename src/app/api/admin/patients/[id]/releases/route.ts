@@ -7,6 +7,7 @@ import { type ProviderFormData } from "@/lib/schemas/release";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { encryptPii, decryptPii } from "@/lib/crypto";
+import { generateReleaseCode } from "@/lib/utils/releaseCode";
 
 export const GET = contractRoute(contract.admin.patientReleases.list, async ({ params }) => {
   const session = await auth();
@@ -57,6 +58,7 @@ export const POST = contractRoute(contract.admin.patientReleases.create, async (
           ...encryptedReleaseData,
           createdAt: now,
           updatedAt: now,
+          releaseCode: generateReleaseCode(),
         })
         .returning();
 

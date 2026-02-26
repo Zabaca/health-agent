@@ -54,6 +54,7 @@ export const releases = sqliteTable('Release', {
   authDate: text('authDate').notNull(),
   authAgentName: text('authAgentName'),
   voided: integer('voided', { mode: 'boolean' }).notNull().default(false),
+  releaseCode: text('releaseCode').unique(),
 });
 
 export const providers = sqliteTable('Provider', {

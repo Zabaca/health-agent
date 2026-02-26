@@ -5,6 +5,7 @@ import { profileSchema, staffProfileSchema } from '@/lib/schemas/profile';
 import {
   releaseSummarySchema,
   releaseWithProvidersSchema,
+  releaseLookupResultSchema,
   userProviderRowSchema,
   errorSchema,
   successSchema,
@@ -178,6 +179,12 @@ export const contract = c.router({
         responses: { 200: z.array(userProviderRowSchema), 401: errorSchema, 403: errorSchema },
       },
     }),
+    releaseLookup: {
+      method: 'GET',
+      path: '/api/admin/releases/lookup/:code',
+      pathParams: z.object({ code: z.string() }),
+      responses: { 200: releaseLookupResultSchema.nullable(), 401: errorSchema, 403: errorSchema },
+    },
     profile: c.router({
       get: {
         method: 'GET',
@@ -316,6 +323,12 @@ export const contract = c.router({
         responses: { 200: z.array(userProviderRowSchema), 401: errorSchema, 403: errorSchema },
       },
     }),
+    releaseLookup: {
+      method: 'GET',
+      path: '/api/agent/releases/lookup/:code',
+      pathParams: z.object({ code: z.string() }),
+      responses: { 200: releaseLookupResultSchema.nullable(), 401: errorSchema, 403: errorSchema },
+    },
     profile: c.router({
       get: {
         method: 'GET',

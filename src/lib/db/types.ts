@@ -8,5 +8,5 @@ export type UserProviderRow = InferSelectModel<typeof userProviders>;
 export type PatientAssignmentRow = InferSelectModel<typeof patientAssignments>;
 export type ScheduledCallRow = InferSelectModel<typeof scheduledCalls>;
 
-export type ReleaseSummary = Pick<ReleaseRow, 'id' | 'firstName' | 'lastName' | 'createdAt' | 'updatedAt' | 'voided' | 'authSignatureImage'> & { providerNames: string[] };
+export type ReleaseSummary = Pick<ReleaseRow, 'id' | 'firstName' | 'lastName' | 'createdAt' | 'updatedAt' | 'voided' | 'authSignatureImage' | 'releaseCode'> & { providerNames: string[] };
 export type ReleaseWithProviders = ReleaseRow & { providers: ProviderRow[] };

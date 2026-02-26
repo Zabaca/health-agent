@@ -61,6 +61,7 @@ export const releaseWithProvidersSchema = z.object({
   authDate: z.string(),
   authAgentName: z.string().nullable(),
   voided: z.boolean(),
+  releaseCode: z.string().nullable(),
   providers: z.array(providerRowSchema),
 });
 
@@ -100,6 +101,17 @@ export const staffMemberSchema = z.object({
   lastName: z.string().nullable(),
   email: z.string(),
   type: z.enum(['admin', 'agent']),
+});
+
+export const releaseLookupResultSchema = z.object({
+  id: z.string(),
+  releaseCode: z.string().nullable(),
+  firstName: z.string(),
+  lastName: z.string(),
+  createdAt: z.string(),
+  voided: z.boolean(),
+  authSignatureImage: z.string().nullable(),
+  patientId: z.string(),
 });
 
 export const errorSchema = z.object({ error: z.string() });

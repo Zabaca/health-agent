@@ -7,6 +7,7 @@ import { type ProviderFormData } from "@/lib/schemas/release";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { encryptPii, decryptPii } from "@/lib/crypto";
+import { generateReleaseCode } from "@/lib/utils/releaseCode";
 
 async function verifyAssignment(agentId: string, patientId: string) {
   return db.query.patientAssignments.findFirst({
@@ -76,6 +77,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
           ...encryptedReleaseData,
           createdAt: now,
           updatedAt: now,
+          releaseCode: generateReleaseCode(),
         })
         .returning();
 

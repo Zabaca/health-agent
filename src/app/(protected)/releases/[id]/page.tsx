@@ -215,6 +215,13 @@ export default async function ViewReleasePage({
             </Paper>
           )}
 
+          <Paper withBorder p="sm" radius="md">
+            <Stack gap="xs">
+              <Title order={6}>Release Code</Title>
+              <Text size="sm" fw={600} ff="monospace">{release.releaseCode ?? "—"}</Text>
+            </Stack>
+          </Paper>
+
           <SimpleGrid cols={2}>
             <Field label="Authorization Expiration Date" value={release.authExpirationDate} />
             <Field label="Expiration Event" value={release.authExpirationEvent} />
@@ -223,7 +230,6 @@ export default async function ViewReleasePage({
             <Field label="Printed Name" value={release.authPrintedName} />
             <Field label="Date" value={release.authDate} />
           </SimpleGrid>
-          <Field label="Agent / Representative Name" value={release.authAgentName} />
 
           {release.authSignatureImage && (
             <Stack gap={2}>
