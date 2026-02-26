@@ -78,19 +78,19 @@ export default async function AdminReleaseViewPage({
 
       <Paper withBorder p="md" radius="md" className="section-patient-info">
         <Title order={4} mb="md">Patient Information</Title>
-        <SimpleGrid cols={3}>
-          <Field label="First Name" value={release.firstName} />
-          <Field label="Middle Name" value={release.middleName} />
-          <Field label="Last Name" value={release.lastName} />
-          <Field label="Date of Birth" value={dateOfBirth} />
-          <Stack gap={2}>
-            <Text size="xs" c="dimmed" fw={500}>Social Security Number</Text>
-            {ssn ? <SsnDisplay ssn={ssn} /> : <Text size="sm">—</Text>}
-          </Stack>
+        <Stack gap="md">
+          <SimpleGrid cols={3}>
+            <Field label="First Name" value={release.firstName} />
+            <Field label="Middle Name" value={release.middleName} />
+            <Field label="Last Name" value={release.lastName} />
+            <Field label="Date of Birth" value={dateOfBirth} />
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed" fw={500}>Social Security Number</Text>
+              {ssn ? <SsnDisplay ssn={ssn} /> : <Text size="sm">—</Text>}
+            </Stack>
+          </SimpleGrid>
           <Field label="Mailing Address" value={release.mailingAddress} />
-          <Field label="Phone Number" value={release.phoneNumber} />
-          <Field label="Email" value={release.email} />
-        </SimpleGrid>
+        </Stack>
       </Paper>
 
       <Paper withBorder p="md" radius="md" className="section-providers">
