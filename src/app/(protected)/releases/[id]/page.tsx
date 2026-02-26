@@ -112,7 +112,7 @@ export default async function ViewReleasePage({
               </Group>
               <Field label="Provider Type" value={p.providerType} />
 
-              {(p.providerType === "Hospital" || p.providerType === "Facility") && p.patientId && (
+              {p.providerType === "Hospital" && p.patientId && (
                 <Field label="Patient ID" value={p.patientId} />
               )}
 

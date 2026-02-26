@@ -24,7 +24,7 @@ interface Props {
 const PROVIDER_TYPES = [
   { value: "Medical Group", label: "Medical Group" },
   { value: "Hospital", label: "Hospital" },
-  { value: "Facility", label: "Facility" },
+  { value: "Facility", label: "Facility (Clinics, Primary Care Physician, Urgent Care, Labs, etc)" },
 ];
 
 export default function MyProviderCard({ index, onRemove, dragHandleProps }: Props) {
@@ -38,7 +38,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
   const providerName = watch(`providers.${index}.providerName`) || `Provider ${index + 1}`;
   const providerType = watch(`providers.${index}.providerType`);
   const isInsurance = providerType === "Medical Group";
-  const isFacilityType = providerType === "Hospital" || providerType === "Facility";
+  const isFacilityType = providerType === "Hospital";
   const providerErrors = errors.providers?.[index];
 
   return (
@@ -60,7 +60,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
         <Stack gap="md">
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput
-              label="Provider / Organization Name"
+              label="Individual / Organization Name"
               required
               error={providerErrors?.providerName?.message}
               {...register(`providers.${index}.providerName`)}

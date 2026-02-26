@@ -84,7 +84,9 @@ export default function ProviderList({ savedProviders: savedProvidersProp, initi
     name: "providers",
   });
 
-  const [openItems, setOpenItems] = useState<string[]>([]);
+  const [openItems, setOpenItems] = useState<string[]>(() =>
+    fields.map((_, i) => `provider-${i}`)
+  );
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [usedProviderIds, setUsedProviderIds] = useState<(string | null)[]>(
     initialUsedProviderIds ?? []
