@@ -71,6 +71,7 @@ export const releaseSummarySchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   voided: z.boolean(),
+  authSignatureImage: z.string().nullable(),
 });
 
 export const userProviderRowSchema = z.object({

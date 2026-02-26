@@ -75,6 +75,13 @@ export const contract = c.router({
       body: c.noBody(),
       responses: { 200: successSchema, 401: errorSchema, 404: errorSchema },
     },
+    sign: {
+      method: 'POST',
+      path: '/api/releases/:id/sign',
+      pathParams: z.object({ id: z.string() }),
+      body: z.object({ signatureImage: z.string().min(1) }),
+      responses: { 200: successSchema, 401: errorSchema, 404: errorSchema, 409: errorSchema },
+    },
   }),
   myProviders: c.router({
     list: {

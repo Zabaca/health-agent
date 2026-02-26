@@ -11,6 +11,7 @@ import Link from "next/link";
 import { IconArrowLeft, IconBan } from "@tabler/icons-react";
 import VoidReleaseButton from "@/components/release-view/VoidReleaseButton";
 import PrintButton from "@/components/release-view/PrintButton";
+import SignReleaseSection from "@/components/release-view/SignReleaseSection";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
 
@@ -238,6 +239,11 @@ export default async function ViewReleasePage({
           )}
         </Stack>
       </Paper>
+
+      {/* Signature required — shown when release was created by staff and not yet signed */}
+      {!release.authSignatureImage && !release.voided && (
+        <SignReleaseSection releaseId={id} />
+      )}
 
       <Group justify="flex-end" className="section-footer">
         <Text size="xs" c="dimmed">

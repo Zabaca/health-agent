@@ -10,6 +10,7 @@ import {
   Modal,
   ActionIcon,
   Tooltip,
+  Badge,
 } from "@mantine/core";
 import { IconEye, IconBan } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
@@ -88,6 +89,13 @@ export default function ReleaseList({ releases }: Props) {
       <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
       <Table.Td>{new Date(r.updatedAt).toLocaleString()}</Table.Td>
       <Table.Td>
+        {!r.authSignatureImage ? (
+          <Badge color="yellow" variant="light">Signature Required</Badge>
+        ) : (
+          <Badge color="green" variant="light">Signed</Badge>
+        )}
+      </Table.Td>
+      <Table.Td>
         <Group gap="xs">
           <Tooltip label="View">
             <ActionIcon
@@ -121,6 +129,7 @@ export default function ReleaseList({ releases }: Props) {
             <Table.Th>Providers</Table.Th>
             <Table.Th>Created</Table.Th>
             <Table.Th>Last Updated</Table.Th>
+            <Table.Th>Status</Table.Th>
             <Table.Th>Actions</Table.Th>
           </Table.Tr>
         </Table.Thead>
