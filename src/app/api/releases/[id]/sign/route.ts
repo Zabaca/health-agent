@@ -26,7 +26,12 @@ export const POST = contractRoute(contract.releases.sign, async ({ params, body 
 
   await db
     .update(releasesTable)
-    .set({ authSignatureImage: body.signatureImage, updatedAt: new Date().toISOString() })
+    .set({
+      authSignatureImage: body.signatureImage,
+      authPrintedName: body.printedName,
+      authDate: body.authDate,
+      updatedAt: new Date().toISOString(),
+    })
     .where(eq(releasesTable.id, params.id));
 
   return NextResponse.json({ success: true });
