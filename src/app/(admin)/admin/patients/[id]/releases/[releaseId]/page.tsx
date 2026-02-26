@@ -64,7 +64,7 @@ export default async function AdminReleaseViewPage({
         </Group>
         {!release.voided && (
           <Group gap="xs">
-            <PrintButton />
+            <PrintButton releaseCode={release.releaseCode} />
             <StaffVoidReleaseButton mode="admin" patientId={patientId} releaseId={releaseId} />
           </Group>
         )}
@@ -201,6 +201,7 @@ export default async function AdminReleaseViewPage({
           Created {new Date(release.createdAt).toLocaleDateString()} · Updated {new Date(release.updatedAt).toLocaleDateString()}
         </Text>
       </Group>
+
     </Stack>
   );
 }

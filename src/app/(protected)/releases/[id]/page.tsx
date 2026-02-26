@@ -69,7 +69,7 @@ export default async function ViewReleasePage({
         </Group>
         {!release.voided && (
           <Group gap="xs">
-            <PrintButton />
+            <PrintButton releaseCode={release.releaseCode} />
             <VoidReleaseButton releaseId={id} />
           </Group>
         )}
@@ -257,6 +257,7 @@ export default async function ViewReleasePage({
           Created {new Date(release.createdAt).toLocaleDateString()} · Updated {new Date(release.updatedAt).toLocaleDateString()}
         </Text>
       </Group>
+
     </Stack>
   );
 }
