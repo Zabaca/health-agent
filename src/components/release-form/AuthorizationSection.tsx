@@ -68,7 +68,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
 
   const sigValue = watch("authSignatureImage");
 
-  // Patient mode: auto-populate agent fields from the assigned agent
+  // Patient mode: auto-populate agent fields from the assigned agent (runs once on mount)
   useEffect(() => {
     if (!assignedAgent || staffMode) return;
     setValue("releaseAuthAgent", true);
@@ -77,9 +77,9 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
     setValue("authAgentAddress", assignedAgent.address ?? "");
     setValue("authAgentPhone", assignedAgent.phoneNumber ?? "");
     setValue("authAgentEmail", assignedAgent.email);
-  }, [assignedAgent, staffMode, setValue]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Staff mode: pre-populate from logged-in staff member's info
+  // Staff mode: pre-populate from logged-in staff member's info (runs once on mount)
   useEffect(() => {
     if (!staffMode) return;
     setValue("releaseAuthAgent", true);
@@ -93,7 +93,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
     if (staffMode.mode === 'admin') {
       setValue("releaseAuthZabaca", true);
     }
-  }, [staffMode, setValue]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSignatureChange = (dataUrl: string) => {
     setValue("authSignatureImage", dataUrl);
@@ -153,6 +153,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
                 placeholder="MM/DD/YYYY"
                 required
                 minDate={minExpirationDate}
+                popoverProps={{ zIndex: 150 }}
                 error={errors.authExpirationDate?.message}
                 value={field.value ? new Date(field.value) : null}
                 onChange={(date) =>
@@ -189,6 +190,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
                 placeholder="MM/DD/YYYY"
                 required
                 minDate={today}
+                popoverProps={{ zIndex: 150 }}
                 error={errors.authDate?.message}
                 value={field.value ? new Date(field.value) : null}
                 onChange={(date) =>

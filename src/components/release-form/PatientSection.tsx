@@ -46,6 +46,7 @@ export default function PatientSection() {
               placeholder="MM/DD/YYYY"
               required
               maxDate={new Date()}
+              popoverProps={{ zIndex: 150 }}
               error={errors.dateOfBirth?.message}
               value={field.value ? new Date(field.value) : null}
               onChange={(date) =>
