@@ -53,11 +53,12 @@ export default async function DashboardPage() {
     avatarUrl: string | null;
   } | null = null;
   let initialProviderValues: MyProviderFormData[] = [];
+  let userProviderRows: Awaited<ReturnType<typeof db.query.userProviders.findMany>> = [];
   let initialReleaseId: string | undefined;
   let releaseDefaultValues: Partial<ReleaseFormData>;
 
   if (isUnboardedPatient) {
-    const [assignment, userProviderRows, existingRelease] = await Promise.all([
+    const [assignment, fetchedProviderRows, existingRelease] = await Promise.all([
       db.query.patientAssignments.findFirst({
         where: eq(patientAssignments.patientId, userId),
         with: {
@@ -86,6 +87,7 @@ export default async function DashboardPage() {
     ]);
 
     assignedAgent = assignment?.assignedTo ?? null;
+    userProviderRows = fetchedProviderRows;
 
     initialProviderValues = userProviderRows.map((p) => ({
       providerName: p.providerName,
@@ -196,6 +198,7 @@ export default async function DashboardPage() {
           assignedAgent={assignedAgent}
           initialProfileValues={initialProfileValues}
           initialProviderValues={initialProviderValues}
+          initialProviderRows={userProviderRows}
           releaseDefaultValues={releaseDefaultValues}
           initialReleaseId={initialReleaseId}
         />

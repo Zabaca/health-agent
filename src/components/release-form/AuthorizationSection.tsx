@@ -153,7 +153,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
                 placeholder="MM/DD/YYYY"
                 required
                 minDate={minExpirationDate}
-                popoverProps={{ zIndex: 150 }}
+                popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={errors.authExpirationDate?.message}
                 value={field.value ? new Date(field.value) : null}
                 onChange={(date) =>
@@ -190,7 +190,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
                 placeholder="MM/DD/YYYY"
                 required
                 minDate={today}
-                popoverProps={{ zIndex: 150 }}
+                popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={errors.authDate?.message}
                 value={field.value ? new Date(field.value) : null}
                 onChange={(date) =>

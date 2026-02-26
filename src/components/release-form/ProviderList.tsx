@@ -140,14 +140,14 @@ export default function ProviderList({ savedProviders: savedProvidersProp, initi
   const handleAddNew = () => {
     const newIndex = fields.length;
     append(defaultProvider);
-    setOpenItems((prev) => [...prev, `provider-${newIndex}`]);
+    setOpenItems([`provider-${newIndex}`]);
     setUsedProviderIds((prev) => [...prev, null]);
   };
 
   const handleSelect = (p: ProviderFormData, savedId: string) => {
     const newIndex = fields.length;
     append(p);
-    setOpenItems((prev) => [...prev, `provider-${newIndex}`]);
+    setOpenItems([`provider-${newIndex}`]);
     setUsedProviderIds((prev) => [...prev, savedId]);
   };
 

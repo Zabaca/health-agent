@@ -23,7 +23,8 @@ import ReleaseForm from "@/components/release-form/ReleaseForm";
 import ScheduleCallForm from "@/components/schedule-call/ScheduleCallForm";
 import { apiClient } from "@/lib/api/client";
 import type { ProfileFormData } from "@/lib/schemas/profile";
-import type { MyProviderFormData, ReleaseFormData } from "@/lib/schemas/release";
+import type { MyProviderFormData, ReleaseFormData, ProviderFormData } from "@/lib/schemas/release";
+import type { UserProviderRow } from "@/lib/db/types";
 
 interface AssignedAgent {
   id: string;
@@ -39,6 +40,7 @@ interface Props {
   assignedAgent: AssignedAgent | null;
   initialProfileValues: ProfileFormData;
   initialProviderValues: MyProviderFormData[];
+  initialProviderRows: UserProviderRow[];
   releaseDefaultValues: Partial<ReleaseFormData>;
   initialReleaseId?: string;
 }
@@ -47,6 +49,7 @@ export default function OnboardingModal({
   assignedAgent,
   initialProfileValues,
   initialProviderValues,
+  initialProviderRows,
   releaseDefaultValues,
   initialReleaseId,
 }: Props) {
@@ -57,8 +60,18 @@ export default function OnboardingModal({
   const [completed, setCompleted] = useState(session?.user?.onboarded === true);
   const [activeStep, setActiveStep] = useState(0);
 
-  // Per-step completion tracking
-  const [profileSaved, setProfileSaved] = useState(false);
+  // Per-step completion tracking — initialize from server-provided values so a
+  // page refresh doesn't reset progress the patient has already made.
+  const [profileSaved, setProfileSaved] = useState(() =>
+    Boolean(
+      initialProfileValues.firstName &&
+      initialProfileValues.lastName &&
+      initialProfileValues.dateOfBirth &&
+      initialProfileValues.address &&
+      initialProfileValues.phoneNumber &&
+      initialProfileValues.ssn
+    )
+  );
   const [profileValues, setProfileValues] = useState<ProfileFormData>(initialProfileValues);
   const [providerValues, setProviderValues] = useState<MyProviderFormData[]>(initialProviderValues);
   const [savedReleaseId, setSavedReleaseId] = useState<string | undefined>(initialReleaseId);
@@ -125,38 +138,13 @@ export default function OnboardingModal({
       >
         <Title order={3} mb="md">Welcome to Your Health Portal</Title>
 
-        <Stepper active={activeStep} w="100%" mb={canGoBack || canGoForward ? "sm" : 0}>
+        <Stepper active={activeStep} w="100%">
           <Stepper.Step label="Welcome" />
           <Stepper.Step label="Profile" />
           <Stepper.Step label="Providers" />
           <Stepper.Step label="Release" />
           <Stepper.Step label="Schedule" />
         </Stepper>
-
-        {(canGoBack || canGoForward) && (
-          <Group justify="space-between" w="100%">
-            {canGoBack ? (
-              <Button
-                variant="subtle"
-                leftSection={<IconArrowLeft size={14} />}
-                onClick={goBack}
-                size="sm"
-              >
-                Back
-              </Button>
-            ) : <span />}
-            {canGoForward && (
-              <Button
-                variant="subtle"
-                rightSection={<IconArrowRight size={14} />}
-                onClick={() => setActiveStep((s) => s + 1)}
-                size="sm"
-              >
-                Next
-              </Button>
-            )}
-          </Group>
-        )}
       </Box>
 
       {/* Bottom container: scrollable form content */}
@@ -273,8 +261,20 @@ export default function OnboardingModal({
                       mailingAddress: profileValues.address        || releaseDefaultValues.mailingAddress || "",
                       phoneNumber:    profileValues.phoneNumber    || releaseDefaultValues.phoneNumber    || "",
                       ssn:            profileValues.ssn            || releaseDefaultValues.ssn            || "",
+                      providers:      providerValues.map((p): ProviderFormData => ({
+                        ...p,
+                        historyPhysical: false,
+                        diagnosticResults: false,
+                        treatmentProcedure: false,
+                        prescriptionMedication: false,
+                        imagingRadiology: false,
+                        dischargeSummaries: false,
+                        specificRecords: false,
+                        allAvailableDates: false,
+                      })),
                     }
               }
+              savedProviders={initialProviderRows}
               assignedAgent={assignedAgent}
               onComplete={(id) => {
                 setSavedReleaseId(id);
@@ -301,6 +301,38 @@ export default function OnboardingModal({
           )}
         </Stack>
       </Box>
+
+      {/* Footer: Back / Next — never scrolls */}
+      {(canGoBack || canGoForward) && (
+        <Box
+          px="xl"
+          py="sm"
+          style={{ borderTop: "1px solid var(--mantine-color-gray-2)", flexShrink: 0 }}
+        >
+          <Group justify="space-between">
+            {canGoBack ? (
+              <Button
+                variant="subtle"
+                leftSection={<IconArrowLeft size={14} />}
+                onClick={goBack}
+                size="sm"
+              >
+                Back
+              </Button>
+            ) : <span />}
+            {canGoForward && (
+              <Button
+                variant="subtle"
+                rightSection={<IconArrowRight size={14} />}
+                onClick={() => setActiveStep((s) => s + 1)}
+                size="sm"
+              >
+                Next
+              </Button>
+            )}
+          </Group>
+        </Box>
+      )}
     </Modal>
   );
 }

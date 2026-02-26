@@ -157,7 +157,7 @@ export default function RecordRequestFields({ index }: Props) {
               <DatePickerInput
                 label="From"
                 placeholder="MM/DD/YYYY"
-                popoverProps={{ zIndex: 150 }}
+                popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={providerErrors?.dateRangeFrom?.message}
                 value={field.value ? new Date(field.value) : null}
                 onChange={(date) =>
@@ -177,7 +177,7 @@ export default function RecordRequestFields({ index }: Props) {
               <DatePickerInput
                 label="To"
                 placeholder="MM/DD/YYYY"
-                popoverProps={{ zIndex: 150 }}
+                popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={providerErrors?.dateRangeTo?.message}
                 value={field.value ? new Date(field.value) : null}
                 onChange={(date) =>
