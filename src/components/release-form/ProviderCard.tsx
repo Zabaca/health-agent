@@ -10,6 +10,7 @@ import {
   Title,
   Divider,
   Group,
+  Text,
 } from "@mantine/core";
 import { IconGripVertical } from "@tabler/icons-react";
 import { useFormContext, Controller } from "react-hook-form";
@@ -44,9 +45,13 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
   const isFacilityType = providerType === "Hospital" || providerType === "Clinic" || providerType === "Facility";
   const isClinic = providerType === "Clinic";
   const providerErrors = errors.providers?.[index];
+  const hasErrors = !!providerErrors;
 
   return (
-    <Accordion.Item value={`provider-${index}`}>
+    <Accordion.Item
+      value={`provider-${index}`}
+      style={hasErrors ? { borderColor: "var(--mantine-color-red-5)" } : undefined}
+    >
       <Accordion.Control>
         <Group gap="xs" wrap="nowrap" align="center">
           <div
@@ -57,11 +62,16 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
             <IconGripVertical size={16} />
           </div>
           <Stack gap={0} style={{ flex: 1 }}>
-            <Title order={5} style={{ margin: 0 }}>
+            <Title order={5} style={{ margin: 0, color: hasErrors ? "var(--mantine-color-red-6)" : undefined }}>
               {providerName}
             </Title>
             <span style={{ fontSize: 12, color: "#868e96" }}>{providerType || "Provider"}</span>
           </Stack>
+          {hasErrors && (
+            <Text size="xs" c="red" fw={500}>
+              Fix errors
+            </Text>
+          )}
         </Group>
       </Accordion.Control>
       <Accordion.Panel>

@@ -14,7 +14,7 @@ interface Props {
   usedProviderIds: string[];
 }
 
-function rowToFormData(row: UserProviderRow): ProviderFormData {
+export function rowToFormData(row: UserProviderRow): ProviderFormData {
   return {
     providerName: row.providerName,
     providerType: row.providerType as ProviderFormData["providerType"],

@@ -74,10 +74,11 @@ function SortableItem({ id, index, onRemove }: SortableItemProps) {
 
 interface ProviderListProps {
   savedProviders?: UserProviderRow[];
+  initialUsedProviderIds?: string[];
 }
 
-export default function ProviderList({ savedProviders: savedProvidersProp }: ProviderListProps) {
-  const { control, formState: { errors } } = useFormContext<ReleaseFormData>();
+export default function ProviderList({ savedProviders: savedProvidersProp, initialUsedProviderIds }: ProviderListProps) {
+  const { control, formState: { errors, submitCount } } = useFormContext<ReleaseFormData>();
   const { fields, append, remove, move } = useFieldArray({
     control,
     name: "providers",
@@ -85,8 +86,22 @@ export default function ProviderList({ savedProviders: savedProvidersProp }: Pro
 
   const [openItems, setOpenItems] = useState<string[]>([]);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
-  const [usedProviderIds, setUsedProviderIds] = useState<(string | null)[]>([]);
+  const [usedProviderIds, setUsedProviderIds] = useState<(string | null)[]>(
+    initialUsedProviderIds ?? []
+  );
   const [savedProviders, setSavedProviders] = useState<UserProviderRow[]>(savedProvidersProp ?? []);
+
+  // On submit, open any provider accordion item that has validation errors
+  useEffect(() => {
+    if (submitCount === 0) return;
+    setOpenItems((prev) => {
+      const set = new Set(prev);
+      fields.forEach((_, i) => {
+        if (errors.providers?.[i]) set.add(`provider-${i}`);
+      });
+      return Array.from(set);
+    });
+  }, [submitCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (savedProvidersProp !== undefined) return;

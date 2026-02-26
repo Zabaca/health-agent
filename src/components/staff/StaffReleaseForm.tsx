@@ -12,6 +12,7 @@ import { errorSchema } from "@/lib/api/response-schemas";
 import PatientSection from "@/components/release-form/PatientSection";
 import ProviderList from "@/components/release-form/ProviderList";
 import AuthorizationSection from "@/components/release-form/AuthorizationSection";
+import { rowToFormData } from "@/components/release-form/AddProviderModal";
 import type { UserProviderRow } from "@/lib/db/types";
 
 interface Props {
@@ -54,7 +55,7 @@ export default function StaffReleaseForm({
       phoneNumber: "",
       email: "",
       ssn: "",
-      providers: [],
+      providers: savedProviders.map(rowToFormData),
       releaseAuthAgent: true,
       releaseAuthZabaca: mode === 'admin',
       authPrintedName: "",
@@ -176,7 +177,10 @@ export default function StaffReleaseForm({
           {serverError && <Alert color="red">{serverError}</Alert>}
 
           <PatientSection />
-          <ProviderList savedProviders={savedProviders} />
+          <ProviderList
+            savedProviders={savedProviders}
+            initialUsedProviderIds={savedProviders.map((p) => p.id)}
+          />
           <AuthorizationSection staffMode={{ mode, agentInfo }} />
 
           <Group justify="flex-end">

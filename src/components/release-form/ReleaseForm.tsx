@@ -12,6 +12,8 @@ import { errorSchema } from "@/lib/api/response-schemas";
 import PatientSection from "./PatientSection";
 import ProviderList from "./ProviderList";
 import AuthorizationSection from "./AuthorizationSection";
+import { rowToFormData } from "./AddProviderModal";
+import type { UserProviderRow } from "@/lib/db/types";
 
 interface AssignedAgent {
   firstName: string | null;
@@ -25,11 +27,12 @@ interface Props {
   releaseId?: string;
   defaultValues?: Partial<ReleaseFormData>;
   assignedAgent?: AssignedAgent | null;
+  savedProviders?: UserProviderRow[];
   onComplete?: (releaseId: string) => void;
   onBack?: () => void;
 }
 
-export default function ReleaseForm({ releaseId, defaultValues, assignedAgent, onComplete, onBack }: Props) {
+export default function ReleaseForm({ releaseId, defaultValues, assignedAgent, savedProviders, onComplete, onBack }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -44,7 +47,7 @@ export default function ReleaseForm({ releaseId, defaultValues, assignedAgent, o
       phoneNumber: "",
       email: "",
       ssn: "",
-      providers: [],
+      providers: savedProviders?.map(rowToFormData) ?? [],
       releaseAuthAgent: false,
       releaseAuthZabaca: false,
       authPrintedName: "",
@@ -148,7 +151,10 @@ export default function ReleaseForm({ releaseId, defaultValues, assignedAgent, o
           {serverError && <Alert color="red">{serverError}</Alert>}
 
           <PatientSection />
-          <ProviderList />
+          <ProviderList
+            savedProviders={savedProviders}
+            initialUsedProviderIds={savedProviders?.map((p) => p.id)}
+          />
           <AuthorizationSection assignedAgent={assignedAgent} />
 
           <Group justify="flex-end">
