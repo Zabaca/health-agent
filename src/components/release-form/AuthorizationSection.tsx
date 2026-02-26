@@ -67,6 +67,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
   }, []);
 
   const sigValue = watch("authSignatureImage");
+  const printedName = watch("authPrintedName");
 
   // Patient mode: auto-populate agent fields from the assigned agent (runs once on mount)
   useEffect(() => {
@@ -110,11 +111,12 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
         {assignedAgent && !staffMode && (
           <Paper withBorder p="sm" radius="md">
             <Stack gap="md">
-              <Title order={6}>Agent Details</Title>
+              <Title order={6}>Individual/Organization to Receive the Information</Title>
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
                 <AgentField label="First Name" value={assignedAgent.firstName} />
                 <AgentField label="Last Name" value={assignedAgent.lastName} />
               </SimpleGrid>
+              <AgentField label="Relationship to Patient" value="Authorized Representative" />
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
                 <AgentField label="Phone Number" value={assignedAgent.phoneNumber} />
                 <AgentField label="Email" value={assignedAgent.email} />
@@ -128,11 +130,12 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
         {staffMode && (
           <Paper withBorder p="sm" radius="md">
             <Stack gap="md">
-              <Title order={6}>Agent Details</Title>
+              <Title order={6}>Individual/Organization to Receive the Information</Title>
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
                 <TextInput label="First Name" disabled {...register("authAgentFirstName")} />
                 <TextInput label="Last Name" disabled {...register("authAgentLastName")} />
               </SimpleGrid>
+              <AgentField label="Relationship to Patient" value="Authorized Representative" />
               <TextInput label="Organization" disabled {...register("authAgentOrganization")} />
               <TextInput label="Address" disabled {...register("authAgentAddress")} />
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -176,7 +179,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
 
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput
-            label="Printed Name"
+            label="Patient Printed Name"
             required={!staffMode}
             error={errors.authPrintedName?.message}
             {...register("authPrintedName")}
@@ -216,6 +219,7 @@ export default function AuthorizationSection({ assignedAgent, staffMode }: Props
                 value={sigValue}
                 onChange={handleSignatureChange}
                 error={errors.authSignatureImage?.message}
+                typedName={printedName}
               />
             )}
           />

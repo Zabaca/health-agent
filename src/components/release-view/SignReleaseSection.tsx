@@ -79,7 +79,7 @@ export default function SignReleaseSection({ releaseId }: { releaseId: string })
         </Alert>
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput
-            label="Printed Name"
+            label="Patient Printed Name"
             placeholder="Your full name"
             required
             value={printedName}

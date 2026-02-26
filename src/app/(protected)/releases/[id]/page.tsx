@@ -59,7 +59,7 @@ export default async function ViewReleasePage({
 
   return (
     <Stack gap="xl">
-      <Title order={2} ta="center" className="print-only">Medical Record Release</Title>
+      <Title order={2} ta="center" className="print-only">Authorization for the Release of Protected Health Information</Title>
       <Group justify="space-between" align="center" className="no-print">
         <Group gap="sm">
           <Button component={Link} href="/dashboard" variant="subtle" leftSection={<IconArrowLeft size={16} />} px={0}>
@@ -202,10 +202,11 @@ export default async function ViewReleasePage({
           {release.releaseAuthAgent && (
             <Paper withBorder p="sm" radius="md">
               <Stack gap="md">
-                <Title order={6}>Agent Details</Title>
+                <Title order={6}>Individual/Organization to Receive the Information</Title>
                 <SimpleGrid cols={3}>
                   <Field label="First Name" value={release.authAgentFirstName} />
                   <Field label="Last Name" value={release.authAgentLastName} />
+                  <Field label="Relationship to Patient" value="Authorized Representative" />
                   <Field label="Organization" value={release.authAgentOrganization} />
                   <Field label="Phone Number" value={release.authAgentPhone} />
                   <Field label="Email" value={release.authAgentEmail} />
@@ -227,13 +228,13 @@ export default async function ViewReleasePage({
             <Field label="Expiration Event" value={release.authExpirationEvent} />
           </SimpleGrid>
           <SimpleGrid cols={2}>
-            <Field label="Printed Name" value={release.authPrintedName} />
+            <Field label="Patient Printed Name" value={release.authPrintedName} />
             <Field label="Date" value={release.authDate} />
           </SimpleGrid>
 
           {release.authSignatureImage && (
             <Stack gap={2}>
-              <Text size="xs" c="dimmed" fw={500}>Signature</Text>
+              <Text size="xs" c="dimmed" fw={500}>Patient Signature</Text>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={release.authSignatureImage}

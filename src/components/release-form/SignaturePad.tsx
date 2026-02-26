@@ -8,9 +8,10 @@ interface Props {
   value?: string;
   onChange: (dataUrl: string) => void;
   error?: string;
+  typedName?: string;
 }
 
-export default function SignaturePad({ value, onChange, error }: Props) {
+export default function SignaturePad({ value, onChange, error, typedName }: Props) {
   const sigRef = useRef<SignatureCanvas>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(0);
@@ -22,6 +23,14 @@ export default function SignaturePad({ value, onChange, error }: Props) {
   // Keep a ref to the value that was in place when the user entered resign mode,
   // so "Keep existing" can restore it if they change their mind.
   const priorValueRef = useRef(value ?? "");
+
+  // Prevents the value-change effect from switching to preview mode when the
+  // value update originated from our own auto-draw (typing a name).
+  const isAutoDrawRef = useRef(false);
+
+  // When true, the user clicked "Re-sign" to draw manually — typed-name
+  // auto-draw will not override their drawing.
+  const [isManualMode, setIsManualMode] = useState(false);
 
   // Set up the ResizeObserver only while the canvas container is mounted
   // (i.e. while resignMode is true).
@@ -43,12 +52,41 @@ export default function SignaturePad({ value, onChange, error }: Props) {
 
   // If the value prop is populated after initial mount (e.g. defaultValues resolved),
   // switch to preview mode so the saved signature is shown.
+  // Skip when the update came from our own auto-draw so the canvas stays open while typing.
   useEffect(() => {
+    if (isAutoDrawRef.current) {
+      isAutoDrawRef.current = false;
+      return;
+    }
     if (value && resignMode) {
       setResignMode(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
+
+  // Auto-draw the typed name to an offscreen canvas and immediately switch to
+  // preview — the user never has to click "Save Signature" for typed names.
+  // Uses an offscreen canvas so it works regardless of resignMode.
+  useEffect(() => {
+    if (typedName === undefined || isManualMode || !typedName.trim()) return;
+
+    const offscreen = document.createElement("canvas");
+    offscreen.width = 400;
+    offscreen.height = 100;
+    const ctx = offscreen.getContext("2d");
+    if (!ctx) return;
+
+    ctx.font = "italic 40px 'Segoe Script', 'Brush Script MT', cursive";
+    ctx.fillStyle = "#000";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(typedName.trim(), offscreen.width / 2, offscreen.height / 2);
+
+    isAutoDrawRef.current = true;
+    onChange(offscreen.toDataURL("image/png"));
+    setResignMode(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typedName, isManualMode]);
 
   const handleEnd = () => {
     if (sigRef.current && !sigRef.current.isEmpty()) {
@@ -62,6 +100,7 @@ export default function SignaturePad({ value, onChange, error }: Props) {
       onChange(dataUrl);
       setResignMode(false);
       setHasDrawing(false);
+      setIsManualMode(false);
     }
   };
 
@@ -74,6 +113,7 @@ export default function SignaturePad({ value, onChange, error }: Props) {
     priorValueRef.current = value ?? "";
     sigRef.current?.clear();
     setHasDrawing(false);
+    setIsManualMode(true);
     setResignMode(true);
   };
 
@@ -82,13 +122,14 @@ export default function SignaturePad({ value, onChange, error }: Props) {
     onChange(priorValueRef.current);
     sigRef.current?.clear();
     setHasDrawing(false);
+    setIsManualMode(false);
     setResignMode(false);
   };
 
   return (
     <Stack gap="xs">
       <Text size="sm" fw={500}>
-        Signature <span style={{ color: "red" }}>*</span>
+        Patient Signature <span style={{ color: "red" }}>*</span>
       </Text>
 
       {/* Saved signature preview */}
@@ -150,7 +191,11 @@ export default function SignaturePad({ value, onChange, error }: Props) {
           </Button>
         )}
         {resignMode && !hasDrawing && (
-          <Text size="xs" c="dimmed">Draw your signature above</Text>
+          <Text size="xs" c="dimmed">
+            {typedName !== undefined
+              ? "Type your name above to auto-sign, or draw here"
+              : "Draw your signature above"}
+          </Text>
         )}
         {resignMode && priorValueRef.current && (
           <Button variant="subtle" size="xs" onClick={handleKeepExisting}>
