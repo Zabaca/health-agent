@@ -41,7 +41,7 @@ export function rowToFormData(row: UserProviderRow): ProviderFormData {
     dateRangeFrom: undefined,
     dateRangeTo: undefined,
     allAvailableDates: false,
-    purpose: undefined,
+    purpose: "Personal records",
     purposeOther: undefined,
   };
 }

@@ -108,7 +108,7 @@ export default function ReleaseForm({ releaseId, defaultValues, assignedAgent, s
           setServerError(errorSchema.safeParse(result.body).data?.error || "Failed to save. Please try again.");
           return;
         }
-        savedReleaseId = result.body.id;
+        savedReleaseId = result.body[0]?.id;
       }
 
       if (!onComplete) {

@@ -78,9 +78,9 @@ export default function SignaturePad({ value, onChange, error, typedName }: Prop
 
     ctx.font = "italic 40px 'Segoe Script', 'Brush Script MT', cursive";
     ctx.fillStyle = "#000";
-    ctx.textAlign = "center";
+    ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(typedName.trim(), offscreen.width / 2, offscreen.height / 2);
+    ctx.fillText(typedName.trim(), 12, offscreen.height / 2);
 
     isAutoDrawRef.current = true;
     onChange(offscreen.toDataURL("image/png"));

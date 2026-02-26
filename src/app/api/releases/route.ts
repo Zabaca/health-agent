@@ -41,36 +41,31 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
     const { providers, ...releaseData } = body;
     const encryptedReleaseData = encryptPii(releaseData);
 
-    const release = await db.transaction(async (tx) => {
-      const releaseId = crypto.randomUUID();
+    const created = await db.transaction(async (tx) => {
+      const results = [];
       const now = new Date().toISOString();
-      const [newRelease] = await tx
-        .insert(releasesTable)
-        .values({
-          id: releaseId,
-          userId: session.user.id,
-          ...encryptedReleaseData,
-          createdAt: now,
-          updatedAt: now,
-          releaseCode: generateReleaseCode(),
-        })
-        .returning();
+      for (const provider of providers) {
+        const releaseId = crypto.randomUUID();
+        const [newRelease] = await tx
+          .insert(releasesTable)
+          .values({
+            id: releaseId,
+            userId: session.user.id,
+            ...encryptedReleaseData,
+            createdAt: now,
+            updatedAt: now,
+            releaseCode: generateReleaseCode(),
+          })
+          .returning();
 
-      const insertedProviders = providers.length
-        ? await tx
-            .insert(providersTable)
-            .values(
-              providers.map((p: ProviderFormData, i: number) => ({
-                id: crypto.randomUUID(),
-                releaseId,
-                ...p,
-                order: i,
-              }))
-            )
-            .returning()
-        : [];
+        const [insertedProvider] = await tx
+          .insert(providersTable)
+          .values({ id: crypto.randomUUID(), releaseId, order: 0, ...provider })
+          .returning();
 
-      return { ...newRelease, providers: insertedProviders };
+        results.push({ ...newRelease, providers: [insertedProvider] });
+      }
+      return results;
     });
 
     // Silently backfill empty profile fields from submitted release data (plaintext)
@@ -116,7 +111,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
       // swallow — do not block the release response
     }
 
-    return NextResponse.json(decryptPii(release), { status: 201 });
+    return NextResponse.json(created.map(decryptPii), { status: 201 });
   } catch (error) {
     console.error("Create release error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

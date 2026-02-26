@@ -121,7 +121,7 @@ const releaseBaseObject = z.object({
       return date >= minDate;
     }, "Expiration date must be at least 90 days from today"),
   authExpirationEvent: z.string().optional(),
-  authPrintedName: z.string().min(1, "Printed name is required"),
+  authPrintedName: z.string().trim().min(1, "Printed name is required"),
   authSignatureImage: z.string({ required_error: "Signature is required" }).min(1, "Signature is required"),
   authDate: z.string().min(1, "Date is required")
     .refine((val) => !isNaN(new Date(val).getTime()), "Please enter a valid date"),
@@ -138,7 +138,7 @@ export const releaseSchema = releaseBaseObject.superRefine(releaseRefinement);
 
 export const staffReleaseSchema = releaseBaseObject.extend({
   authSignatureImage: z.string().optional().default(''),
-  authPrintedName: z.string().default(''),
+  authPrintedName: z.string().trim().default(''),
   authDate: z.string().default(''),
 }).superRefine(releaseRefinement);
 

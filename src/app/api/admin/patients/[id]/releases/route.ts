@@ -3,7 +3,6 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { type ProviderFormData } from "@/lib/schemas/release";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { encryptPii, decryptPii } from "@/lib/crypto";
@@ -47,39 +46,34 @@ export const POST = contractRoute(contract.admin.patientReleases.create, async (
     const { providers, ...releaseData } = body;
     const encryptedReleaseData = encryptPii(releaseData);
 
-    const release = await db.transaction(async (tx) => {
-      const releaseId = crypto.randomUUID();
+    const created = await db.transaction(async (tx) => {
+      const results = [];
       const now = new Date().toISOString();
-      const [newRelease] = await tx
-        .insert(releasesTable)
-        .values({
-          id: releaseId,
-          userId: params.id,
-          ...encryptedReleaseData,
-          createdAt: now,
-          updatedAt: now,
-          releaseCode: generateReleaseCode(),
-        })
-        .returning();
+      for (const provider of providers) {
+        const releaseId = crypto.randomUUID();
+        const [newRelease] = await tx
+          .insert(releasesTable)
+          .values({
+            id: releaseId,
+            userId: params.id,
+            ...encryptedReleaseData,
+            createdAt: now,
+            updatedAt: now,
+            releaseCode: generateReleaseCode(),
+          })
+          .returning();
 
-      const insertedProviders = providers.length
-        ? await tx
-            .insert(providersTable)
-            .values(
-              providers.map((p: ProviderFormData, i: number) => ({
-                id: crypto.randomUUID(),
-                releaseId,
-                ...p,
-                order: i,
-              }))
-            )
-            .returning()
-        : [];
+        const [insertedProvider] = await tx
+          .insert(providersTable)
+          .values({ id: crypto.randomUUID(), releaseId, order: 0, ...provider })
+          .returning();
 
-      return { ...newRelease, providers: insertedProviders };
+        results.push({ ...newRelease, providers: [insertedProvider] });
+      }
+      return results;
     });
 
-    return NextResponse.json(decryptPii(release), { status: 201 });
+    return NextResponse.json(created.map(decryptPii), { status: 201 });
   } catch (error) {
     console.error("Create release error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

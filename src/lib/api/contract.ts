@@ -5,6 +5,7 @@ import { profileSchema, staffProfileSchema } from '@/lib/schemas/profile';
 import {
   releaseSummarySchema,
   releaseWithProvidersSchema,
+  releaseCreateResponseSchema,
   releaseLookupResultSchema,
   userProviderRowSchema,
   errorSchema,
@@ -54,7 +55,7 @@ export const contract = c.router({
       method: 'POST',
       path: '/api/releases',
       body: releaseSchema,
-      responses: { 201: releaseWithProvidersSchema, 400: errorSchema, 401: errorSchema, 500: errorSchema },
+      responses: { 201: releaseCreateResponseSchema, 400: errorSchema, 401: errorSchema, 500: errorSchema },
     },
     getById: {
       method: 'GET',
@@ -152,7 +153,7 @@ export const contract = c.router({
         path: '/api/admin/patients/:id/releases',
         pathParams: z.object({ id: z.string() }),
         body: staffReleaseSchema,
-        responses: { 201: releaseWithProvidersSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 500: errorSchema },
+        responses: { 201: releaseCreateResponseSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 500: errorSchema },
       },
       getById: {
         method: 'GET',
@@ -296,7 +297,7 @@ export const contract = c.router({
         path: '/api/agent/patients/:id/releases',
         pathParams: z.object({ id: z.string() }),
         body: staffReleaseSchema,
-        responses: { 201: releaseWithProvidersSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 500: errorSchema },
+        responses: { 201: releaseCreateResponseSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 500: errorSchema },
       },
       getById: {
         method: 'GET',

@@ -86,6 +86,13 @@ export default function ReleaseList({ releases }: Props) {
           <Text size="sm" c="dimmed">—</Text>
         )}
       </Table.Td>
+      <Table.Td>
+        {r.releaseCode ? (
+          <Text size="sm" ff="monospace">{r.releaseCode}</Text>
+        ) : (
+          <Text size="sm" c="dimmed">—</Text>
+        )}
+      </Table.Td>
       <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
       <Table.Td>{new Date(r.updatedAt).toLocaleString()}</Table.Td>
       <Table.Td>
@@ -126,7 +133,8 @@ export default function ReleaseList({ releases }: Props) {
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Patient Name</Table.Th>
-            <Table.Th>Providers</Table.Th>
+            <Table.Th>Provider</Table.Th>
+            <Table.Th>Release Code</Table.Th>
             <Table.Th>Created</Table.Th>
             <Table.Th>Last Updated</Table.Th>
             <Table.Th>Status</Table.Th>

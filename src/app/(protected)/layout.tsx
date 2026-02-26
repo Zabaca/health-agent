@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import AppShell from "@/components/layout/AppShell";
-import { IconLayoutDashboard, IconUser, IconBuildingHospital, IconPhone } from "@tabler/icons-react";
+import { IconFiles, IconUser, IconBuildingHospital, IconPhone } from "@tabler/icons-react";
 
 export default async function ProtectedLayout({
   children,
@@ -14,7 +14,7 @@ export default async function ProtectedLayout({
   }
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: <IconLayoutDashboard size={16} /> },
+    { href: "/dashboard", label: "Dashboard", icon: <IconFiles size={16} /> },
     { href: "/profile", label: "My Profile", icon: <IconUser size={16} /> },
     { href: "/my-providers", label: "My Providers", icon: <IconBuildingHospital size={16} /> },
     { href: "/scheduled-calls", label: "Scheduled Calls", icon: <IconPhone size={16} /> },
