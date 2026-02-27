@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Button, Badge,
 } from "@mantine/core";
@@ -42,7 +42,7 @@ export default async function AgentProfilePage({
   const { id } = await params;
 
   const agent = await db.query.users.findFirst({
-    where: and(eq(users.id, id), eq(users.type, "agent")),
+    where: and(eq(users.id, id), or(eq(users.type, "agent"), eq(users.type, "admin"))),
   });
 
   if (!agent) notFound();
