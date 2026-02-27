@@ -367,8 +367,8 @@ export default function ExportTiffButton({ releaseCode }: Props) {
 
         pageBuffers.push(
           UTIF.encodeImage(rgba, width, pageHeightPx, {
-            "t282": [DPI, 1],
-            "t283": [DPI, 1],
+            "t282": [DPI],
+            "t283": [DPI],
             "t296": [2],
           } as unknown as import("utif").IFD)
         );
