@@ -11,6 +11,7 @@ import Link from "next/link";
 import { IconArrowLeft, IconBan } from "@tabler/icons-react";
 import VoidReleaseButton from "@/components/release-view/VoidReleaseButton";
 import PrintButton from "@/components/release-view/PrintButton";
+import ExportTiffButton from "@/components/release-view/ExportTiffButton";
 import SignReleaseSection from "@/components/release-view/SignReleaseSection";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
@@ -58,7 +59,7 @@ export default async function ViewReleasePage({
   };
 
   return (
-    <Stack gap="xl">
+    <Stack gap="xl" className="release-content">
       <Title order={2} ta="center" className="print-only">Authorization for the Release of Protected Health Information</Title>
       <Group justify="space-between" align="center" className="no-print">
         <Group gap="sm">
@@ -69,6 +70,7 @@ export default async function ViewReleasePage({
         </Group>
         {!release.voided && (
           <Group gap="xs">
+            <ExportTiffButton releaseCode={release.releaseCode} />
             <PrintButton releaseCode={release.releaseCode} />
             <VoidReleaseButton releaseId={id} />
           </Group>
@@ -99,18 +101,18 @@ export default async function ViewReleasePage({
         </Stack>
       </Paper>
 
-      {/* Healthcare Providers */}
+      {/* Healthcare Provider */}
       <Paper withBorder p="md" radius="md" className="section-providers">
-        <Title order={4} mb="md">Healthcare Providers</Title>
+        <Title order={4} mb="md">Healthcare Provider</Title>
         <Stack gap="lg">
           {release.providers.map((p, i) => (
             <Stack key={p.id} gap="md">
               {i > 0 && <Divider />}
               <Group gap="sm">
                 <Title order={5}>{p.providerName}</Title>
-                <Badge variant="light">{p.providerType}</Badge>
+                <Badge variant="light" className="no-print">{p.providerType}</Badge>
               </Group>
-              <Field label="Provider Type" value={p.providerType} />
+              <div className="no-print"><Field label="Provider Type" value={p.providerType} /></div>
 
               {p.providerType === "Hospital" && p.patientId && (
                 <Field label="Patient ID" value={p.patientId} />
@@ -188,12 +190,11 @@ export default async function ViewReleasePage({
         <Title order={4} mb="md">Authorization</Title>
         <Stack gap="md">
           <Text size="sm" fs="italic">
-            {release.firstName} {release.lastName} hereby authorizes{" "}
+            {release.firstName} {release.lastName} (Patient) hereby authorizes{" "}
             {release.releaseAuthAgent
               ? <>
-                  {[release.authAgentFirstName, release.authAgentLastName].filter(Boolean).join(" ")}
-                  {release.authAgentOrganization ? ` of ${release.authAgentOrganization}` : ""}{" "}
-                  as the acting agent for {release.firstName} {release.lastName} in requesting medical records on the patient&apos;s behalf.
+                  {[release.authAgentFirstName, release.authAgentLastName].filter(Boolean).join(" ")}{" "}
+                  (Authorized Representative) as the acting agent in requesting medical records on the patient&apos;s behalf.
                 </>
               : <>the release of their medical records as described in this document.</>
             }
