@@ -5,7 +5,7 @@ import { releases as releasesTable, providers as providersTable, patientAssignme
 import { and, asc, desc, eq } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Divider,
-  Badge, Checkbox, Button, Alert, Table,
+  Badge, Checkbox, Button, Alert,
 } from "@mantine/core";
 import Link from "next/link";
 import { IconArrowLeft, IconBan } from "@tabler/icons-react";
@@ -14,6 +14,7 @@ import PrintButton from "@/components/release-view/PrintButton";
 import ExportTiffButton from "@/components/release-view/ExportTiffButton";
 import FaxButton from "@/components/release-view/FaxButton";
 import MembershipCardImage from "@/components/release-view/MembershipCardImage";
+import ReleaseRequestLogTable from "@/components/release-view/ReleaseRequestLogTable";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
 
@@ -239,45 +240,7 @@ export default async function AgentReleaseViewPage({
         </Text>
       </Group>
 
-      <Paper withBorder p="md" radius="md" className="no-print">
-        <Title order={4} mb="md">Release Request History</Title>
-        {requestLogs.length === 0 ? (
-          <Text size="sm" c="dimmed">No requests sent yet.</Text>
-        ) : (
-          <Table striped>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Type</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th>Fax Number</Table.Th>
-                <Table.Th>Date</Table.Th>
-                <Table.Th>Response</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {requestLogs.map((log) => (
-                <Table.Tr key={log.id}>
-                  <Table.Td><Text tt="uppercase" size="xs">{log.type}</Text></Table.Td>
-                  <Table.Td>
-                    <Badge color={log.error ? "red" : "green"} variant="light">
-                      {log.error ? "error" : log.status}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td><Text size="sm">{log.faxNumber ?? "—"}</Text></Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{new Date(log.createdAt).toLocaleString()}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm" c="dimmed" truncate maw={200}>
-                      {log.apiResponse ?? "—"}
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        )}
-      </Paper>
+      <ReleaseRequestLogTable logs={requestLogs} />
 
     </Stack>
   );

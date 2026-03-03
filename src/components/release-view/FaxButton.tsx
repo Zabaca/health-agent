@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Group, Modal, Text, TextInput } from "@mantine/core";
+import { Button, Group, Modal, Stack, Text, TextInput, ThemeIcon } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconSend } from "@tabler/icons-react";
 
@@ -344,8 +344,14 @@ export default function FaxButton({
   const [recipient, setRecipient] = useState(providerName ?? "");
   const [loading, setLoading] = useState(false);
 
+  const faxDigits = faxNumber.replace(/\D/g, "");
+  const faxValid  = faxDigits.length === 10;
+  const faxError  = faxNumber.trim() && !faxValid
+    ? "Must be 10 digits (3-digit area code + 7-digit number)"
+    : null;
+
   const handleSend = async () => {
-    if (!faxNumber.trim()) return;
+    if (!faxValid) return;
 
     setLoading(true);
     try {
@@ -470,9 +476,31 @@ export default function FaxButton({
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
-        title="Send Fax"
         centered
+        withCloseButton
+        styles={{
+          content: { overflow: "hidden" },
+          header: {
+            background: "linear-gradient(135deg, var(--mantine-primary-color-9) 0%, var(--mantine-primary-color-7) 100%)",
+            padding: "var(--mantine-spacing-lg)",
+          },
+          title: { width: "100%" },
+          close: { color: "white", opacity: 0.8 },
+        }}
+        title={
+          <Group gap="md" align="center">
+            <ThemeIcon size={42} radius="xl" color="white" variant="white"
+              style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+              <IconSend size={22} color="#1e3a5f" />
+            </ThemeIcon>
+            <Stack gap={0}>
+              <Text fw={700} size="lg" c="white">Send Fax</Text>
+              <Text size="xs" c="rgba(255,255,255,0.75)">Transmit release via Faxage</Text>
+            </Stack>
+          </Group>
+        }
       >
+        <Stack pt="sm" pb="xs">
         <TextInput
           label="Recipient"
           placeholder="Provider name"
@@ -484,8 +512,10 @@ export default function FaxButton({
         <TextInput
           label="Fax number"
           placeholder="e.g. 555-123-4567"
+          description="10-digit number — area code + 7-digit phone number"
           value={faxNumber}
           onChange={(e) => setFaxNumber(e.currentTarget.value)}
+          error={faxError}
           mb="lg"
         />
         <Group justify="flex-end">
@@ -493,12 +523,13 @@ export default function FaxButton({
           <Button
             leftSection={<IconSend size={16} />}
             loading={loading}
-            disabled={!faxNumber.trim()}
+            disabled={!faxValid}
             onClick={handleSend}
           >
             Send
           </Button>
         </Group>
+        </Stack>
       </Modal>
     </>
   );
