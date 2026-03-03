@@ -24,6 +24,7 @@ export async function POST(req: Request) {
 
   let status: "success" | "failed" = "failed";
   let apiResponse: string | null = null;
+  let httpResponse: string | null = null;
   let isError = false;
 
   try {
@@ -39,12 +40,18 @@ export async function POST(req: Request) {
     } else {
       status = "success";
     }
+    httpResponse = JSON.stringify({
+      status:     res.status,
+      statusText: res.statusText,
+      headers:    Object.fromEntries(res.headers.entries()),
+      body:       apiResponse,
+    });
   } catch (err) {
     isError = true;
     apiResponse = err instanceof Error ? err.message : String(err);
   }
 
-  // Always log the attempt with the raw apiResponse
+  // Always log the attempt with the raw apiResponse and full HTTP response object
   await db.insert(releaseRequestLog).values({
     id:            crypto.randomUUID(),
     releaseId,
@@ -54,6 +61,7 @@ export async function POST(req: Request) {
     faxNumber,
     recipientName: recipientName ?? null,
     apiResponse,
+    httpResponse,
     error:         isError,
     createdAt:     new Date().toISOString(),
   });

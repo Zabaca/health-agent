@@ -175,6 +175,7 @@ export const releaseRequestLog = sqliteTable('ReleaseRequestLog', {
   faxNumber:    text('faxNumber'),
   recipientName: text('recipientName'),
   apiResponse:  text('apiResponse'),
+  httpResponse: text('httpResponse'),
   error:        integer('error', { mode: 'boolean' }).notNull().default(false),
   createdAt:    text('createdAt').notNull(),
 });
