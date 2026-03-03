@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Group, Text, ActionIcon, Tooltip } from "@mantine/core";
 import { IconEye, IconEyeOff } from "@tabler/icons-react";
 
@@ -18,8 +18,20 @@ function maskSsn(ssn: string): string {
   return `***-**-${ssn.slice(-4)}`;
 }
 
+const AUTO_HIDE_MS = 60_000;
+
 export default function SsnDisplay({ ssn }: { ssn: string }) {
   const [visible, setVisible] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      timerRef.current = setTimeout(() => setVisible(false), AUTO_HIDE_MS);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [visible]);
 
   return (
     <>
