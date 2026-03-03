@@ -1,17 +1,18 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { releases as releasesTable, providers as providersTable, releaseRequestLog } from "@/lib/db/schema";
+import { and, asc, desc, eq } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Divider,
-  Badge, Checkbox, Button, Alert,
+  Badge, Checkbox, Button, Alert, Table,
 } from "@mantine/core";
 import Link from "next/link";
 import { IconArrowLeft, IconBan } from "@tabler/icons-react";
 import StaffVoidReleaseButton from "@/components/staff/StaffVoidReleaseButton";
 import PrintButton from "@/components/release-view/PrintButton";
 import ExportTiffButton from "@/components/release-view/ExportTiffButton";
+import FaxButton from "@/components/release-view/FaxButton";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
 
@@ -41,6 +42,12 @@ export default async function AdminReleaseViewPage({
 
   if (!release) notFound();
 
+  const requestLogs = await db
+    .select()
+    .from(releaseRequestLog)
+    .where(eq(releaseRequestLog.releaseId, releaseId))
+    .orderBy(desc(releaseRequestLog.createdAt));
+
   const { ssn, dateOfBirth } = decryptPii(release);
 
   const recordLabels: Record<string, string> = {
@@ -65,6 +72,12 @@ export default async function AdminReleaseViewPage({
         </Group>
         {!release.voided && (
           <Group gap="xs">
+            <FaxButton
+              releaseId={releaseId}
+              releaseCode={release.releaseCode}
+              defaultFaxNumber={release.providers[0]?.fax ?? null}
+              providerName={release.providers[0]?.providerName ?? null}
+            />
             <ExportTiffButton releaseCode={release.releaseCode} />
             <PrintButton releaseCode={release.releaseCode} />
             <StaffVoidReleaseButton mode="admin" patientId={patientId} releaseId={releaseId} />
@@ -202,6 +215,46 @@ export default async function AdminReleaseViewPage({
           Created {new Date(release.createdAt).toLocaleDateString()} · Updated {new Date(release.updatedAt).toLocaleDateString()}
         </Text>
       </Group>
+
+      <Paper withBorder p="md" radius="md" className="no-print">
+        <Title order={4} mb="md">Release Request History</Title>
+        {requestLogs.length === 0 ? (
+          <Text size="sm" c="dimmed">No requests sent yet.</Text>
+        ) : (
+          <Table striped>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Type</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th>Fax Number</Table.Th>
+                <Table.Th>Date</Table.Th>
+                <Table.Th>Response</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {requestLogs.map((log) => (
+                <Table.Tr key={log.id}>
+                  <Table.Td><Text tt="uppercase" size="xs">{log.type}</Text></Table.Td>
+                  <Table.Td>
+                    <Badge color={log.error ? "red" : "green"} variant="light">
+                      {log.error ? "error" : log.status}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td><Text size="sm">{log.faxNumber ?? "—"}</Text></Table.Td>
+                  <Table.Td>
+                    <Text size="sm">{new Date(log.createdAt).toLocaleString()}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="sm" c="dimmed" truncate maw={200}>
+                      {log.apiResponse ?? "—"}
+                    </Text>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        )}
+      </Paper>
 
     </Stack>
   );

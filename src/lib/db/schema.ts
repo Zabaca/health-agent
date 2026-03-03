@@ -128,6 +128,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const releasesRelations = relations(releases, ({ one, many }) => ({
   user: one(users, { fields: [releases.userId], references: [users.id] }),
   providers: many(providers),
+  requestLog: many(releaseRequestLog),
 }));
 
 export const providersRelations = relations(providers, ({ one }) => ({
@@ -163,4 +164,21 @@ export const scheduledCalls = sqliteTable('ScheduledCall', {
 export const scheduledCallsRelations = relations(scheduledCalls, ({ one }) => ({
   patient: one(users, { fields: [scheduledCalls.patientId], references: [users.id], relationName: 'scheduledCallPatient' }),
   agent: one(users, { fields: [scheduledCalls.agentId], references: [users.id], relationName: 'scheduledCallAgent' }),
+}));
+
+export const releaseRequestLog = sqliteTable('ReleaseRequestLog', {
+  id:           text('id').primaryKey(),
+  releaseId:    text('releaseId').notNull().references(() => releases.id, { onDelete: 'cascade' }),
+  type:         text('type', { enum: ['fax'] }).notNull(),
+  service:      text('service').notNull().default('faxage'),
+  status:       text('status', { enum: ['success', 'failed'] }).notNull(),
+  faxNumber:    text('faxNumber'),
+  recipientName: text('recipientName'),
+  apiResponse:  text('apiResponse'),
+  error:        integer('error', { mode: 'boolean' }).notNull().default(false),
+  createdAt:    text('createdAt').notNull(),
+});
+
+export const releaseRequestLogRelations = relations(releaseRequestLog, ({ one }) => ({
+  release: one(releases, { fields: [releaseRequestLog.releaseId], references: [releases.id] }),
 }));

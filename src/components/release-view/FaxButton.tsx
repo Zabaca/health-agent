@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@mantine/core";
-import { IconFileDownload } from "@tabler/icons-react";
+import { Button, Group, Modal, Text, TextInput } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { IconSend } from "@tabler/icons-react";
 
 // 8.5" at 96 CSS DPI
 const PRINT_WIDTH_PX = 816;
@@ -10,8 +11,6 @@ const PRINT_WIDTH_PX = 816;
 const DPI = 600;
 const SCALE = DPI / 96;
 
-// Print-equivalent styles applied to the html2canvas clone.
-// Mirrors @media print in globals.css + SSN rules from SsnDisplay.tsx.
 const PRINT_CSS = `
   body { background: white !important; line-height: 1.3 !important; }
   * { line-height: inherit; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -93,11 +92,6 @@ const PRINT_CSS = `
   div:has(> .section-patient-info) { gap: 10px !important; }
 `;
 
-/**
- * Scan the rendered canvas upward from `idealCut` within a search window to find
- * the nearest row where every pixel is near-white (i.e. a gap between elements).
- * Returns `idealCut` unchanged if no such row is found (fallback).
- */
 function findBestCut(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -111,7 +105,6 @@ function findBestCut(
   const { data } = ctx.getImageData(0, from, width, windowHeight);
   const stride = width * 4;
 
-  // Scan upward from idealCut; return the first fully-white row found.
   for (let row = windowHeight - 1; row >= 0; row--) {
     let allWhite = true;
     const rowOff = row * stride;
@@ -126,23 +119,12 @@ function findBestCut(
   return idealCut;
 }
 
-/**
- * Combine multiple single-page TIFF ArrayBuffers (as produced by UTIF.encodeImage)
- * into a single multi-page TIFF by:
- *  1. Rebasing all file-relative offsets in each page's IFD entries by that page's
- *     cumulative start position in the combined output.
- *  2. Linking pages via the "next IFD" pointer at the end of each IFD.
- *  3. Concatenating the patched page buffers.
- *
- * Handles both big-endian (MM) and little-endian (II) TIFFs.
- */
 function buildMultiPageTiff(pageBuffers: ArrayBuffer[]): ArrayBuffer {
   if (pageBuffers.length === 0) throw new Error("No pages");
   if (pageBuffers.length === 1) return pageBuffers[0];
 
-  // Detect byte order from the first page's magic bytes ('II' = LE, 'MM' = BE)
   const firstByte = new Uint8Array(pageBuffers[0])[0];
-  const le = firstByte === 0x49; // 'I'
+  const le = firstByte === 0x49;
 
   const r16 = (b: Uint8Array, o: number) =>
     le ? (b[o] | (b[o + 1] << 8)) >>> 0
@@ -167,12 +149,10 @@ function buildMultiPageTiff(pageBuffers: ArrayBuffer[]): ArrayBuffer {
     }
   };
 
-  // Bytes per element for each TIFF type code
   const TYPE_SIZE: Record<number, number> = {
     1:1, 2:1, 3:2, 4:4, 5:8, 6:1, 7:1, 8:2, 9:4, 10:8, 11:4, 12:8,
   };
 
-  // Make writable copies and record each page's start offset in the final file
   const pages = pageBuffers.map(b => new Uint8Array(b.slice(0)));
   const starts: number[] = [];
   let cum = 0;
@@ -180,7 +160,7 @@ function buildMultiPageTiff(pageBuffers: ArrayBuffer[]): ArrayBuffer {
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
-    const base = starts[i]; // how far into the combined file this page sits
+    const base = starts[i];
 
     const ifdOff   = r32(page, 4);
     const nEntries = r16(page, ifdOff);
@@ -193,12 +173,9 @@ function buildMultiPageTiff(pageBuffers: ArrayBuffer[]): ArrayBuffer {
       const bytes = (TYPE_SIZE[type] ?? 1) * count;
 
       if (bytes > 4) {
-        // The 4-byte value field holds a pointer to external data — rebase it.
         const oldPtr = r32(page, eOff + 8);
         w32(page, eOff + 8, oldPtr + base);
 
-        // StripOffsets (tag 273): the external array contains file addresses of
-        // the actual pixel strips, so those values must also be rebased.
         if (tag === 273 && type === 4) {
           for (let s = 0; s < count; s++) {
             const addr = r32(page, oldPtr + s * 4);
@@ -206,22 +183,18 @@ function buildMultiPageTiff(pageBuffers: ArrayBuffer[]): ArrayBuffer {
           }
         }
       } else if (tag === 273) {
-        // Inline strip offset (count === 1, 4 bytes fits in the value field)
         const addr = r32(page, eOff + 8);
         w32(page, eOff + 8, addr + base);
       }
     }
 
-    // "Next IFD" pointer is the 4 bytes immediately after the last entry.
     const nextPtrOff = ifdOff + 2 + nEntries * 12;
     if (i < pages.length - 1) {
       const nextIfdOff = r32(pages[i + 1], 4);
       w32(page, nextPtrOff, starts[i + 1] + nextIfdOff);
     }
-    // Last page: leave next-IFD as 0 (already zero from encodeImage).
   }
 
-  // Concatenate all patched pages into one buffer.
   const total = pages.reduce((s, p) => s + p.byteLength, 0);
   const out = new Uint8Array(total);
   let pos = 0;
@@ -229,10 +202,6 @@ function buildMultiPageTiff(pageBuffers: ArrayBuffer[]): ArrayBuffer {
   return out.buffer;
 }
 
-/**
- * Draw the page footer (separator line + "releaseCode · Page X of Y") into the
- * bottom margin of a page canvas, matching the print-view footer style.
- */
 function drawPageFooter(
   ctx: CanvasRenderingContext2D,
   pageWidth: number,
@@ -241,16 +210,11 @@ function drawPageFooter(
   pageNum: number,
   totalPages: number,
 ) {
-  // Match the 48 CSS-px padding applied to .release-content in onclone
   const margin = Math.round(48 * SCALE);
-  // Font: 8pt converted to canvas pixels at 600 DPI
   const fontSize = Math.round(8 * DPI / 72);
-  // Baseline sits 0.5" from the bottom of the page
   const baseline = pageHeightPx - Math.round(DPI * 0.5);
 
   ctx.save();
-
-  // Footer text right-aligned, monospace, #555
   ctx.font = `${fontSize}px monospace`;
   ctx.fillStyle = "#555555";
   ctx.textAlign = "right";
@@ -260,16 +224,9 @@ function drawPageFooter(
     pageWidth - margin,
     baseline,
   );
-
   ctx.restore();
 }
 
-/**
- * Encode RGBA pixel data as a Deflate-compressed TIFF (compression type 8, zlib).
- * Converts RGBA → RGB (drops alpha) and applies a horizontal differencing
- * predictor (tag 317=2) before compression to maximise deflate ratio.
- * Produces a little-endian TIFF compatible with buildMultiPageTiff.
- */
 async function encodeTiffDeflate(
   rgbaData: Uint8Array,
   w: number,
@@ -362,14 +319,34 @@ async function encodeTiffDeflate(
   return buf;
 }
 
-interface Props {
-  releaseCode?: string | null;
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 8192) {
+    binary += String.fromCharCode(...Array.from(bytes.subarray(i, i + 8192)));
+  }
+  return btoa(binary);
 }
 
-export default function ExportTiffButton({ releaseCode }: Props) {
+export default function FaxButton({
+  releaseCode,
+  defaultFaxNumber,
+  providerName,
+  releaseId,
+}: {
+  releaseCode?: string | null;
+  defaultFaxNumber?: string | null;
+  providerName?: string | null;
+  releaseId: string;
+}) {
+  const [opened, setOpened] = useState(false);
+  const [faxNumber, setFaxNumber] = useState(defaultFaxNumber?.trim() ?? "");
+  const [recipient, setRecipient] = useState(providerName ?? "");
   const [loading, setLoading] = useState(false);
 
-  const handleExport = async () => {
+  const handleSend = async () => {
+    if (!faxNumber.trim()) return;
+
     setLoading(true);
     try {
       const element = document.querySelector(".release-content") as HTMLElement | null;
@@ -382,41 +359,30 @@ export default function ExportTiffButton({ releaseCode }: Props) {
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
-        // Render at 8.5" page width so layout matches print view
         windowWidth: PRINT_WIDTH_PX,
         onclone: (clonedDoc) => {
-          // Apply print-equivalent styles
           const style = clonedDoc.createElement("style");
           style.textContent = PRINT_CSS;
           clonedDoc.head.appendChild(style);
 
-          // Pin the content element to 8.5" with 0.5" margins on each side
           const content = clonedDoc.querySelector(".release-content") as HTMLElement | null;
           if (content) {
             content.style.width = `${PRINT_WIDTH_PX}px`;
             content.style.maxWidth = `${PRINT_WIDTH_PX}px`;
-            content.style.padding = "48px"; // ≈ 0.5" at 96 DPI
+            content.style.padding = "48px";
             content.style.boxSizing = "border-box";
             content.style.background = "white";
           }
-
         },
       });
 
       const { width, height } = canvas;
       const ctx = canvas.getContext("2d")!;
 
-      // 11" page height at 600 DPI; search up to 1" upward for a whitespace cut.
       const pageHeightPx = Math.round(11 * DPI);
-      const searchWindow = Math.round(1  * DPI); // 1" = 600 canvas px
-      // Top margin injected on pages 2+ so moved elements aren't flush against the top.
-      // Matches the 48 CSS-px padding on .release-content (48 × SCALE = 300 canvas px).
+      const searchWindow = Math.round(1 * DPI);
       const topMarginPx  = Math.round(48 * SCALE);
 
-      // Compute smart page-break positions: scan upward from each ideal cut
-      // to find the nearest all-white row (gap between elements).
-      // Pages 2+ have a topMarginPx offset injected when drawing, so the usable
-      // content height is reduced by that amount to prevent overflow.
       const cuts: number[] = [];
       let scanPos = 0;
       let pageIdx = 0;
@@ -429,22 +395,16 @@ export default function ExportTiffButton({ releaseCode }: Props) {
         pageIdx++;
       }
 
-      // Build [start, end] pairs for each page slice.
       const sliceStarts = [0, ...cuts];
       const sliceEnds   = [...cuts, height];
-
       const pageBuffers: ArrayBuffer[] = [];
-
       const totalPages = sliceStarts.length;
 
       for (let i = 0; i < sliceStarts.length; i++) {
-        const yStart     = sliceStarts[i];
+        const yStart      = sliceStarts[i];
         const sliceHeight = sliceEnds[i] - yStart;
+        const topOffset   = i === 0 ? 0 : topMarginPx;
 
-        // Each output page is a full 8.5 × 11" canvas; content sits at the top
-        // and any remaining space is filled with white.
-        // Pages 2+ get a topMarginPx offset so moved elements aren't flush against the top.
-        const topOffset = i === 0 ? 0 : topMarginPx;
         const pageCanvas = document.createElement("canvas");
         pageCanvas.width  = width;
         pageCanvas.height = pageHeightPx;
@@ -453,7 +413,6 @@ export default function ExportTiffButton({ releaseCode }: Props) {
         pageCtx.fillRect(0, 0, width, pageHeightPx);
         pageCtx.drawImage(canvas, 0, yStart, width, sliceHeight, 0, topOffset, width, sliceHeight);
 
-        // Footer: release code + page number in the bottom margin
         drawPageFooter(pageCtx, width, pageHeightPx, releaseCode, i + 1, totalPages);
 
         const rgba = new Uint8Array(
@@ -463,33 +422,84 @@ export default function ExportTiffButton({ releaseCode }: Props) {
         pageBuffers.push(await encodeTiffDeflate(rgba, width, pageHeightPx, DPI));
       }
 
-      const tiff = pageBuffers.length === 1 ? pageBuffers[0] : buildMultiPageTiff(pageBuffers);
+      const tiffBuffer = pageBuffers.length === 1 ? pageBuffers[0] : buildMultiPageTiff(pageBuffers);
+      const fileData = arrayBufferToBase64(tiffBuffer);
 
-      const blob = new Blob([tiff], { type: "image/tiff" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `release-${releaseCode ?? "document"}.tiff`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const res = await fetch("/api/fax", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          faxNumber:     faxNumber.trim(),
+          recipientName: recipient.trim(),
+          fileData,
+          fileName:  `release-${releaseCode ?? "document"}.tiff`,
+          releaseId,
+        }),
+      });
+
+      if (res.ok) {
+        notifications.show({ title: "Fax sent", message: "The fax was sent successfully.", color: "green" });
+        setOpened(false);
+      } else {
+        const { error } = await res.json();
+        notifications.show({ title: "Fax failed", message: error ?? "Unknown error", color: "red" });
+      }
     } catch (err) {
-      console.error("TIFF export failed:", err);
+      console.error("Fax failed:", err);
+      notifications.show({ title: "Fax failed", message: "Unexpected error. Please try again.", color: "red" });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Button
-      variant="light"
-      leftSection={<IconFileDownload size={16} />}
-      className="no-print"
-      loading={loading}
-      onClick={handleExport}
-    >
-      Export TIFF
-    </Button>
+    <>
+      <Button
+        variant="light"
+        leftSection={<IconSend size={16} />}
+        className="no-print"
+        onClick={() => {
+          setFaxNumber(defaultFaxNumber?.trim() ?? "");
+          setRecipient(providerName ?? "");
+          setOpened(true);
+        }}
+      >
+        Fax Request
+      </Button>
+
+      <Modal
+        opened={opened}
+        onClose={() => setOpened(false)}
+        title="Send Fax"
+        centered
+      >
+        <TextInput
+          label="Recipient"
+          placeholder="Provider name"
+          value={recipient}
+          onChange={(e) => setRecipient(e.currentTarget.value)}
+          mb="sm"
+          data-autofocus
+        />
+        <TextInput
+          label="Fax number"
+          placeholder="e.g. 555-123-4567"
+          value={faxNumber}
+          onChange={(e) => setFaxNumber(e.currentTarget.value)}
+          mb="lg"
+        />
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setOpened(false)} disabled={loading}>Cancel</Button>
+          <Button
+            leftSection={<IconSend size={16} />}
+            loading={loading}
+            disabled={!faxNumber.trim()}
+            onClick={handleSend}
+          >
+            Send
+          </Button>
+        </Group>
+      </Modal>
+    </>
   );
 }

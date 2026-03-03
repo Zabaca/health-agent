@@ -14,6 +14,7 @@ A Next.js web app for managing medical record release forms across three roles: 
 - **Signature**: react-signature-canvas
 - **PII encryption**: Node.js built-in `crypto` (AES-256-GCM) for SSN, address, phone
 - **Release codes**: Short, time-based human-readable identifiers for each release form (see [Release Codes](#release-codes))
+- **Fax integration**: Faxage API — admins and agents can fax a release directly from the release view page (see [Faxage Integration](#faxage-integration))
 - **Dates**: dayjs
 - **Linter**: oxlint
 
@@ -58,6 +59,11 @@ openssl rand -hex 32
 | `AUTH_SECRET` | Yes | NextAuth.js secret — at least 32 random characters |
 | `NEXTAUTH_URL` | Yes | Base URL of the app (e.g. `http://localhost:3000`) |
 | `ENCRYPTION_KEY` | Yes | 64-character hex string (32 bytes) used to AES-256-GCM encrypt PII fields (SSN, address, phone) |
+| `FAXAGE_USERNAME` | No* | Faxage account username |
+| `FAXAGE_COMPANY` | No* | Faxage company identifier |
+| `FAXAGE_PASSWORD` | No* | Faxage account password |
+
+> \* Required to send faxes. The app runs without them, but clicking **Fax Request** will fail until all three are set.
 
 ### 3. Set up the database
 
@@ -97,6 +103,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 6. **My Providers** (`/my-providers`) — manage a saved list of healthcare providers
 7. **New Release** (`/releases/new`) — submit a medical record release form with provider entries and a drawn signature
 
+The release view pages for **agents** and **admins** share a common set of actions available when the release is not voided:
+
+- **Fax Request** — opens a modal pre-filled with the first provider's name and fax number (both editable). On send, the release is rendered as a Deflate-compressed TIFF and transmitted to the provider via the Faxage API. Every attempt (success or failure) is recorded in the **Release Request History** table at the bottom of the page.
+- **Export TIFF** — downloads a multi-page, Deflate-compressed TIFF of the release at 600 DPI, with smart page breaks and a footer showing the release code and page number.
+- **Print** — opens the browser print dialog.
+- **Void Release** — irreversibly voids the release (staff only).
+
 ### Agent (`/agent/`)
 
 - Dashboard lists assigned patients
@@ -129,6 +142,47 @@ return timePart + randomPart;
 - **Unique** — enforced at the database level via a `UNIQUE` index on the `releaseCode` column.
 
 Codes are stored on the `Release` row, displayed in the Authorization section of every release view/print page, and used by the admin and agent lookup pages to quickly retrieve a specific release.
+
+---
+
+## Faxage Integration
+
+Admins and agents can fax a release record directly from the release view page using the [Faxage](https://www.faxage.com) HTTP API.
+
+### How it works
+
+1. Click **Fax Request** on any non-voided release.
+2. A modal pre-fills the recipient name and fax number from the first provider on the release (both are editable before sending).
+3. The release page is rendered to canvas via `html2canvas`, split into 8.5×11" pages at 600 DPI, and encoded as a Deflate-compressed TIFF (browser-native `CompressionStream` — no extra dependencies).
+4. The TIFF is base64-encoded and POSTed to `/api/fax`, which forwards it to `https://api.faxage.com/httpsfax.php`.
+5. Every attempt — success or failure — is logged to the `ReleaseRequestLog` table and displayed in the **Release Request History** section at the bottom of the release page.
+
+### Configuration
+
+Add the following to your `.env`:
+
+```env
+FAXAGE_USERNAME="your-faxage-username"
+FAXAGE_COMPANY="your-faxage-company"
+FAXAGE_PASSWORD="your-faxage-password"
+```
+
+### Database
+
+The `ReleaseRequestLog` table stores:
+
+| Column | Description |
+|--------|-------------|
+| `id` | UUID primary key |
+| `releaseId` | Foreign key → `Release` (cascade delete) |
+| `type` | `"fax"` (extensible for future send types) |
+| `service` | `"faxage"` |
+| `status` | `"success"` or `"failed"` |
+| `faxNumber` | Destination fax number |
+| `recipientName` | Provider name used as the fax recipient |
+| `apiResponse` | Raw response string from Faxage (always recorded) |
+| `error` | Boolean — `true` if Faxage returned an error or the request threw |
+| `createdAt` | ISO timestamp |
 
 ---
 
@@ -173,13 +227,15 @@ src/
 │   │   └── change-password
 │   ├── (agent)/agent/          # Agent-only pages (mirrors admin)
 │   │   └── releases/lookup     # Look up assigned-patient releases by code
-│   └── api/                    # API routes (ts-rest contract handlers)
+│   └── api/
+│       ├── fax/route.ts        # POST /api/fax — calls Faxage, logs result to ReleaseRequestLog
+│       └── ...                 # ts-rest contract handlers
 ├── components/
 │   ├── auth/                   # LoginForm, RegisterForm
 │   ├── dashboard/              # ReleaseList, scheduled call cards
 │   ├── layout/                 # AppShell, Sidebar (role-aware)
 │   ├── release-form/           # Form sections and field components
-│   └── release-view/           # Read-only view, DeleteReleaseButton
+│   └── release-view/           # Read-only view, ExportTiffButton, FaxButton, PrintButton
 ├── lib/
 │   ├── api/
 │   │   ├── contract.ts         # ts-rest API contract definition
