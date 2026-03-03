@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { releases as releasesTable, providers as providersTable, patientAssignments, releaseRequestLog } from "@/lib/db/schema";
+import { releases as releasesTable, providers as providersTable, patientAssignments, releaseRequestLog, users } from "@/lib/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Divider,
@@ -54,6 +54,10 @@ export default async function AgentReleaseViewPage({
 
   if (!release) notFound();
 
+  const agentUser = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+  });
+
   const requestLogs = await db
     .select()
     .from(releaseRequestLog)
@@ -89,6 +93,10 @@ export default async function AgentReleaseViewPage({
               releaseCode={release.releaseCode}
               defaultFaxNumber={release.providers[0]?.fax ?? null}
               providerName={release.providers[0]?.providerName ?? null}
+              patientName={[release.firstName, release.lastName].filter(Boolean).join(" ")}
+              agentName={[agentUser?.firstName, agentUser?.lastName].filter(Boolean).join(" ") || null}
+              agentEmail={agentUser?.email ?? null}
+              agentPhone={agentUser?.phoneNumber ?? null}
             />
             <ExportTiffButton releaseCode={release.releaseCode} />
             <PrintButton releaseCode={release.releaseCode} />

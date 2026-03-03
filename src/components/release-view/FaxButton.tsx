@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Group, Modal, Stack, Text, TextInput, ThemeIcon } from "@mantine/core";
+import { Button, Group, Modal, Stack, Text, Textarea, TextInput, ThemeIcon } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconSend } from "@tabler/icons-react";
 
@@ -91,6 +91,102 @@ const PRINT_CSS = `
 
   div:has(> .section-patient-info) { gap: 10px !important; }
 `;
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildCoverLetterHtml({
+  today,
+  recipient,
+  faxNumber,
+  agentName,
+  agentEmail,
+  agentPhone,
+  patientName,
+  comment,
+  totalPages,
+}: {
+  today: string;
+  recipient: string;
+  faxNumber: string;
+  agentName?: string | null;
+  agentEmail?: string | null;
+  agentPhone?: string | null;
+  patientName?: string | null;
+  comment: string;
+  totalPages: number;
+}): string {
+  const fromLines = [agentName || "—", agentEmail, agentPhone]
+    .filter((v): v is string => !!v)
+    .map(escapeHtml)
+    .join("<br>");
+
+  const commentRow = comment.trim()
+    ? `<tr><td style="font-weight:bold;width:120px;padding:8px 0;vertical-align:top">COMMENTS:</td><td style="padding:8px 0;white-space:pre-wrap">${escapeHtml(comment.trim())}</td></tr>`
+    : "";
+
+  return `
+    <div style="width:816px;background:white;padding:48px;box-sizing:border-box;font-family:Arial,sans-serif;font-size:12pt;color:#000">
+      <div style="background:#1e3a5f;color:white;padding:16px 24px;margin:-48px -48px 32px;font-size:18pt;font-weight:bold;letter-spacing:0.05em">
+        RELEASE REQUEST
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:32px">
+        <tr><td style="font-weight:bold;width:120px;padding:8px 0;vertical-align:top">DATE:</td><td style="padding:8px 0">${escapeHtml(today)}</td></tr>
+        <tr><td style="font-weight:bold;padding:8px 0;vertical-align:top">TOTAL PAGES:</td><td style="padding:8px 0">${totalPages}</td></tr>
+        <tr><td style="font-weight:bold;padding:8px 0;vertical-align:top">TO:</td><td style="padding:8px 0">${escapeHtml(recipient || "—")}<br>${escapeHtml(faxNumber)}</td></tr>
+        <tr><td style="font-weight:bold;padding:8px 0;vertical-align:top">FROM:</td><td style="padding:8px 0">${fromLines}</td></tr>
+        <tr><td style="font-weight:bold;padding:8px 0;vertical-align:top">PATIENT:</td><td style="padding:8px 0">${escapeHtml(patientName || "—")}</td></tr>
+        ${commentRow}
+      </table>
+      <hr style="border:none;border-top:2px solid #1e3a5f;margin-bottom:32px">
+      <p style="font-size:9pt;color:#444;line-height:1.6;font-style:italic">
+        CONFIDENTIALITY NOTICE: The documents accompanying this facsimile transmission contain confidential information, belonging to the sender, that is legally privileged. This information is intended only for the use of the individual or entity named above. If you are not the intended recipient, you are hereby notified that any disclosure, copying, distribution, or action taken in reliance on the contents of these documents is strictly prohibited. If you have received this transmission in error, please notify us immediately by telephone and destroy the original documents.
+      </p>
+    </div>
+  `;
+}
+
+function splitCanvasIntoPageCanvases(canvas: HTMLCanvasElement): HTMLCanvasElement[] {
+  const { width, height } = canvas;
+  const ctx = canvas.getContext("2d")!;
+  const pageHeightPx = Math.round(11 * DPI);
+  const searchWindow = Math.round(1 * DPI);
+  const topMarginPx  = Math.round(48 * SCALE);
+
+  const cuts: number[] = [];
+  let scanPos = 0;
+  let pageIdx = 0;
+  while (scanPos + pageHeightPx < height) {
+    const usable = pageIdx === 0 ? pageHeightPx : pageHeightPx - topMarginPx;
+    const ideal  = scanPos + usable;
+    const cut    = findBestCut(ctx, width, ideal, searchWindow);
+    cuts.push(cut);
+    scanPos = cut;
+    pageIdx++;
+  }
+
+  const sliceStarts = [0, ...cuts];
+  const sliceEnds   = [...cuts, height];
+
+  return sliceStarts.map((yStart, i) => {
+    const sliceHeight = sliceEnds[i] - yStart;
+    const topOffset   = i === 0 ? 0 : topMarginPx;
+
+    const pageCanvas = document.createElement("canvas");
+    pageCanvas.width  = width;
+    pageCanvas.height = pageHeightPx;
+    const pageCtx = pageCanvas.getContext("2d")!;
+    pageCtx.fillStyle = "#ffffff";
+    pageCtx.fillRect(0, 0, width, pageHeightPx);
+    pageCtx.drawImage(canvas, 0, yStart, width, sliceHeight, 0, topOffset, width, sliceHeight);
+    return pageCanvas;
+  });
+}
 
 function findBestCut(
   ctx: CanvasRenderingContext2D,
@@ -333,15 +429,24 @@ export default function FaxButton({
   defaultFaxNumber,
   providerName,
   releaseId,
+  agentName,
+  agentEmail,
+  agentPhone,
+  patientName,
 }: {
   releaseCode?: string | null;
   defaultFaxNumber?: string | null;
   providerName?: string | null;
   releaseId: string;
+  agentName?: string | null;
+  agentEmail?: string | null;
+  agentPhone?: string | null;
+  patientName?: string | null;
 }) {
   const [opened, setOpened] = useState(false);
   const [faxNumber, setFaxNumber] = useState(defaultFaxNumber?.trim() ?? "");
   const [recipient, setRecipient] = useState(providerName ?? "");
+  const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
 
   const faxDigits = faxNumber.replace(/\D/g, "");
@@ -360,7 +465,41 @@ export default function FaxButton({
 
       const { default: html2canvas } = await import("html2canvas");
 
-      const canvas = await html2canvas(element, {
+      const today = new Date().toLocaleString("en-US", {
+        year: "numeric", month: "long", day: "numeric",
+        hour: "numeric", minute: "2-digit", hour12: true,
+        timeZone: "UTC", timeZoneName: "short",
+      });
+
+      const coverHtmlOptions = {
+        today,
+        recipient: recipient.trim(),
+        faxNumber: faxNumber.trim(),
+        agentName,
+        agentEmail,
+        agentPhone,
+        patientName,
+        comment,
+      };
+
+      const captureCover = async (pages: number) => {
+        const wrapper = document.createElement("div");
+        wrapper.style.cssText = "position:fixed;left:-9999px;top:0;";
+        wrapper.innerHTML = buildCoverLetterHtml({ ...coverHtmlOptions, totalPages: pages });
+        document.body.appendChild(wrapper);
+        const canvas = await html2canvas(wrapper.firstElementChild as HTMLElement, {
+          scale: SCALE,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          windowWidth: PRINT_WIDTH_PX,
+        });
+        document.body.removeChild(wrapper);
+        return canvas;
+      };
+
+      // Capture release content first so we know its page count
+      const contentCanvas = await html2canvas(element, {
         scale: SCALE,
         useCORS: true,
         backgroundColor: "#ffffff",
@@ -381,54 +520,37 @@ export default function FaxButton({
           }
         },
       });
+      const contentPageCanvases = splitCanvasIntoPageCanvases(contentCanvas);
 
-      const { width, height } = canvas;
-      const ctx = canvas.getContext("2d")!;
+      // First cover pass: count how many pages the cover itself takes
+      const coverCountCanvas = await captureCover(0);
+      const coverPageCount = splitCanvasIntoPageCanvases(coverCountCanvas).length;
 
-      const pageHeightPx = Math.round(11 * DPI);
-      const searchWindow = Math.round(1 * DPI);
-      const topMarginPx  = Math.round(48 * SCALE);
+      // Now we know the real total — render cover again with the correct number
+      const totalPages = coverPageCount + contentPageCanvases.length;
+      const coverCanvas = await captureCover(totalPages);
+      const coverPageCanvases = splitCanvasIntoPageCanvases(coverCanvas);
 
-      const cuts: number[] = [];
-      let scanPos = 0;
-      let pageIdx = 0;
-      while (scanPos + pageHeightPx < height) {
-        const usable = pageIdx === 0 ? pageHeightPx : pageHeightPx - topMarginPx;
-        const ideal  = scanPos + usable;
-        const cut    = findBestCut(ctx, width, ideal, searchWindow);
-        cuts.push(cut);
-        scanPos = cut;
-        pageIdx++;
+      // Draw footers and encode all pages
+      const allPageBuffers: ArrayBuffer[] = [];
+
+      for (let i = 0; i < coverPageCanvases.length; i++) {
+        const pc = coverPageCanvases[i];
+        const ctx = pc.getContext("2d")!;
+        drawPageFooter(ctx, pc.width, pc.height, releaseCode, i + 1, totalPages);
+        const rgba = new Uint8Array(ctx.getImageData(0, 0, pc.width, pc.height).data.buffer);
+        allPageBuffers.push(await encodeTiffDeflate(rgba, pc.width, pc.height, DPI));
       }
 
-      const sliceStarts = [0, ...cuts];
-      const sliceEnds   = [...cuts, height];
-      const pageBuffers: ArrayBuffer[] = [];
-      const totalPages = sliceStarts.length;
-
-      for (let i = 0; i < sliceStarts.length; i++) {
-        const yStart      = sliceStarts[i];
-        const sliceHeight = sliceEnds[i] - yStart;
-        const topOffset   = i === 0 ? 0 : topMarginPx;
-
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width  = width;
-        pageCanvas.height = pageHeightPx;
-        const pageCtx = pageCanvas.getContext("2d")!;
-        pageCtx.fillStyle = "#ffffff";
-        pageCtx.fillRect(0, 0, width, pageHeightPx);
-        pageCtx.drawImage(canvas, 0, yStart, width, sliceHeight, 0, topOffset, width, sliceHeight);
-
-        drawPageFooter(pageCtx, width, pageHeightPx, releaseCode, i + 1, totalPages);
-
-        const rgba = new Uint8Array(
-          pageCtx.getImageData(0, 0, width, pageHeightPx).data.buffer
-        );
-
-        pageBuffers.push(await encodeTiffDeflate(rgba, width, pageHeightPx, DPI));
+      for (let i = 0; i < contentPageCanvases.length; i++) {
+        const pc = contentPageCanvases[i];
+        const ctx = pc.getContext("2d")!;
+        drawPageFooter(ctx, pc.width, pc.height, releaseCode, coverPageCanvases.length + i + 1, totalPages);
+        const rgba = new Uint8Array(ctx.getImageData(0, 0, pc.width, pc.height).data.buffer);
+        allPageBuffers.push(await encodeTiffDeflate(rgba, pc.width, pc.height, DPI));
       }
 
-      const tiffBuffer = pageBuffers.length === 1 ? pageBuffers[0] : buildMultiPageTiff(pageBuffers);
+      const tiffBuffer = allPageBuffers.length === 1 ? allPageBuffers[0] : buildMultiPageTiff(allPageBuffers);
       const fileData = arrayBufferToBase64(tiffBuffer);
 
       const res = await fetch("/api/fax", {
@@ -467,6 +589,7 @@ export default function FaxButton({
         onClick={() => {
           setFaxNumber(defaultFaxNumber?.trim() ?? "");
           setRecipient(providerName ?? "");
+          setComment("");
           setOpened(true);
         }}
       >
@@ -516,6 +639,15 @@ export default function FaxButton({
           value={faxNumber}
           onChange={(e) => setFaxNumber(e.currentTarget.value)}
           error={faxError}
+          mb="sm"
+        />
+        <Textarea
+          label="Comment / Additional Details"
+          placeholder="Optional notes for the recipient..."
+          value={comment}
+          onChange={(e) => setComment(e.currentTarget.value)}
+          autosize
+          minRows={3}
           mb="lg"
         />
         <Group justify="flex-end">

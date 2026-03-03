@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { releases as releasesTable, providers as providersTable, releaseRequestLog } from "@/lib/db/schema";
+import { releases as releasesTable, providers as providersTable, releaseRequestLog, users } from "@/lib/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Divider,
@@ -34,7 +34,7 @@ export default async function AdminReleaseViewPage({
 }: {
   params: Promise<{ id: string; releaseId: string }>;
 }) {
-  await auth();
+  const session = await auth();
   const { id: patientId, releaseId } = await params;
 
   const release = await db.query.releases.findFirst({
@@ -43,6 +43,10 @@ export default async function AdminReleaseViewPage({
   });
 
   if (!release) notFound();
+
+  const adminUser = session?.user?.id
+    ? await db.query.users.findFirst({ where: eq(users.id, session.user.id) })
+    : null;
 
   const requestLogs = await db
     .select()
@@ -79,6 +83,10 @@ export default async function AdminReleaseViewPage({
               releaseCode={release.releaseCode}
               defaultFaxNumber={release.providers[0]?.fax ?? null}
               providerName={release.providers[0]?.providerName ?? null}
+              patientName={[release.firstName, release.lastName].filter(Boolean).join(" ")}
+              agentName={[adminUser?.firstName, adminUser?.lastName].filter(Boolean).join(" ") || null}
+              agentEmail={adminUser?.email ?? null}
+              agentPhone={adminUser?.phoneNumber ?? null}
             />
             <ExportTiffButton releaseCode={release.releaseCode} />
             <PrintButton releaseCode={release.releaseCode} />
