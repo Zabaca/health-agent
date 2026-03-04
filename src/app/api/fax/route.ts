@@ -34,18 +34,21 @@ export async function POST(req: Request) {
       body: params.toString(),
     });
     apiResponse = await res.text();
-    // Faxage returns "JOBID\n<id>" on success, "ERROR\n<detail>" on failure
-    if (apiResponse.startsWith("ERROR")) {
-      isError = true;
-    } else {
-      status = "success";
-    }
     httpResponse = JSON.stringify({
       status:     res.status,
       statusText: res.statusText,
       headers:    Object.fromEntries(res.headers.entries()),
       body:       apiResponse,
     });
+    // Faxage always returns HTTP 200; detect errors by body prefix (ERRxx:)
+    if (!res.ok || /^ERR\d+:/.test(apiResponse.trim())) {
+      isError = true;
+    } else if (apiResponse.trim().startsWith("JOBID:")) {
+      status = "success";
+    } else {
+      // Unexpected body format — treat as error
+      isError = true;
+    }
   } catch (err) {
     isError = true;
     apiResponse = err instanceof Error ? err.message : String(err);
