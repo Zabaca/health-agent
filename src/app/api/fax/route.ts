@@ -20,6 +20,9 @@ export async function POST(req: Request) {
     recipname:         recipientName ?? "Medical Records",
     "faxfilenames[0]": fileName,
     "faxfiledata[0]":  fileData,
+    tagname:           " ",
+    tagnumber:         " ",
+    callerid:          " ",
   });
 
   let status: "success" | "failed" = "failed";

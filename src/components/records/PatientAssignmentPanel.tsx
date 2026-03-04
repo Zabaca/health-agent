@@ -53,7 +53,12 @@ export default function PatientAssignmentPanel({
     try {
       const params = new URLSearchParams();
       if (name) params.set('name', name);
-      if (dob) params.set('dob', dob.toISOString().split('T')[0]);
+      if (dob) {
+        const mm = String(dob.getMonth() + 1).padStart(2, '0');
+        const dd = String(dob.getDate()).padStart(2, '0');
+        const yyyy = dob.getFullYear();
+        params.set('dob', `${mm}/${dd}/${yyyy}`);
+      }
       if (ssnLast4) params.set('ssn', ssnLast4);
 
       const res = await fetch(`${searchUrl}?${params.toString()}`);

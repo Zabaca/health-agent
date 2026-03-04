@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Modal, Group, ActionIcon, Text, Center, Loader, Tooltip } from '@mantine/core';
-import { IconChevronLeft, IconChevronRight, IconZoomIn, IconZoomOut, IconZoomReset } from '@tabler/icons-react';
+import { Modal, Group, ActionIcon, Text, Center, Loader, Tooltip, Stack, ThemeIcon, Divider, Paper } from '@mantine/core';
+import { IconChevronLeft, IconChevronRight, IconZoomIn, IconZoomOut, IconZoomReset, IconFileText } from '@tabler/icons-react';
 import UTIF from 'utif';
 
 interface TiffModalProps {
@@ -19,15 +19,14 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
   const canvasRef    = useRef<HTMLCanvasElement>(null);
   const scrollRef    = useRef<HTMLDivElement>(null);
   const dragState    = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
-  const [ifds, setIfds]     = useState<UTIF.IFD[]>([]);
-  const [buffer, setBuffer] = useState<ArrayBuffer | null>(null);
-  const [page, setPage]     = useState(0);
-  const [zoom, setZoom]     = useState(1);
-  const [fitZoom, setFitZoom] = useState(1); // zoom level that fits modal width
+  const [ifds, setIfds]       = useState<UTIF.IFD[]>([]);
+  const [buffer, setBuffer]   = useState<ArrayBuffer | null>(null);
+  const [page, setPage]       = useState(0);
+  const [zoom, setZoom]       = useState(1);
+  const [fitZoom, setFitZoom] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
 
-  // Load all pages when modal opens
   useEffect(() => {
     if (!opened) return;
     let cancelled = false;
@@ -44,7 +43,6 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
         for (const ifd of decoded) UTIF.decodeImage(buf, ifd);
         if (cancelled) return;
 
-        // Compute fit-to-width zoom from available container width
         const containerWidth = scrollRef.current?.clientWidth ?? 700;
         const pageWidth = decoded[0]?.width ?? 1;
         const fit = Math.min(1, containerWidth / pageWidth);
@@ -64,7 +62,6 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
     return () => { cancelled = true; };
   }, [filePath, opened]);
 
-  // Draw current page onto canvas at natural resolution
   useEffect(() => {
     if (!canvasRef.current || !ifds.length || !buffer) return;
     const ifd = ifds[page];
@@ -81,8 +78,6 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
 
   const totalPages = ifds.length;
   const ifd        = ifds[page];
-
-  // 100% = natural pixel dimensions of the document
   const displayPct = Math.round(zoom * 100);
 
   const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -110,63 +105,106 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
   }, []);
 
   return (
-    <Modal opened={opened} onClose={onClose} size="xl" title="Document" centered>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size="xl"
+      centered
+      withCloseButton
+      styles={{
+        content: { overflow: 'hidden' },
+        header: {
+          background: 'linear-gradient(135deg, var(--mantine-primary-color-9) 0%, var(--mantine-primary-color-7) 100%)',
+          padding: 'var(--mantine-spacing-lg)',
+        },
+        title: { width: '100%' },
+        close: { color: 'white', opacity: 0.8 },
+      }}
+      title={
+        <Group gap="md" align="center">
+          <ThemeIcon size={42} radius="xl" color="white" variant="white"
+            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+            <IconFileText size={22} color="var(--mantine-primary-color-7)" />
+          </ThemeIcon>
+          <Stack gap={0}>
+            <Text fw={700} size="lg" c="white">Document Viewer</Text>
+            <Text size="xs" c="rgba(255,255,255,0.75)">
+              {totalPages > 0 ? `${totalPages} page${totalPages !== 1 ? 's' : ''}` : 'Loading…'}
+            </Text>
+          </Stack>
+        </Group>
+      }
+    >
       {loading && <Center py="xl"><Loader size="sm" /></Center>}
-      {error   && <Text c="red" size="sm">{error}</Text>}
+      {error   && <Text c="red" size="sm" p="md">{error}</Text>}
 
       {!loading && !error && totalPages > 0 && (
-        <>
+        <Stack gap="sm" pt="sm">
           {/* Toolbar */}
-          <Group justify="space-between" mb="sm">
-            <Group gap="xs">
-              <ActionIcon variant="subtle" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-                <IconChevronLeft size={16} />
-              </ActionIcon>
-              <Text size="sm">Page {page + 1} of {totalPages}</Text>
-              <ActionIcon variant="subtle" disabled={page === totalPages - 1} onClick={() => setPage(p => p + 1)}>
-                <IconChevronRight size={16} />
-              </ActionIcon>
-            </Group>
+          <Paper withBorder radius="sm" px="sm" py={6}>
+            <Group justify="space-between">
+              {/* Pagination */}
+              <Group gap={4}>
+                <ActionIcon variant="subtle" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                  <IconChevronLeft size={16} />
+                </ActionIcon>
+                <Text size="sm" w={90} ta="center">
+                  Page {page + 1} of {totalPages}
+                </Text>
+                <ActionIcon variant="subtle" disabled={page === totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                  <IconChevronRight size={16} />
+                </ActionIcon>
+              </Group>
 
-            <Group gap="xs">
-              <Tooltip label="Zoom out">
-                <ActionIcon
-                  variant="subtle"
-                  disabled={zoom <= ZOOM_MIN}
-                  onClick={() => setZoom(z => Math.max(ZOOM_MIN, parseFloat((z - ZOOM_STEP).toFixed(2))))}
-                >
-                  <IconZoomOut size={16} />
-                </ActionIcon>
-              </Tooltip>
-              <Text size="sm" w={52} ta="center">{displayPct}%</Text>
-              <Tooltip label="Zoom in">
-                <ActionIcon
-                  variant="subtle"
-                  disabled={zoom >= ZOOM_MAX}
-                  onClick={() => setZoom(z => Math.min(ZOOM_MAX, parseFloat((z + ZOOM_STEP).toFixed(2))))}
-                >
-                  <IconZoomIn size={16} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Actual size (100%)">
-                <ActionIcon variant="subtle" onClick={() => setZoom(1)}>
-                  <IconZoomReset size={16} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-          </Group>
+              <Divider orientation="vertical" />
 
-          {/* Scrollable canvas area */}
+              {/* Zoom */}
+              <Group gap={4}>
+                <Tooltip label="Zoom out" withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    disabled={zoom <= ZOOM_MIN}
+                    onClick={() => setZoom(z => Math.max(ZOOM_MIN, parseFloat((z - ZOOM_STEP).toFixed(2))))}
+                  >
+                    <IconZoomOut size={16} />
+                  </ActionIcon>
+                </Tooltip>
+                <Text size="sm" w={52} ta="center" ff="monospace">{displayPct}%</Text>
+                <Tooltip label="Zoom in" withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    disabled={zoom >= ZOOM_MAX}
+                    onClick={() => setZoom(z => Math.min(ZOOM_MAX, parseFloat((z + ZOOM_STEP).toFixed(2))))}
+                  >
+                    <IconZoomIn size={16} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Fit to width" withArrow>
+                  <ActionIcon variant="subtle" onClick={() => setZoom(fitZoom)}>
+                    <IconZoomReset size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            </Group>
+          </Paper>
+
+          {/* Canvas area */}
           <div
             ref={scrollRef}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
             onMouseUp={onMouseUp}
             onMouseLeave={onMouseUp}
-            style={{ overflow: 'auto', maxHeight: '70vh', background: '#f0f0f0', borderRadius: 4, padding: 8, cursor: 'grab' }}
+            style={{
+              overflow: 'auto',
+              maxHeight: '68vh',
+              background: '#e8e8e8',
+              borderRadius: 6,
+              padding: 12,
+              cursor: 'grab',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+            }}
           >
-            {/* width:fit-content + margin:auto centers when smaller than container,
-                but left-aligns when wider so the scroll origin stays at the left edge */}
             <div style={{ width: 'fit-content', margin: '0 auto' }}>
               <canvas
                 ref={canvasRef}
@@ -174,11 +212,12 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
                   display: 'block',
                   width:  ifd ? ifd.width  * zoom : undefined,
                   height: ifd ? ifd.height * zoom : undefined,
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
                 }}
               />
             </div>
           </div>
-        </>
+        </Stack>
       )}
     </Modal>
   );
