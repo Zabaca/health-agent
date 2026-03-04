@@ -1,0 +1,1 @@
+ALTER TABLE `IncomingFaxLog` ADD `rawBody` text;

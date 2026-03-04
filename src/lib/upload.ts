@@ -23,3 +23,17 @@ export async function saveFile(
 
   return `/uploads/${filename}`;
 }
+
+export async function saveBuffer(
+  data: Buffer | Uint8Array,
+  extension: string
+): Promise<string> {
+  await mkdir(UPLOAD_DIR, { recursive: true });
+
+  const filename = `${uuidv4()}.${extension}`;
+  const filepath = path.join(UPLOAD_DIR, filename);
+
+  await writeFile(filepath, data instanceof Buffer ? data : Buffer.from(data));
+
+  return `/uploads/${filename}`;
+}

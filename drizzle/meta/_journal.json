@@ -57,6 +57,27 @@
       "when": 1772566740994,
       "tag": "0007_giant_lilandra",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1772589621589,
+      "tag": "0008_bent_slayback",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1772598194583,
+      "tag": "0009_old_barracuda",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1772630062666,
+      "tag": "0010_smart_morgan_stark",
+      "breakpoints": true
     }
   ]
 }

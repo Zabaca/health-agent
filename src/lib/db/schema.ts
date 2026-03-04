@@ -123,6 +123,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   staffAssignments: many(patientAssignments, { relationName: 'staffAssignment' }),
   scheduledCallsAsPatient: many(scheduledCalls, { relationName: 'scheduledCallPatient' }),
   scheduledCallsAsAgent: many(scheduledCalls, { relationName: 'scheduledCallAgent' }),
+  incomingFiles: many(incomingFiles),
 }));
 
 export const releasesRelations = relations(releases, ({ one, many }) => ({
@@ -182,4 +183,38 @@ export const releaseRequestLog = sqliteTable('ReleaseRequestLog', {
 
 export const releaseRequestLogRelations = relations(releaseRequestLog, ({ one }) => ({
   release: one(releases, { fields: [releaseRequestLog.releaseId], references: [releases.id] }),
+}));
+
+export const incomingFaxLog = sqliteTable('IncomingFaxLog', {
+  id:        text('id').primaryKey(),
+  recvid:    text('recvid').notNull().unique(),
+  recvdate:  text('recvdate').notNull(),
+  starttime: text('starttime').notNull(),
+  cid:       text('cid'),
+  dnis:      text('dnis'),
+  pagecount: integer('pagecount'),
+  tsid:      text('tsid'),
+  status:    text('status', { enum: ['pending', 'retrieved', 'failed'] }).notNull().default('pending'),
+  filename:  text('filename'),
+  rawBody:   text('rawBody'),
+  createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const incomingFiles = sqliteTable('IncomingFile', {
+  id:               text('id').primaryKey(),
+  filePath:         text('filePath').notNull(),
+  fileType:         text('fileType').notNull(),
+  source:           text('source').notNull().default('fax'),
+  incomingFaxLogId: text('incomingFaxLogId').references(() => incomingFaxLog.id),
+  patientId:        text('patientId').references(() => users.id),
+  createdAt:        text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const incomingFaxLogRelations = relations(incomingFaxLog, ({ many }) => ({
+  files: many(incomingFiles),
+}));
+
+export const incomingFilesRelations = relations(incomingFiles, ({ one }) => ({
+  faxLog: one(incomingFaxLog, { fields: [incomingFiles.incomingFaxLogId], references: [incomingFaxLog.id] }),
+  patient: one(users, { fields: [incomingFiles.patientId], references: [users.id] }),
 }));
