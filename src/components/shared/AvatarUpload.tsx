@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import { Avatar, ActionIcon, Box, Loader } from "@mantine/core";
 import { IconCamera } from "@tabler/icons-react";
-import { apiClient } from "@/lib/api/client";
 
 interface AvatarUploadProps {
   value?: string | null;
@@ -18,6 +17,26 @@ function getInitials(name?: string): string {
   return ((parts[0][0] ?? "") + (parts[parts.length - 1][0] ?? "")).toUpperCase();
 }
 
+async function uploadToTransloadit(file: File): Promise<string> {
+  const sigRes = await fetch("/api/transloadit/signature");
+  if (!sigRes.ok) throw new Error("Failed to get upload signature");
+  const { params, signature } = await sigRes.json();
+
+  const formData = new FormData();
+  formData.append("params", params);
+  formData.append("signature", signature);
+  formData.append("file", file);
+
+  const res = await fetch("https://api2.transloadit.com/assemblies?wait=true", {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json();
+  const url = data.uploads?.[0]?.ssl_url;
+  if (!url) throw new Error("No URL returned from upload");
+  return url;
+}
+
 export default function AvatarUpload({ value, onChange, name }: AvatarUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -25,25 +44,14 @@ export default function AvatarUpload({ value, onChange, name }: AvatarUploadProp
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const dataUrl = ev.target?.result as string;
-      const extension = file.name.split(".").pop() ?? "jpg";
-
-      setUploading(true);
-      try {
-        const result = await apiClient.upload({ body: { data: dataUrl, extension } });
-        if (result.status === 200) {
-          onChange(result.body.url);
-        }
-      } finally {
-        setUploading(false);
-        // Reset input so same file can be selected again
-        e.target.value = "";
-      }
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+    try {
+      const url = await uploadToTransloadit(file);
+      onChange(url);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
   };
 
   return (
@@ -62,12 +70,7 @@ export default function AvatarUpload({ value, onChange, name }: AvatarUploadProp
         radius="50%"
         variant="filled"
         color="gray"
-        style={{
-          position: "absolute",
-          bottom: 0,
-          right: 0,
-          pointerEvents: uploading ? "none" : "auto",
-        }}
+        style={{ position: "absolute", bottom: 0, right: 0, pointerEvents: uploading ? "none" : "auto" }}
         onClick={() => !uploading && inputRef.current?.click()}
         aria-label="Upload avatar"
       >

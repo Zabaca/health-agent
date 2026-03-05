@@ -65,7 +65,7 @@ export const POST = contractRoute(contract.admin.patientReleases.create, async (
 
         const [insertedProvider] = await tx
           .insert(providersTable)
-          .values({ id: crypto.randomUUID(), releaseId, order: 0, ...provider })
+          .values({ id: crypto.randomUUID(), releaseId, order: 0, ...provider, providerName: provider.providerName ?? "" })
           .returning();
 
         results.push({ ...newRelease, providers: [insertedProvider] });

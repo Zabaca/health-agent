@@ -23,9 +23,10 @@ export async function POST(req: Request) {
     tagname:           " ",
     tagnumber:         " ",
     callerid:          " ",
+    url_notify:        process.env.FAXAGE_NOTIFY_URL!,
   });
 
-  let status: "success" | "failed" = "failed";
+  let status: "success" | "failed" | "awaiting_confirmation" = "failed";
   let apiResponse: string | null = null;
   let httpResponse: string | null = null;
   let isError = false;
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
     if (!res.ok || /^ERR\d+:/.test(apiResponse.trim())) {
       isError = true;
     } else if (apiResponse.trim().startsWith("JOBID:")) {
-      status = "success";
+      status = "awaiting_confirmation";
     } else {
       // Unexpected body format — treat as error
       isError = true;

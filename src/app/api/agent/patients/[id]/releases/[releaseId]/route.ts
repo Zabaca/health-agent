@@ -84,6 +84,7 @@ export const PUT = contractRoute(contract.agent.patientReleases.update, async ({
                 id: crypto.randomUUID(),
                 releaseId: params.releaseId,
                 ...p,
+                providerName: p.providerName ?? "",
                 order: i,
               }))
             )

@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
+experimental: {
     serverComponentsExternalPackages: ["bcryptjs", "@libsql/client"],
   },
 };

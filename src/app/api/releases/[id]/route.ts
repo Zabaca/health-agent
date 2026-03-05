@@ -60,6 +60,7 @@ export const PUT = contractRoute(contract.releases.update, async ({ params, body
                 id: crypto.randomUUID(),
                 releaseId: params.id,
                 ...p,
+                providerName: p.providerName ?? "",
                 order: i,
               }))
             )

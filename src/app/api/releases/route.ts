@@ -60,7 +60,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
 
         const [insertedProvider] = await tx
           .insert(providersTable)
-          .values({ id: crypto.randomUUID(), releaseId, order: 0, ...provider })
+          .values({ id: crypto.randomUUID(), releaseId, order: 0, ...provider, providerName: provider.providerName ?? "" })
           .returning();
 
         results.push({ ...newRelease, providers: [insertedProvider] });
@@ -101,6 +101,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
                 id: crypto.randomUUID(),
                 userId,
                 ...providerInfo,
+                providerName: providerInfo.providerName ?? "",
                 order: i,
               };
             })

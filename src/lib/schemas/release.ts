@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 const providerBaseShape = {
-  providerName: z.string().min(1, "Provider name is required"),
-  providerType: z.enum(["Medical Group", "Hospital", "Clinic", "Facility"], {
+  providerName: z.string().optional(),
+  providerType: z.enum(["Insurance", "Medical Group", "Hospital", "Clinic", "Facility"], {
     errorMap: () => ({ message: "Please select a provider type" }),
   }),
   physicianName: z.string().optional(),
@@ -33,7 +33,11 @@ const providerBaseShape = {
 };
 
 export const providerSchema = z.object(providerBaseShape).superRefine((data, ctx) => {
-  if (data.providerType === "Medical Group") {
+  if (data.providerType !== "Medical Group" && !data.providerName?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Provider name is required", path: ["providerName"] });
+  }
+
+  if (data.providerType === "Insurance" || data.providerType === "Medical Group") {
     if (!data.insurance?.trim()) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Insurance is required", path: ["insurance"] });
     }
@@ -76,7 +80,11 @@ export const myProviderSchema = z.object(providerBaseShape).omit({
   purpose: true,
   purposeOther: true,
 }).superRefine((data, ctx) => {
-  if (data.providerType === "Medical Group") {
+  if (data.providerType !== "Insurance" && !data.providerName?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Provider name is required", path: ["providerName"] });
+  }
+
+  if (data.providerType === "Insurance" || data.providerType === "Medical Group") {
     if (!data.insurance?.trim()) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Insurance is required", path: ["insurance"] });
     }

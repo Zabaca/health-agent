@@ -172,7 +172,7 @@ export const releaseRequestLog = sqliteTable('ReleaseRequestLog', {
   releaseId:    text('releaseId').notNull().references(() => releases.id, { onDelete: 'cascade' }),
   type:         text('type', { enum: ['fax'] }).notNull(),
   service:      text('service').notNull().default('faxage'),
-  status:       text('status', { enum: ['success', 'failed'] }).notNull(),
+  status:       text('status', { enum: ['success', 'failed', 'awaiting_confirmation'] }).notNull(),
   faxNumber:    text('faxNumber'),
   recipientName: text('recipientName'),
   apiResponse:  text('apiResponse'),
@@ -213,6 +213,20 @@ export const incomingFiles = sqliteTable('IncomingFile', {
 export const incomingFaxLogRelations = relations(incomingFaxLog, ({ many }) => ({
   files: many(incomingFiles),
 }));
+
+export const faxConfirm = sqliteTable('FaxConfirm', {
+  id:           text('id').primaryKey(),
+  jobid:        text('jobid'),
+  commid:       text('commid'),
+  destname:     text('destname'),
+  destnum:      text('destnum'),
+  shortstatus:  text('shortstatus'),
+  longstatus:   text('longstatus'),
+  sendtime:     text('sendtime'),
+  completetime: text('completetime'),
+  rawBody:      text('rawBody'),
+  createdAt:    text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+});
 
 export const incomingFilesRelations = relations(incomingFiles, ({ one }) => ({
   faxLog: one(incomingFaxLog, { fields: [incomingFiles.incomingFaxLogId], references: [incomingFaxLog.id] }),

@@ -25,8 +25,11 @@ export default function ReleaseRequestLogTable({ logs }: { logs: ReleaseRequestL
               <Table.Tr key={log.id}>
                 <Table.Td><Text tt="uppercase" size="xs">{log.type}</Text></Table.Td>
                 <Table.Td>
-                  <Badge color={log.error ? "red" : "green"} variant="light">
-                    {log.error ? "error" : log.status}
+                  <Badge
+                    color={log.error ? "red" : log.status === "awaiting_confirmation" ? "yellow" : "green"}
+                    variant="light"
+                  >
+                    {log.error ? "error" : log.status === "awaiting_confirmation" ? "Awaiting Confirmation" : log.status}
                   </Badge>
                 </Table.Td>
                 <Table.Td><Text size="sm">{log.faxNumber ?? "—"}</Text></Table.Td>

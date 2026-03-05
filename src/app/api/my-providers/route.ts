@@ -38,6 +38,7 @@ export const PUT = contractRoute(contract.myProviders.replace, async ({ body }) 
           id: crypto.randomUUID(),
           userId,
           ...p,
+          providerName: p.providerName ?? "",
           order: i,
         }))
       );

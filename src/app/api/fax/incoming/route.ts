@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         password:  process.env.FAXAGE_PASSWORD!,
         operation: "getfax",
         faxid:     recvid,
-        informat:  "tiff",
+        informat:  "pdf",
       }).toString(),
     });
   } catch (err) {

@@ -36,8 +36,10 @@
     "next-auth": "^5.0.0-beta.25",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "react-dropzone": "^15.0.0",
     "react-hook-form": "^7.54.0",
     "react-signature-canvas": "^1.0.6",
+    "transloadit": "^4.7.4",
     "utif": "^3.1.0",
     "uuid": "^11.0.0",
     "zod": "^3.24.0"
