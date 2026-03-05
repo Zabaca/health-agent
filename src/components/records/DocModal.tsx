@@ -5,8 +5,8 @@ import { Modal, Group, ActionIcon, Text, Center, Loader, Tooltip, Stack, ThemeIc
 import { IconChevronLeft, IconChevronRight, IconZoomIn, IconZoomOut, IconZoomReset, IconFileText } from '@tabler/icons-react';
 import UTIF from 'utif';
 
-interface TiffModalProps {
-  filePath: string;
+interface DocModalProps {
+  fileURL: string;
   opened: boolean;
   onClose: () => void;
 }
@@ -15,7 +15,7 @@ const ZOOM_STEP = 0.125;
 const ZOOM_MIN  = 0.25;
 const ZOOM_MAX  = 4;
 
-export default function TiffModal({ filePath, opened, onClose }: TiffModalProps) {
+export default function DocModal({ fileURL, opened, onClose }: DocModalProps) {
   const canvasRef    = useRef<HTMLCanvasElement>(null);
   const scrollRef    = useRef<HTMLDivElement>(null);
   const dragState    = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
@@ -27,8 +27,10 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
+  const isPdf = fileURL.toLowerCase().endsWith('.pdf');
+
   useEffect(() => {
-    if (!opened) return;
+    if (!opened || isPdf) return;
     let cancelled = false;
 
     async function load() {
@@ -36,7 +38,7 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
       setError(null);
       setPage(0);
       try {
-        const res = await fetch(filePath);
+        const res = await fetch(fileURL);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const buf = await res.arrayBuffer();
         const decoded = UTIF.decode(buf);
@@ -60,7 +62,7 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
 
     load();
     return () => { cancelled = true; };
-  }, [filePath, opened]);
+  }, [fileURL, opened, isPdf]);
 
   useEffect(() => {
     if (!canvasRef.current || !ifds.length || !buffer) return;
@@ -135,89 +137,99 @@ export default function TiffModal({ filePath, opened, onClose }: TiffModalProps)
         </Group>
       }
     >
-      {loading && <Center py="xl"><Loader size="sm" /></Center>}
-      {error   && <Text c="red" size="sm" p="md">{error}</Text>}
+      {isPdf ? (
+        <iframe
+          src={fileURL}
+          style={{ width: '100%', height: '68vh', border: 'none', borderRadius: 6 }}
+          title="PDF Document"
+        />
+      ) : (
+        <>
+          {loading && <Center py="xl"><Loader size="sm" /></Center>}
+          {error   && <Text c="red" size="sm" p="md">{error}</Text>}
 
-      {!loading && !error && totalPages > 0 && (
-        <Stack gap="sm" pt="sm">
-          {/* Toolbar */}
-          <Paper withBorder radius="sm" px="sm" py={6}>
-            <Group justify="space-between">
-              {/* Pagination */}
-              <Group gap={4}>
-                <ActionIcon variant="subtle" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-                  <IconChevronLeft size={16} />
-                </ActionIcon>
-                <Text size="sm" w={90} ta="center">
-                  Page {page + 1} of {totalPages}
-                </Text>
-                <ActionIcon variant="subtle" disabled={page === totalPages - 1} onClick={() => setPage(p => p + 1)}>
-                  <IconChevronRight size={16} />
-                </ActionIcon>
-              </Group>
+          {!loading && !error && totalPages > 0 && (
+            <Stack gap="sm" pt="sm">
+              {/* Toolbar */}
+              <Paper withBorder radius="sm" px="sm" py={6}>
+                <Group justify="space-between">
+                  {/* Pagination */}
+                  <Group gap={4}>
+                    <ActionIcon variant="subtle" disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                      <IconChevronLeft size={16} />
+                    </ActionIcon>
+                    <Text size="sm" w={90} ta="center">
+                      Page {page + 1} of {totalPages}
+                    </Text>
+                    <ActionIcon variant="subtle" disabled={page === totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                      <IconChevronRight size={16} />
+                    </ActionIcon>
+                  </Group>
 
-              <Divider orientation="vertical" />
+                  <Divider orientation="vertical" />
 
-              {/* Zoom */}
-              <Group gap={4}>
-                <Tooltip label="Zoom out" withArrow>
-                  <ActionIcon
-                    variant="subtle"
-                    disabled={zoom <= ZOOM_MIN}
-                    onClick={() => setZoom(z => Math.max(ZOOM_MIN, parseFloat((z - ZOOM_STEP).toFixed(2))))}
-                  >
-                    <IconZoomOut size={16} />
-                  </ActionIcon>
-                </Tooltip>
-                <Text size="sm" w={52} ta="center" ff="monospace">{displayPct}%</Text>
-                <Tooltip label="Zoom in" withArrow>
-                  <ActionIcon
-                    variant="subtle"
-                    disabled={zoom >= ZOOM_MAX}
-                    onClick={() => setZoom(z => Math.min(ZOOM_MAX, parseFloat((z + ZOOM_STEP).toFixed(2))))}
-                  >
-                    <IconZoomIn size={16} />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Fit to width" withArrow>
-                  <ActionIcon variant="subtle" onClick={() => setZoom(fitZoom)}>
-                    <IconZoomReset size={16} />
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
-            </Group>
-          </Paper>
+                  {/* Zoom */}
+                  <Group gap={4}>
+                    <Tooltip label="Zoom out" withArrow>
+                      <ActionIcon
+                        variant="subtle"
+                        disabled={zoom <= ZOOM_MIN}
+                        onClick={() => setZoom(z => Math.max(ZOOM_MIN, parseFloat((z - ZOOM_STEP).toFixed(2))))}
+                      >
+                        <IconZoomOut size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Text size="sm" w={52} ta="center" ff="monospace">{displayPct}%</Text>
+                    <Tooltip label="Zoom in" withArrow>
+                      <ActionIcon
+                        variant="subtle"
+                        disabled={zoom >= ZOOM_MAX}
+                        onClick={() => setZoom(z => Math.min(ZOOM_MAX, parseFloat((z + ZOOM_STEP).toFixed(2))))}
+                      >
+                        <IconZoomIn size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Fit to width" withArrow>
+                      <ActionIcon variant="subtle" onClick={() => setZoom(fitZoom)}>
+                        <IconZoomReset size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Group>
+                </Group>
+              </Paper>
 
-          {/* Canvas area */}
-          <div
-            ref={scrollRef}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onMouseLeave={onMouseUp}
-            style={{
-              overflow: 'auto',
-              maxHeight: '68vh',
-              background: '#e8e8e8',
-              borderRadius: 6,
-              padding: 12,
-              cursor: 'grab',
-              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
-            }}
-          >
-            <div style={{ width: 'fit-content', margin: '0 auto' }}>
-              <canvas
-                ref={canvasRef}
+              {/* Canvas area */}
+              <div
+                ref={scrollRef}
+                onMouseDown={onMouseDown}
+                onMouseMove={onMouseMove}
+                onMouseUp={onMouseUp}
+                onMouseLeave={onMouseUp}
                 style={{
-                  display: 'block',
-                  width:  ifd ? ifd.width  * zoom : undefined,
-                  height: ifd ? ifd.height * zoom : undefined,
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+                  overflow: 'auto',
+                  maxHeight: '68vh',
+                  background: '#e8e8e8',
+                  borderRadius: 6,
+                  padding: 12,
+                  cursor: 'grab',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
                 }}
-              />
-            </div>
-          </div>
-        </Stack>
+              >
+                <div style={{ width: 'fit-content', margin: '0 auto' }}>
+                  <canvas
+                    ref={canvasRef}
+                    style={{
+                      display: 'block',
+                      width:  ifd ? ifd.width  * zoom : undefined,
+                      height: ifd ? ifd.height * zoom : undefined,
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+                    }}
+                  />
+                </div>
+              </div>
+            </Stack>
+          )}
+        </>
       )}
     </Modal>
   );

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { incomingFaxLog, incomingFiles } from "@/lib/db/schema";
-import { saveBuffer } from "@/lib/upload";
+import { uploadBufferToTransloadit } from "@/lib/transloadit";
 import { eq } from "drizzle-orm";
 
 const FAXAGE_URL = "https://api.faxage.com/httpsfax.php";
+const FAX_FORMAT = "pdf";
 
 export async function POST(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret");
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
         password:  process.env.FAXAGE_PASSWORD!,
         operation: "getfax",
         faxid:     recvid,
-        informat:  "pdf",
+        informat:  FAX_FORMAT,
       }).toString(),
     });
   } catch (err) {
@@ -107,14 +108,18 @@ export async function POST(req: NextRequest) {
 
   // Extract filename from Content-Disposition header
   const filenameMatch = disposition.match(/filename="?([^";\s]+)"?/i);
-  const originalFilename = filenameMatch?.[1] ?? `${recvid}.tiff`;
+  const originalFilename = filenameMatch?.[1] ?? `${recvid}.${FAX_FORMAT}`;
 
-  const filePath = await saveBuffer(Buffer.from(responseBuffer), 'tiff');
+  const fileURL = await uploadBufferToTransloadit(Buffer.from(responseBuffer), originalFilename).catch(() => null);
+  if (!fileURL) {
+    await db.update(incomingFaxLog).set({ status: 'failed' }).where(eq(incomingFaxLog.id, logId));
+    return NextResponse.json({ ok: true });
+  }
 
   await db.insert(incomingFiles).values({
     id:               crypto.randomUUID(),
-    filePath,
-    fileType:         'tiff',
+    fileURL,
+    fileType:         FAX_FORMAT,
     source:           'fax',
     incomingFaxLogId: logId,
     patientId:        null,

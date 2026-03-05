@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { incomingFiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Title, Stack, Text, Badge, Group, Card } from "@mantine/core";
-import TiffViewer from "@/components/records/TiffViewer";
+import DocViewer from "@/components/records/DocViewer";
 
 export default async function MyRecordDetailPage({
   params,
@@ -28,7 +28,7 @@ export default async function MyRecordDetailPage({
 
       <Card withBorder>
         <Title order={5} mb="sm">Document</Title>
-        <TiffViewer filePath={file.filePath} />
+        <DocViewer fileURL={file.fileURL} />
       </Card>
 
       {file.faxLog && (

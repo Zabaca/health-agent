@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { incomingFiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Title, Grid, Stack, Text, Badge, Group, Card, SimpleGrid } from "@mantine/core";
-import TiffViewer from "@/components/records/TiffViewer";
+import DocViewer from "@/components/records/DocViewer";
 import PatientAssignmentPanel from "@/components/records/PatientAssignmentPanel";
 
 export default async function AdminRecordDetailPage({
@@ -34,7 +34,7 @@ export default async function AdminRecordDetailPage({
         <Stack gap="md">
           <Card withBorder>
             <Title order={5} mb="sm">Document</Title>
-            <TiffViewer filePath={file.filePath} />
+            <DocViewer fileURL={file.fileURL} />
           </Card>
 
           {file.faxLog && (

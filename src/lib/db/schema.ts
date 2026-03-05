@@ -202,7 +202,7 @@ export const incomingFaxLog = sqliteTable('IncomingFaxLog', {
 
 export const incomingFiles = sqliteTable('IncomingFile', {
   id:               text('id').primaryKey(),
-  filePath:         text('filePath').notNull(),
+  fileURL:          text('fileURL').notNull(),
   fileType:         text('fileType').notNull(),
   source:           text('source').notNull().default('fax'),
   incomingFaxLogId: text('incomingFaxLogId').references(() => incomingFaxLog.id),
