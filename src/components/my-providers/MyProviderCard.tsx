@@ -9,6 +9,7 @@ import {
   Stack,
   Title,
   Group,
+  Divider,
 } from "@mantine/core";
 import { IconGripVertical } from "@tabler/icons-react";
 import { useFormContext, Controller } from "react-hook-form";
@@ -22,7 +23,7 @@ interface Props {
 }
 
 const PROVIDER_TYPES = [
-  { value: "Medical Group", label: "Medical Group" },
+  { value: "Insurance", label: "Insurance" },
   { value: "Hospital", label: "Hospital" },
   { value: "Facility", label: "Facility (Clinics, Primary Care Physician, Urgent Care, Labs, etc)" },
 ];
@@ -37,7 +38,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
 
   const providerName = watch(`providers.${index}.providerName`) || `Provider ${index + 1}`;
   const providerType = watch(`providers.${index}.providerType`);
-  const isInsurance = providerType === "Medical Group";
+  const isInsurance = providerType === "Insurance";
   const isFacilityType = providerType === "Hospital";
   const providerErrors = errors.providers?.[index];
 
@@ -59,12 +60,21 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
       <Accordion.Panel>
         <Stack gap="md">
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <TextInput
-              label="Individual / Organization Name"
-              required
-              error={providerErrors?.providerName?.message}
-              {...register(`providers.${index}.providerName`)}
-            />
+            {isInsurance ? (
+              <TextInput
+                label="Insurance"
+                required
+                error={providerErrors?.insurance?.message}
+                {...register(`providers.${index}.insurance`)}
+              />
+            ) : (
+              <TextInput
+                label="Individual / Organization Name"
+                required
+                error={providerErrors?.providerName?.message}
+                {...register(`providers.${index}.providerName`)}
+              />
+            )}
             <Controller
               name={`providers.${index}.providerType`}
               control={control}
@@ -74,7 +84,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
                   required
                   data={PROVIDER_TYPES}
                   placeholder="Select a type"
-                  value={field.value || "Medical Group"}
+                  value={field.value || "Insurance"}
                   onChange={field.onChange}
                   error={providerErrors?.providerType?.message}
                 />
@@ -92,12 +102,6 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
 
           {isInsurance && (
             <>
-              <TextInput
-                label="Insurance"
-                required
-                error={providerErrors?.insurance?.message}
-                {...register(`providers.${index}.insurance`)}
-              />
               <SimpleGrid cols={{ base: 1, sm: 3 }}>
                 <TextInput
                   label="Insurance Member ID"
@@ -125,6 +129,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
                       label="Membership Card (Front)"
                       value={field.value}
                       onChange={field.onChange}
+                      accept="image/*,application/pdf"
                     />
                   )}
                 />
@@ -136,6 +141,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
                       label="Membership Card (Back)"
                       value={field.value}
                       onChange={field.onChange}
+                      accept="image/*,application/pdf"
                     />
                   )}
                 />
@@ -148,24 +154,55 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
             error={providerErrors?.address?.message}
             {...register(`providers.${index}.address`)}
           />
-          <SimpleGrid cols={{ base: 1, sm: 3 }}>
-            <TextInput
-              label="Phone"
-              error={providerErrors?.phone?.message}
-              {...register(`providers.${index}.phone`)}
-            />
-            <TextInput
-              label="Fax"
-              error={providerErrors?.fax?.message}
-              {...register(`providers.${index}.fax`)}
-            />
-            <TextInput
-              label="Email"
-              type="email"
-              error={providerErrors?.providerEmail?.message}
-              {...register(`providers.${index}.providerEmail`)}
-            />
-          </SimpleGrid>
+          {!isInsurance && (
+            <SimpleGrid cols={{ base: 1, sm: 3 }}>
+              <TextInput
+                label="Phone"
+                error={providerErrors?.phone?.message}
+                {...register(`providers.${index}.phone`)}
+              />
+              <TextInput
+                label="Fax"
+                error={providerErrors?.fax?.message}
+                {...register(`providers.${index}.fax`)}
+              />
+              <TextInput
+                label="Email"
+                type="email"
+                error={providerErrors?.providerEmail?.message}
+                {...register(`providers.${index}.providerEmail`)}
+              />
+            </SimpleGrid>
+          )}
+
+          {isInsurance && (
+            <>
+              <Divider label="Medical Group" labelPosition="center" />
+              <TextInput
+                label="Name of Medical Group"
+                error={providerErrors?.providerName?.message}
+                {...register(`providers.${index}.providerName`)}
+              />
+              <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                <TextInput
+                  label="Medical Group Phone Number"
+                  error={providerErrors?.phone?.message}
+                  {...register(`providers.${index}.phone`)}
+                />
+                <TextInput
+                  label="Medical Group Fax"
+                  error={providerErrors?.fax?.message}
+                  {...register(`providers.${index}.fax`)}
+                />
+                <TextInput
+                  label="Medical Group Email"
+                  type="email"
+                  error={providerErrors?.providerEmail?.message}
+                  {...register(`providers.${index}.providerEmail`)}
+                />
+              </SimpleGrid>
+            </>
+          )}
 
           <Button
             variant="light"

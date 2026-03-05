@@ -31,7 +31,7 @@ const schema = z.object({ providers: z.array(myProviderSchema) });
 
 const defaultProvider: MyProviderFormData = {
   providerName: "",
-  providerType: "Medical Group",
+  providerType: "Insurance",
 };
 
 interface Props {
