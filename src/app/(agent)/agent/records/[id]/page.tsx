@@ -17,7 +17,7 @@ export default async function AgentRecordDetailPage({
 
   const file = await db.query.incomingFiles.findFirst({
     where: eq(incomingFiles.id, id),
-    with: { faxLog: true, patient: true },
+    with: { faxLog: true, patient: true, uploadLog: { with: { uploadedBy: true } } },
   });
 
   if (!file) notFound();
@@ -35,6 +35,30 @@ export default async function AgentRecordDetailPage({
             <Title order={5} mb="sm">Document</Title>
             <DocViewer fileURL={file.fileURL} />
           </Card>
+
+          {file.uploadLog && (
+            <Card withBorder>
+              <Title order={5} mb="sm">Upload Metadata</Title>
+              <Stack gap="xs">
+                <Group gap="xs">
+                  <Text size="sm" fw={500}>File name:</Text>
+                  <Text size="sm">{file.uploadLog.originalName}</Text>
+                </Group>
+                <Group gap="xs">
+                  <Text size="sm" fw={500}>Uploaded by:</Text>
+                  <Text size="sm">
+                    {file.uploadLog.uploadedBy
+                      ? [file.uploadLog.uploadedBy.firstName, file.uploadLog.uploadedBy.lastName].filter(Boolean).join(' ') || file.uploadLog.uploadedBy.email
+                      : '—'}
+                  </Text>
+                </Group>
+                <Group gap="xs">
+                  <Text size="sm" fw={500}>Uploaded at:</Text>
+                  <Text size="sm">{new Date(file.uploadLog.uploadedAt).toLocaleString()}</Text>
+                </Group>
+              </Stack>
+            </Card>
+          )}
 
           {file.faxLog && (
             <Card withBorder>
