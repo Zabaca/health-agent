@@ -2,8 +2,9 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { incomingFiles } from "@/lib/db/schema";
 import { isNull } from "drizzle-orm";
-import { Title } from "@mantine/core";
+import { Group, Title } from "@mantine/core";
 import RecordsTable from "@/components/records/RecordsTable";
+import UploadFileButton from "@/components/records/UploadFileButton";
 
 export const metadata = { title: "Received Files — Agent Portal" };
 
@@ -27,7 +28,10 @@ export default async function AgentRecordsPage() {
 
   return (
     <>
-      <Title order={2} mb="lg">Received Files (Unassigned)</Title>
+      <Group justify="space-between" mb="lg">
+        <Title order={2}>Received Files (Unassigned)</Title>
+        <UploadFileButton />
+      </Group>
       <RecordsTable rows={rows} basePath="/agent/records" />
     </>
   );

@@ -92,6 +92,13 @@
       "when": 1772800000000,
       "tag": "0012_rename_filepath_to_fileurl",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1772900000000,
+      "tag": "0013_add_file_upload_log",
+      "breakpoints": true
     }
   ]
 }
