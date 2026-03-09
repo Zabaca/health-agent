@@ -27,7 +27,7 @@ export async function uploadBufferToTransloadit(
   const formData = new FormData();
   formData.append("params", params);
   formData.append("signature", signature);
-  formData.append("file", new Blob([buffer]), filename);
+  formData.append("file", new Blob([new Uint8Array(buffer)]), filename);
 
   const res = await fetch("https://api2.transloadit.com/assemblies?wait=true", {
     method: "POST",
