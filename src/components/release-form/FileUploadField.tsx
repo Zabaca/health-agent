@@ -10,6 +10,8 @@ interface Props {
   value?: string;
   onChange: (url: string) => void;
   accept?: string;
+  required?: boolean;
+  error?: string;
 }
 
 async function uploadToTransloadit(file: File): Promise<string> {
@@ -32,7 +34,7 @@ async function uploadToTransloadit(file: File): Promise<string> {
   return url;
 }
 
-export default function FileUploadField({ label, value, onChange }: Props) {
+export default function FileUploadField({ label, value, onChange, required, error: fieldError }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
@@ -68,7 +70,7 @@ export default function FileUploadField({ label, value, onChange }: Props) {
 
   return (
     <Stack gap={6}>
-      <Text size="sm" fw={500}>{label}</Text>
+      <Text size="sm" fw={500}>{label}{required && <span style={{ color: "var(--mantine-color-red-6)", marginLeft: 2 }}>*</span>}</Text>
 
       {value ? (
         <Box>
@@ -174,10 +176,10 @@ export default function FileUploadField({ label, value, onChange }: Props) {
         </Box>
       )}
 
-      {error && (
+      {(error || fieldError) && (
         <Group gap={4}>
           <IconX size={12} color="red" />
-          <Text size="xs" c="red">{error}</Text>
+          <Text size="xs" c="red">{error || fieldError}</Text>
         </Group>
       )}
 

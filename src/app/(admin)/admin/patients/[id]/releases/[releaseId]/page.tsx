@@ -125,10 +125,10 @@ export default async function AdminReleaseViewPage({
             <Stack key={p.id} gap="md">
               {i > 0 && <Divider />}
               <Group gap="sm">
-                <Title order={5}>{p.providerName}</Title>
+                <Title order={5}>{p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName}</Title>
                 <Badge variant="light" className="no-print">{p.providerType}</Badge>
               </Group>
-              {p.providerType === "Medical Group" && (
+              {p.providerType === "Insurance" && (
                 <>
                   <SimpleGrid cols={3}>
                     <Field label="Insurance" value={p.insurance} />
@@ -153,7 +153,7 @@ export default async function AdminReleaseViewPage({
                 <Field label="Fax" value={p.fax} />
                 <Field label="Email" value={p.providerEmail} />
               </SimpleGrid>
-              <Field label="Address" value={p.address} />
+              {p.providerType !== "Insurance" && <Field label="Address" value={p.address} />}
               <Divider variant="dashed" />
               <Title order={6}>Records to Release</Title>
               <SimpleGrid cols={3}>

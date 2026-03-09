@@ -25,7 +25,7 @@ interface Props {
 }
 
 const PROVIDER_TYPES = [
-  { value: "Medical Group", label: "Medical Group" },
+  { value: "Insurance", label: "Insurance" },
   { value: "Hospital", label: "Hospital" },
   { value: "Clinic", label: "Clinic" },
   { value: "Facility", label: "Facility (Clinics, Primary Care Physician, Urgent Care, Labs, etc)" },
@@ -41,7 +41,9 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
 
   const providerName = watch(`providers.${index}.providerName`) || `Provider ${index + 1}`;
   const providerType = watch(`providers.${index}.providerType`);
-  const isInsurance = providerType === "Medical Group";
+  const insuranceName = watch(`providers.${index}.insurance`);
+  const isInsurance = providerType === "Insurance";
+  const displayName = isInsurance ? (insuranceName || `Provider ${index + 1}`) : providerName;
   const isFacilityType = providerType === "Hospital" || providerType === "Clinic";
   const isClinic = providerType === "Clinic";
   const providerErrors = errors.providers?.[index];
@@ -63,7 +65,7 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
           </div>
           <Stack gap={0} style={{ flex: 1 }}>
             <Title order={5} style={{ margin: 0, color: hasErrors ? "var(--mantine-color-red-6)" : undefined }}>
-              {providerName}
+              {displayName}
             </Title>
             <span style={{ fontSize: 12, color: "#868e96" }}>{providerType || "Provider"}</span>
           </Stack>
@@ -79,7 +81,7 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             {isInsurance ? (
               <TextInput
-                label="Insurance"
+                label="Insurance Name"
                 required
                 error={providerErrors?.insurance?.message}
                 {...register(`providers.${index}.insurance`)}
@@ -102,7 +104,8 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
                   data={PROVIDER_TYPES}
                   placeholder="Select a type"
                   value={field.value || null}
-                  onChange={field.onChange}
+                  onChange={(val) => { if (val !== null) field.onChange(val); }}
+                  allowDeselect={false}
                   error={providerErrors?.providerType?.message}
                 />
               )}
@@ -155,6 +158,8 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
                       value={field.value}
                       onChange={field.onChange}
                       accept="image/*,application/pdf"
+                      required
+                      error={providerErrors?.membershipIdFront?.message}
                     />
                   )}
                 />
@@ -167,6 +172,8 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
                       value={field.value}
                       onChange={field.onChange}
                       accept="image/*,application/pdf"
+                      required
+                      error={providerErrors?.membershipIdBack?.message}
                     />
                   )}
                 />
@@ -174,11 +181,13 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
             </>
           )}
 
-          <TextInput
-            label="Address"
-            error={providerErrors?.address?.message}
-            {...register(`providers.${index}.address`)}
-          />
+          {!isInsurance && (
+            <TextInput
+              label="Address"
+              error={providerErrors?.address?.message}
+              {...register(`providers.${index}.address`)}
+            />
+          )}
           {!isInsurance && (
             <SimpleGrid cols={{ base: 1, sm: 3 }}>
               <TextInput
@@ -201,32 +210,11 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
           )}
 
           {isInsurance && (
-            <>
-              <Divider label="Medical Group" labelPosition="center" />
-              <TextInput
-                label="Name of Medical Group"
-                error={providerErrors?.providerName?.message}
-                {...register(`providers.${index}.providerName`)}
-              />
-              <SimpleGrid cols={{ base: 1, sm: 3 }}>
-                <TextInput
-                  label="Medical Group Phone Number"
-                  error={providerErrors?.phone?.message}
-                  {...register(`providers.${index}.phone`)}
-                />
-                <TextInput
-                  label="Medical Group Fax"
-                  error={providerErrors?.fax?.message}
-                  {...register(`providers.${index}.fax`)}
-                />
-                <TextInput
-                  label="Medical Group Email"
-                  type="email"
-                  error={providerErrors?.providerEmail?.message}
-                  {...register(`providers.${index}.providerEmail`)}
-                />
-              </SimpleGrid>
-            </>
+            <TextInput
+              label="Medical Group Name"
+              error={providerErrors?.providerName?.message}
+              {...register(`providers.${index}.providerName`)}
+            />
           )}
 
           <Divider />
