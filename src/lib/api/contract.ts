@@ -183,6 +183,13 @@ export const contract = c.router({
         pathParams: z.object({ id: z.string() }),
         responses: { 200: z.array(userProviderRowSchema), 401: errorSchema, 403: errorSchema },
       },
+      replace: {
+        method: 'PUT',
+        path: '/api/admin/patients/:id/providers',
+        pathParams: z.object({ id: z.string() }),
+        body: z.object({ providers: z.array(myProviderSchema) }),
+        responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema },
+      },
     }),
     releaseLookup: {
       method: 'GET',
@@ -326,6 +333,13 @@ export const contract = c.router({
         path: '/api/agent/patients/:id/providers',
         pathParams: z.object({ id: z.string() }),
         responses: { 200: z.array(userProviderRowSchema), 401: errorSchema, 403: errorSchema },
+      },
+      replace: {
+        method: 'PUT',
+        path: '/api/agent/patients/:id/providers',
+        pathParams: z.object({ id: z.string() }),
+        body: z.object({ providers: z.array(myProviderSchema) }),
+        responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema },
       },
     }),
     releaseLookup: {

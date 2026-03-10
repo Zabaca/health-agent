@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, releases as releasesTable, patientAssignments } from "@/lib/db/schema";
-import { and, desc, eq, or } from "drizzle-orm";
-import { Title, Text, Stack } from "@mantine/core";
+import { users, releases as releasesTable, patientAssignments, userProviders } from "@/lib/db/schema";
+import { and, asc, desc, eq, or } from "drizzle-orm";
+import { Title, Text, Stack, Group } from "@mantine/core";
 import PatientReleasesPanel from "@/components/staff/PatientReleasesPanel";
 import PatientInfoCard from "@/components/staff/PatientInfoCard";
 import ReassignPatientControl from "@/components/staff/ReassignPatientControl";
+import PatientProvidersPanel from "@/components/staff/PatientProvidersPanel";
 import { decryptPii } from "@/lib/crypto";
 
 export default async function AdminPatientPage({
@@ -22,9 +23,10 @@ export default async function AdminPatientPage({
 
   const decryptedPatient = decryptPii(patient);
 
-  const [staffMembers, currentAssignment] = await Promise.all([
+  const [staffMembers, currentAssignment, providers] = await Promise.all([
     db.query.users.findMany({ where: or(eq(users.type, 'admin'), eq(users.type, 'agent')) }),
     db.query.patientAssignments.findFirst({ where: eq(patientAssignments.patientId, patientId) }),
+    db.select().from(userProviders).where(eq(userProviders.userId, patientId)).orderBy(asc(userProviders.order)),
   ]);
 
   const releases = await db
@@ -57,16 +59,27 @@ export default async function AdminPatientPage({
 
   return (
     <Stack gap="lg">
-      <div>
-        <Title order={2}>{patientName}</Title>
-        <Text c="dimmed" size="sm">{patient.email}</Text>
-      </div>
+      <Group justify="space-between" align="flex-start">
+        <div>
+          <Title order={2}>{patientName}</Title>
+          <Text c="dimmed" size="sm">{patient.email}</Text>
+        </div>
+        <ReassignPatientControl
+          inline
+          mode="admin"
+          patientId={patientId}
+          staffMembers={staffMembers.map((s) => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, email: s.email, type: s.type as 'admin' | 'agent' }))}
+          currentAssignedToId={currentAssignment?.assignedToId ?? null}
+        />
+      </Group>
       <PatientInfoCard patient={decryptedPatient} />
-      <ReassignPatientControl
-        mode="admin"
+      <PatientProvidersPanel
         patientId={patientId}
-        staffMembers={staffMembers.map((s) => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, email: s.email, type: s.type as 'admin' | 'agent' }))}
-        currentAssignedToId={currentAssignment?.assignedToId ?? null}
+        role="admin"
+        defaultProviders={providers.map(({ id: _id, userId: _userId, order: _order, providerType, ...rest }) => ({
+          ...Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, v ?? undefined])),
+          providerType: providerType as "Insurance" | "Hospital" | "Clinic" | "Facility",
+        }))}
       />
       <PatientReleasesPanel
         patientId={patientId}
