@@ -30,3 +30,4 @@ jobs:
           AUTH_SECRET: ci-secret-at-least-32-characters-long
           NEXTAUTH_URL: http://localhost:3000
           ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+# test: trigger status check for branch protection setup
