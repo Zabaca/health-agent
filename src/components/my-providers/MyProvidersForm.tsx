@@ -37,6 +37,7 @@ const defaultProvider: MyProviderFormData = {
 interface Props {
   defaultValues: MyProviderFormData[];
   onComplete?: (providers: MyProviderFormData[]) => void;
+  onSave?: (providers: MyProviderFormData[]) => Promise<void>;
   maw?: number | string;
 }
 
@@ -71,7 +72,7 @@ function SortableItem({ id, index, onRemove }: SortableItemProps) {
   );
 }
 
-export default function MyProvidersForm({ defaultValues, onComplete, maw = 700 }: Props) {
+export default function MyProvidersForm({ defaultValues, onComplete, onSave, maw = 700 }: Props) {
   const methods = useForm<MyProvidersFormData>({
     resolver: zodResolver(schema),
     defaultValues: { providers: defaultValues },
@@ -130,13 +131,19 @@ export default function MyProvidersForm({ defaultValues, onComplete, maw = 700 }
     setSuccess(false);
     setError(null);
     try {
-      const result = await apiClient.myProviders.replace({ body: { providers: data.providers } });
-      if (result.status !== 200) throw new Error("Failed to save providers");
-      if (onComplete) {
-        onComplete(data.providers);
-      } else {
+      if (onSave) {
+        await onSave(data.providers);
         setSuccess(true);
         methods.reset(data);
+      } else {
+        const result = await apiClient.myProviders.replace({ body: { providers: data.providers } });
+        if (result.status !== 200) throw new Error("Failed to save providers");
+        if (onComplete) {
+          onComplete(data.providers);
+        } else {
+          setSuccess(true);
+          methods.reset(data);
+        }
       }
     } catch {
       setError("Failed to save providers. Please try again.");
