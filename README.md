@@ -66,7 +66,7 @@ openssl rand -hex 32
 | `R2_ACCOUNT_ID` | Yes | Cloudflare account ID |
 | `S3_ACCESS_KEY_ID` | Yes | S3-compatible API token access key ID |
 | `S3_SECRET_ACCESS_KEY` | Yes | S3-compatible API token secret access key |
-| `S3_BUCKET` | Yes | S3-compatible bucket name |
+| `S3_BUCKET` | Yes | R2 bucket name |
 
 > \* Required to send faxes. The app runs without them, but clicking **Fax Request** will fail until all three are set.
 
