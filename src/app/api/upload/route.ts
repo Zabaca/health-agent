@@ -1,29 +1,46 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { contract } from "@/lib/api/contract";
-import { contractRoute } from "@/lib/api/contract-handler";
-import { uploadBufferToTransloadit } from "@/lib/transloadit";
+import { uploadToR2 } from "@/lib/r2";
 
-export const POST = contractRoute(contract.upload, async ({ body }) => {
+export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data, extension = "png" } = body;
-
-  if (!data) {
-    return NextResponse.json({ error: "No data provided" }, { status: 400 });
-  }
+  const contentType = req.headers.get("content-type") ?? "";
 
   try {
-    const base64 = data.replace(/^data:[^;]+;base64,/, "");
-    const buffer = Buffer.from(base64, "base64");
+    let buffer: Buffer;
+    let filename: string;
+    let mimeType: string;
 
-    const url = await uploadBufferToTransloadit(buffer, `file.${extension}`);
+    if (contentType.includes("multipart/form-data")) {
+      const form = await req.formData();
+      const file = form.get("file");
+      if (!file || typeof file === "string") {
+        return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      }
+      buffer = Buffer.from(await file.arrayBuffer());
+      filename = file.name || "upload";
+      mimeType = file.type || "application/octet-stream";
+    } else {
+      const body = await req.json() as { data: string; extension?: string };
+      const { data, extension = "png" } = body;
+      if (!data) {
+        return NextResponse.json({ error: "No data provided" }, { status: 400 });
+      }
+      buffer = Buffer.from(data.replace(/^data:[^;]+;base64,/, ""), "base64");
+      filename = `file.${extension}`;
+      const match = data.match(/^data:([^;]+);/);
+      mimeType = match?.[1] ?? "application/octet-stream";
+    }
+
+    const url = await uploadToR2(buffer, filename, mimeType);
     return NextResponse.json({ url });
   } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Upload error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-});
+}

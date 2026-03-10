@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { incomingFaxLog, incomingFiles } from "@/lib/db/schema";
-import { uploadBufferToTransloadit } from "@/lib/transloadit";
+import { uploadToR2 } from "@/lib/r2";
 import { eq } from "drizzle-orm";
 
 const FAXAGE_URL = "https://api.faxage.com/httpsfax.php";
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
   const filenameMatch = disposition.match(/filename="?([^";\s]+)"?/i);
   const originalFilename = filenameMatch?.[1] ?? `${recvid}.${FAX_FORMAT}`;
 
-  const fileURL = await uploadBufferToTransloadit(Buffer.from(responseBuffer), originalFilename).catch(() => null);
+  const fileURL = await uploadToR2(Buffer.from(responseBuffer), originalFilename, "application/pdf").catch(() => null);
   if (!fileURL) {
     await db.update(incomingFaxLog).set({ status: 'failed' }).where(eq(incomingFaxLog.id, logId));
     return NextResponse.json({ ok: true });

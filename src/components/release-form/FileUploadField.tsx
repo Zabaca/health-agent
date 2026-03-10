@@ -10,29 +10,21 @@ interface Props {
   value?: string;
   onChange: (url: string) => void;
   accept?: string;
+  required?: boolean;
+  error?: string;
 }
 
-async function uploadToTransloadit(file: File): Promise<string> {
-  const sigRes = await fetch("/api/transloadit/signature");
-  if (!sigRes.ok) throw new Error("Failed to get upload signature");
-  const { params, signature } = await sigRes.json();
-
+async function uploadFile(file: File): Promise<string> {
   const formData = new FormData();
-  formData.append("params", params);
-  formData.append("signature", signature);
   formData.append("file", file);
-
-  const res = await fetch("https://api2.transloadit.com/assemblies?wait=true", {
-    method: "POST",
-    body: formData,
-  });
-  const data = await res.json();
-  const url = data.uploads?.[0]?.ssl_url;
+  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  if (!res.ok) throw new Error("Upload failed");
+  const { url } = await res.json();
   if (!url) throw new Error("No URL returned from upload");
   return url;
 }
 
-export default function FileUploadField({ label, value, onChange }: Props) {
+export default function FileUploadField({ label, value, onChange, required, error: fieldError }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
@@ -46,7 +38,7 @@ export default function FileUploadField({ label, value, onChange }: Props) {
     setError("");
     setUploading(true);
     try {
-      const url = await uploadToTransloadit(file);
+      const url = await uploadFile(file);
       onChange(url);
     } catch {
       setError("Upload failed. Please try again.");
@@ -68,7 +60,7 @@ export default function FileUploadField({ label, value, onChange }: Props) {
 
   return (
     <Stack gap={6}>
-      <Text size="sm" fw={500}>{label}</Text>
+      <Text size="sm" fw={500}>{label}{required && <span style={{ color: "var(--mantine-color-red-6)", marginLeft: 2 }}>*</span>}</Text>
 
       {value ? (
         <Box>
@@ -77,7 +69,6 @@ export default function FileUploadField({ label, value, onChange }: Props) {
             style={{
               position: "relative",
               display: "inline-block",
-              cursor: "pointer",
               borderRadius: 8,
               outline: isDragActive ? "2px solid var(--mantine-color-blue-5)" : "none",
             }}
@@ -85,6 +76,11 @@ export default function FileUploadField({ label, value, onChange }: Props) {
             <input {...getInputProps()} />
             {isPdf ? (
               <Box
+                component="a"
+                href={value}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -93,6 +89,8 @@ export default function FileUploadField({ label, value, onChange }: Props) {
                   border: "1px solid #dee2e6",
                   borderRadius: 6,
                   background: "#fff5f5",
+                  cursor: "pointer",
+                  textDecoration: "none",
                 }}
               >
                 <ThemeIcon color="red" variant="light" size="sm">
@@ -101,13 +99,21 @@ export default function FileUploadField({ label, value, onChange }: Props) {
                 <Text size="xs" c="red.7">PDF uploaded</Text>
               </Box>
             ) : (
-              <Image
-                src={value}
-                alt={label}
-                maw={200}
-                radius="sm"
-                style={{ border: "1px solid #dee2e6", display: "block" }}
-              />
+              <Box
+                component="a"
+                href={value}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              >
+                <Image
+                  src={value}
+                  alt={label}
+                  maw={200}
+                  radius="sm"
+                  style={{ border: "1px solid #dee2e6", display: "block", cursor: "pointer" }}
+                />
+              </Box>
             )}
             <Box
               style={{
@@ -120,6 +126,7 @@ export default function FileUploadField({ label, value, onChange }: Props) {
                 borderRadius: 6,
                 opacity: isDragActive ? 1 : 0,
                 transition: "opacity 0.15s",
+                pointerEvents: "none",
               }}
             >
               <Text size="xs" c="white" fw={600}>Drop to replace</Text>
@@ -174,10 +181,10 @@ export default function FileUploadField({ label, value, onChange }: Props) {
         </Box>
       )}
 
-      {error && (
+      {(error || fieldError) && (
         <Group gap={4}>
           <IconX size={12} color="red" />
-          <Text size="xs" c="red">{error}</Text>
+          <Text size="xs" c="red">{error || fieldError}</Text>
         </Group>
       )}
 

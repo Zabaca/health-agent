@@ -159,7 +159,7 @@ export default function RecordRequestFields({ index }: Props) {
                 placeholder="MM/DD/YYYY"
                 popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={providerErrors?.dateRangeFrom?.message}
-                value={field.value ? new Date(field.value) : null}
+                value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
                 onChange={(date) =>
                   field.onChange(
                     date
@@ -179,7 +179,7 @@ export default function RecordRequestFields({ index }: Props) {
                 placeholder="MM/DD/YYYY"
                 popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={providerErrors?.dateRangeTo?.message}
-                value={field.value ? new Date(field.value) : null}
+                value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
                 onChange={(date) =>
                   field.onChange(
                     date
