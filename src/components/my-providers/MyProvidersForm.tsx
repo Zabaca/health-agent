@@ -38,6 +38,7 @@ interface Props {
   defaultValues: MyProviderFormData[];
   onComplete?: (providers: MyProviderFormData[]) => void;
   onSave?: (providers: MyProviderFormData[]) => Promise<void>;
+  title?: string;
   maw?: number | string;
 }
 
@@ -72,7 +73,7 @@ function SortableItem({ id, index, onRemove }: SortableItemProps) {
   );
 }
 
-export default function MyProvidersForm({ defaultValues, onComplete, onSave, maw = 700 }: Props) {
+export default function MyProvidersForm({ defaultValues, onComplete, onSave, title = "My Providers", maw = 700 }: Props) {
   const methods = useForm<MyProvidersFormData>({
     resolver: zodResolver(schema),
     defaultValues: { providers: defaultValues },
@@ -155,7 +156,7 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, maw
       <form onSubmit={methods.handleSubmit(onSubmit)}>
         <Paper withBorder p="md" radius="md" maw={maw} w="100%">
           <Title order={4} mb="md">
-            My Providers
+            {title}
           </Title>
 
           {fields.length === 0 && (

@@ -19,6 +19,7 @@ interface Props {
   patientId: string;
   staffMembers: StaffMember[];
   currentAssignedToId: string | null;
+  inline?: boolean;
 }
 
 function staffLabel(s: StaffMember): string {
@@ -26,7 +27,7 @@ function staffLabel(s: StaffMember): string {
   return name ? `${name} (${s.type})` : `${s.email} (${s.type})`;
 }
 
-export default function ReassignPatientControl({ mode, patientId, staffMembers, currentAssignedToId }: Props) {
+export default function ReassignPatientControl({ mode, patientId, staffMembers, currentAssignedToId, inline }: Props) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(currentAssignedToId);
   const [loading, setLoading] = useState(false);
@@ -54,26 +55,34 @@ export default function ReassignPatientControl({ mode, patientId, staffMembers, 
     }
   };
 
+  const controls = (
+    <Group align="flex-end" gap="xs">
+      <Select
+        placeholder="Select agent or admin"
+        data={options}
+        value={selectedId}
+        onChange={setSelectedId}
+        searchable
+        style={{ minWidth: 220 }}
+        size={inline ? "sm" : "sm"}
+      />
+      <Button
+        onClick={handleReassign}
+        loading={loading}
+        disabled={!selectedId || selectedId === currentAssignedToId}
+        size={inline ? "sm" : "sm"}
+      >
+        Reassign
+      </Button>
+    </Group>
+  );
+
+  if (inline) return controls;
+
   return (
     <Paper withBorder p="lg" radius="md">
       <Title order={4} mb="md">Assigned To</Title>
-      <Group align="flex-end">
-        <Select
-          placeholder="Select agent or admin"
-          data={options}
-          value={selectedId}
-          onChange={setSelectedId}
-          searchable
-          style={{ flex: 1 }}
-        />
-        <Button
-          onClick={handleReassign}
-          loading={loading}
-          disabled={!selectedId || selectedId === currentAssignedToId}
-        >
-          Reassign
-        </Button>
-      </Group>
+      {controls}
     </Paper>
   );
 }

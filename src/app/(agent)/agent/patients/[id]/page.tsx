@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users, releases as releasesTable, patientAssignments, userProviders } from "@/lib/db/schema";
 import { and, asc, desc, eq, or } from "drizzle-orm";
-import { Title, Text, Stack } from "@mantine/core";
+import { Title, Text, Stack, Group } from "@mantine/core";
 import PatientReleasesPanel from "@/components/staff/PatientReleasesPanel";
 import PatientInfoCard from "@/components/staff/PatientInfoCard";
 import ReassignPatientControl from "@/components/staff/ReassignPatientControl";
@@ -68,17 +68,20 @@ export default async function AgentPatientPage({
 
   return (
     <Stack gap="lg">
-      <div>
-        <Title order={2}>{patientName}</Title>
-        <Text c="dimmed" size="sm">{patient.email}</Text>
-      </div>
+      <Group justify="space-between" align="flex-start">
+        <div>
+          <Title order={2}>{patientName}</Title>
+          <Text c="dimmed" size="sm">{patient.email}</Text>
+        </div>
+        <ReassignPatientControl
+          inline
+          mode="agent"
+          patientId={patientId}
+          staffMembers={staffMembers.map((s) => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, email: s.email, type: s.type as 'admin' | 'agent' }))}
+          currentAssignedToId={assignment.assignedToId}
+        />
+      </Group>
       <PatientInfoCard patient={decryptedPatient} />
-      <ReassignPatientControl
-        mode="agent"
-        patientId={patientId}
-        staffMembers={staffMembers.map((s) => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, email: s.email, type: s.type as 'admin' | 'agent' }))}
-        currentAssignedToId={assignment.assignedToId}
-      />
       <PatientProvidersPanel
         patientId={patientId}
         role="agent"

@@ -30,6 +30,7 @@ export default function PatientProvidersPanel({ patientId, role, defaultProvider
     <MyProvidersForm
       defaultValues={defaultProviders}
       onSave={handleSave}
+      title="Providers"
       maw="100%"
     />
   );

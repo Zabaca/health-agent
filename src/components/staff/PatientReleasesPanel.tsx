@@ -38,38 +38,89 @@ export default function PatientReleasesPanel({
   const visibleActive = activeReleases.filter((r) => !localVoided.includes(r.id));
 
   return (
-    <Stack gap="lg">
-      <Group justify="space-between" align="center">
+    <Paper withBorder p="md" radius="md">
+      <Group justify="space-between" align="center" mb="md">
         <Title order={4}>Releases</Title>
         <Button component={Link} href={newReleaseHref} leftSection={<IconPlus size={16} />} size="sm">
           New Release
         </Button>
       </Group>
 
-      <Paper withBorder p="md" radius="md">
-        <Title order={5} mb="sm">Active</Title>
-        {visibleActive.length === 0 ? (
-          <Text size="sm" c="dimmed">No active releases.</Text>
-        ) : (
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Name</Table.Th>
-                <Table.Th>Code</Table.Th>
-                <Table.Th>Created</Table.Th>
-                <Table.Th>Updated</Table.Th>
-                <Table.Th>Actions</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {visibleActive.map((r) => (
-                <Table.Tr key={r.id}>
-                  <Table.Td>{r.firstName} {r.lastName}</Table.Td>
-                  <Table.Td><Text size="sm" ff="monospace">{r.releaseCode ?? "—"}</Text></Table.Td>
-                  <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
-                  <Table.Td>{new Date(r.updatedAt).toLocaleDateString()}</Table.Td>
-                  <Table.Td>
-                    <Group gap="xs">
+      <Stack gap="lg">
+        <div>
+          <Title order={5} mb="sm">Active</Title>
+          {visibleActive.length === 0 ? (
+            <Text size="sm" c="dimmed">No active releases.</Text>
+          ) : (
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Name</Table.Th>
+                  <Table.Th>Code</Table.Th>
+                  <Table.Th>Created</Table.Th>
+                  <Table.Th>Updated</Table.Th>
+                  <Table.Th>Actions</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {visibleActive.map((r) => (
+                  <Table.Tr key={r.id}>
+                    <Table.Td>{r.firstName} {r.lastName}</Table.Td>
+                    <Table.Td><Text size="sm" ff="monospace">{r.releaseCode ?? "—"}</Text></Table.Td>
+                    <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
+                    <Table.Td>{new Date(r.updatedAt).toLocaleDateString()}</Table.Td>
+                    <Table.Td>
+                      <Group gap="xs">
+                        <ActionIcon
+                          component={Link}
+                          href={`${releaseHrefBase}/${r.id}`}
+                          variant="subtle"
+                          size="sm"
+                        >
+                          <IconEye size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          size="sm"
+                          loading={voidingId === r.id}
+                          onClick={() => handleVoid(r.id)}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          )}
+        </div>
+
+        {(voidedReleases.length > 0 || localVoided.length > 0) && (
+          <div>
+            <Title order={5} mb="sm">Voided</Title>
+            <Table striped>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Name</Table.Th>
+                  <Table.Th>Code</Table.Th>
+                  <Table.Th>Created</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Actions</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {[
+                  ...voidedReleases,
+                  ...activeReleases.filter((r) => localVoided.includes(r.id)),
+                ].map((r) => (
+                  <Table.Tr key={r.id}>
+                    <Table.Td>{r.firstName} {r.lastName}</Table.Td>
+                    <Table.Td><Text size="sm" ff="monospace">{r.releaseCode ?? "—"}</Text></Table.Td>
+                    <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
+                    <Table.Td><Badge color="red">Voided</Badge></Table.Td>
+                    <Table.Td>
                       <ActionIcon
                         component={Link}
                         href={`${releaseHrefBase}/${r.id}`}
@@ -78,63 +129,14 @@ export default function PatientReleasesPanel({
                       >
                         <IconEye size={16} />
                       </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        size="sm"
-                        loading={voidingId === r.id}
-                        onClick={() => handleVoid(r.id)}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </div>
         )}
-      </Paper>
-
-      {(voidedReleases.length > 0 || localVoided.length > 0) && (
-        <Paper withBorder p="md" radius="md">
-          <Title order={5} mb="sm">Voided</Title>
-          <Table striped>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Name</Table.Th>
-                <Table.Th>Code</Table.Th>
-                <Table.Th>Created</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th>Actions</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {[
-                ...voidedReleases,
-                ...activeReleases.filter((r) => localVoided.includes(r.id)),
-              ].map((r) => (
-                <Table.Tr key={r.id}>
-                  <Table.Td>{r.firstName} {r.lastName}</Table.Td>
-                  <Table.Td><Text size="sm" ff="monospace">{r.releaseCode ?? "—"}</Text></Table.Td>
-                  <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
-                  <Table.Td><Badge color="red">Voided</Badge></Table.Td>
-                  <Table.Td>
-                    <ActionIcon
-                      component={Link}
-                      href={`${releaseHrefBase}/${r.id}`}
-                      variant="subtle"
-                      size="sm"
-                    >
-                      <IconEye size={16} />
-                    </ActionIcon>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Paper>
-      )}
-    </Stack>
+      </Stack>
+    </Paper>
   );
 }
