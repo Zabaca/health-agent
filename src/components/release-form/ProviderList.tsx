@@ -30,7 +30,7 @@ import AddProviderModal from "./AddProviderModal";
 
 const defaultProvider: ProviderFormData = {
   providerName: "",
-  providerType: "" as unknown as "Medical Group" | "Facility",
+  providerType: "" as unknown as "Insurance" | "Facility",
   historyPhysical: false,
   diagnosticResults: false,
   treatmentProcedure: false,
