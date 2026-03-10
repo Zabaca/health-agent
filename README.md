@@ -64,9 +64,9 @@ openssl rand -hex 32
 | `FAXAGE_COMPANY` | No* | Faxage company identifier |
 | `FAXAGE_PASSWORD` | No* | Faxage account password |
 | `R2_ACCOUNT_ID` | Yes | Cloudflare account ID |
-| `R2_ACCESS_KEY_ID` | Yes | R2 API token access key ID |
-| `R2_SECRET_ACCESS_KEY` | Yes | R2 API token secret access key |
-| `R2_BUCKET` | Yes | R2 bucket name |
+| `S3_ACCESS_KEY_ID` | Yes | S3-compatible API token access key ID |
+| `S3_SECRET_ACCESS_KEY` | Yes | S3-compatible API token secret access key |
+| `S3_BUCKET` | Yes | S3-compatible bucket name |
 
 > \* Required to send faxes. The app runs without them, but clicking **Fax Request** will fail until all three are set.
 
