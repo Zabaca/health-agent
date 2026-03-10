@@ -12,22 +12,12 @@ interface Props {
   accept?: string;
 }
 
-async function uploadToTransloadit(file: File): Promise<string> {
-  const sigRes = await fetch("/api/transloadit/signature");
-  if (!sigRes.ok) throw new Error("Failed to get upload signature");
-  const { params, signature } = await sigRes.json();
-
+async function uploadFile(file: File): Promise<string> {
   const formData = new FormData();
-  formData.append("params", params);
-  formData.append("signature", signature);
   formData.append("file", file);
-
-  const res = await fetch("https://api2.transloadit.com/assemblies?wait=true", {
-    method: "POST",
-    body: formData,
-  });
-  const data = await res.json();
-  const url = data.uploads?.[0]?.ssl_url;
+  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  if (!res.ok) throw new Error("Upload failed");
+  const { url } = await res.json();
   if (!url) throw new Error("No URL returned from upload");
   return url;
 }
@@ -46,7 +36,7 @@ export default function FileUploadField({ label, value, onChange }: Props) {
     setError("");
     setUploading(true);
     try {
-      const url = await uploadToTransloadit(file);
+      const url = await uploadFile(file);
       onChange(url);
     } catch {
       setError("Upload failed. Please try again.");
