@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Box, Text, Image, ThemeIcon, Stack, Group } from "@mantine/core";
-import { IconUpload, IconFileTypePdf, IconX } from "@tabler/icons-react";
+import { Box, Text, Image, ThemeIcon, Stack, Group, Modal, ActionIcon, Divider } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { IconUpload, IconFileTypePdf, IconX, IconDownload, IconFileTypePdf as IconPdf } from "@tabler/icons-react";
 
 interface Props {
   label: string;
@@ -27,6 +28,7 @@ async function uploadFile(file: File): Promise<string> {
 export default function FileUploadField({ label, value, onChange, required, error: fieldError }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [previewOpened, { open: openPreview, close: closePreview }] = useDisclosure(false);
 
   const onDrop = async (accepted: File[], rejected: typeof dropzone.fileRejections) => {
     if (rejected.length > 0) {
@@ -63,6 +65,7 @@ export default function FileUploadField({ label, value, onChange, required, erro
       <Text size="sm" fw={500}>{label}{required && <span style={{ color: "var(--mantine-color-red-6)", marginLeft: 2 }}>*</span>}</Text>
 
       {value ? (
+        <>
         <Box>
           <Box
             {...getRootProps()}
@@ -76,11 +79,7 @@ export default function FileUploadField({ label, value, onChange, required, erro
             <input {...getInputProps()} />
             {isPdf ? (
               <Box
-                component="a"
-                href={value}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); openPreview(); }}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -90,7 +89,6 @@ export default function FileUploadField({ label, value, onChange, required, erro
                   borderRadius: 6,
                   background: "#fff5f5",
                   cursor: "pointer",
-                  textDecoration: "none",
                 }}
               >
                 <ThemeIcon color="red" variant="light" size="sm">
@@ -100,11 +98,7 @@ export default function FileUploadField({ label, value, onChange, required, erro
               </Box>
             ) : (
               <Box
-                component="a"
-                href={value}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => { e.stopPropagation(); openPreview(); }}
               >
                 <Image
                   src={value}
@@ -142,6 +136,76 @@ export default function FileUploadField({ label, value, onChange, required, erro
             {uploading ? "Uploading…" : "Click or drop to replace"}
           </Text>
         </Box>
+
+        <Modal
+          opened={previewOpened}
+          onClose={closePreview}
+          size="xl"
+          centered
+          padding={0}
+          withCloseButton={false}
+          styles={{ body: { padding: 0 }, content: { overflow: "hidden", borderRadius: 12 } }}
+        >
+          {/* Header */}
+          <Group
+            justify="space-between"
+            align="center"
+            px="lg"
+            py="sm"
+            style={{ borderBottom: "1px solid var(--mantine-color-gray-2)", background: "var(--mantine-color-gray-0)" }}
+          >
+            <Group gap="xs">
+              <ThemeIcon size="sm" variant="light" color={isPdf ? "red" : "blue"} radius="sm">
+                {isPdf ? <IconPdf size={13} /> : <IconUpload size={13} />}
+              </ThemeIcon>
+              <Text size="sm" fw={600} c="gray.8">{label}</Text>
+            </Group>
+            <Group gap="xs">
+              <ActionIcon
+                component="a"
+                href={value}
+                download
+                variant="subtle"
+                color="gray"
+                size="sm"
+                aria-label="Download"
+              >
+                <IconDownload size={15} />
+              </ActionIcon>
+              <ActionIcon variant="subtle" color="gray" size="sm" onClick={closePreview} aria-label="Close">
+                <IconX size={15} />
+              </ActionIcon>
+            </Group>
+          </Group>
+
+          {/* Content */}
+          <Box
+            style={{
+              background: isPdf ? "#fff" : "var(--mantine-color-gray-1)",
+              minHeight: 400,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {isPdf ? (
+              <iframe
+                src={value}
+                style={{ width: "100%", height: "72vh", border: "none", display: "block" }}
+                title={label}
+              />
+            ) : (
+              <Image
+                src={value}
+                alt={label}
+                fit="contain"
+                mah="72vh"
+                style={{ padding: 16 }}
+              />
+            )}
+          </Box>
+        </Modal>
+        </>
       ) : (
         <Box
           {...getRootProps()}

@@ -18,10 +18,13 @@ export default function DocViewer({ fileURL }: DocViewerProps) {
   const [totalPages, setTotalPages] = useState(0);
   const [modalOpened, { open, close }] = useDisclosure(false);
 
-  const isPdf = fileURL.toLowerCase().endsWith('.pdf');
+  const ext = fileURL.split('.').pop()?.toLowerCase() ?? '';
+  const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  const isImage = IMAGE_EXTS.includes(ext);
+  const isPdf = ext === 'pdf';
 
   useEffect(() => {
-    if (isPdf) { setLoading(false); return; }
+    if (isPdf || isImage) { setLoading(false); return; }
 
     let cancelled = false;
 
@@ -70,7 +73,33 @@ export default function DocViewer({ fileURL }: DocViewerProps) {
 
     loadFirstPage();
     return () => { cancelled = true; };
-  }, [fileURL, isPdf]);
+  }, [fileURL, isPdf, isImage]);
+
+  if (isImage) {
+    return (
+      <>
+        <Tooltip label="Click to view image" position="bottom">
+          <Stack
+            align="center"
+            gap="xs"
+            onClick={open}
+            style={{
+              cursor: 'zoom-in',
+              padding: '8px',
+              border: '1px solid #dee2e6',
+              borderRadius: 8,
+              background: '#f8f9fa',
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={fileURL} alt="Uploaded file" style={{ maxWidth: 120, maxHeight: 120, borderRadius: 4, objectFit: 'cover' }} />
+            <Text size="xs" c="dimmed">Click to view</Text>
+          </Stack>
+        </Tooltip>
+        <DocModal fileURL={fileURL} opened={modalOpened} onClose={close} />
+      </>
+    );
+  }
 
   if (isPdf) {
     return (

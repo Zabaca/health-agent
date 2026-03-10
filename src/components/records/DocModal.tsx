@@ -19,18 +19,32 @@ export default function DocModal({ fileURL, opened, onClose }: DocModalProps) {
   const canvasRef    = useRef<HTMLCanvasElement>(null);
   const scrollRef    = useRef<HTMLDivElement>(null);
   const dragState    = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
-  const [ifds, setIfds]       = useState<UTIF.IFD[]>([]);
-  const [buffer, setBuffer]   = useState<ArrayBuffer | null>(null);
-  const [page, setPage]       = useState(0);
-  const [zoom, setZoom]       = useState(1);
-  const [fitZoom, setFitZoom] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+  const [ifds, setIfds]           = useState<UTIF.IFD[]>([]);
+  const [buffer, setBuffer]       = useState<ArrayBuffer | null>(null);
+  const [page, setPage]           = useState(0);
+  const [zoom, setZoom]           = useState(1);
+  const [fitZoom, setFitZoom]     = useState(1);
+  const [imgZoom, setImgZoom]     = useState(1);
+  const [imgFitZoom, setImgFitZoom] = useState(1);
+  const [imgSize, setImgSize]     = useState<number | null>(null);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState<string | null>(null);
 
-  const isPdf = fileURL.toLowerCase().endsWith('.pdf');
+  const ext = fileURL.split('.').pop()?.toLowerCase() ?? '';
+  const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  const isImage = IMAGE_EXTS.includes(ext);
+  const isPdf = ext === 'pdf';
+
+  // Reset image zoom when modal opens/closes or URL changes
+  useEffect(() => {
+    if (!opened || !isImage) return;
+    setImgSize(null);
+    setImgZoom(1);
+    setImgFitZoom(1);
+  }, [fileURL, opened, isImage]);
 
   useEffect(() => {
-    if (!opened || isPdf) return;
+    if (!opened || isPdf || isImage) return;
     let cancelled = false;
 
     async function load() {
@@ -131,13 +145,87 @@ export default function DocModal({ fileURL, opened, onClose }: DocModalProps) {
           <Stack gap={0}>
             <Text fw={700} size="lg" c="white">Document Viewer</Text>
             <Text size="xs" c="rgba(255,255,255,0.75)">
-              {totalPages > 0 ? `${totalPages} page${totalPages !== 1 ? 's' : ''}` : 'Loading…'}
+              {isImage ? 'Image' : totalPages > 0 ? `${totalPages} page${totalPages !== 1 ? 's' : ''}` : 'Loading…'}
             </Text>
           </Stack>
         </Group>
       }
     >
-      {isPdf ? (
+      {isImage ? (
+        <Stack gap="sm" pt="sm">
+          {/* Toolbar */}
+          <Paper withBorder radius="sm" px="sm" py={6}>
+            <Group justify="flex-end" gap={4}>
+              <Tooltip label="Zoom out" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  disabled={imgZoom <= ZOOM_MIN}
+                  onClick={() => setImgZoom(z => Math.max(ZOOM_MIN, parseFloat((z - ZOOM_STEP).toFixed(2))))}
+                >
+                  <IconZoomOut size={16} />
+                </ActionIcon>
+              </Tooltip>
+              <Text size="sm" w={52} ta="center" ff="monospace">{Math.round(imgZoom * 100)}%</Text>
+              <Tooltip label="Zoom in" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  disabled={imgZoom >= ZOOM_MAX}
+                  onClick={() => setImgZoom(z => Math.min(ZOOM_MAX, parseFloat((z + ZOOM_STEP).toFixed(2))))}
+                >
+                  <IconZoomIn size={16} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label="Fit to width" withArrow>
+                <ActionIcon variant="subtle" onClick={() => setImgZoom(imgFitZoom)}>
+                  <IconZoomReset size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Paper>
+
+          {/* Image area */}
+          <div
+            ref={scrollRef}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            style={{
+              overflow: 'auto',
+              maxHeight: '68vh',
+              background: '#e8e8e8',
+              borderRadius: 6,
+              padding: 12,
+              cursor: 'grab',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+            }}
+          >
+            <div style={{ width: 'fit-content', margin: '0 auto' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={fileURL}
+                alt="Document"
+                draggable={false}
+                onDragStart={e => e.preventDefault()}
+                onLoad={(e) => {
+                  const naturalWidth = e.currentTarget.naturalWidth;
+                  const containerWidth = scrollRef.current?.clientWidth ?? 700;
+                  const fit = Math.min(1, (containerWidth - 24) / naturalWidth);
+                  setImgSize(naturalWidth);
+                  setImgFitZoom(fit);
+                  setImgZoom(fit);
+                }}
+                style={{
+                  display: 'block',
+                  width: imgSize ? imgSize * imgZoom : undefined,
+                  height: 'auto',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+                }}
+              />
+            </div>
+          </div>
+        </Stack>
+      ) : isPdf ? (
         <iframe
           src={fileURL}
           style={{ width: '100%', height: '68vh', border: 'none', borderRadius: 6 }}
