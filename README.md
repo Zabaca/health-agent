@@ -191,6 +191,71 @@ The `ReleaseRequestLog` table stores:
 
 ---
 
+## Secrets Management (SOPS + age)
+
+Secrets are encrypted in the repo using [SOPS](https://github.com/getsops/sops) with [age](https://github.com/FiloSottile/age) encryption — no cloud KMS required.
+
+### First-time setup
+
+1. **Install tools**
+
+   ```bash
+   brew install age sops
+   ```
+
+2. **Generate your age keypair**
+
+   ```bash
+   age-keygen -o ~/Library/Application\ Support/sops/age/keys.txt
+   ```
+
+   Share your **public key** (printed to stdout) with the team so it can be added to `.sops.yaml`.
+
+3. **Get added to `.sops.yaml`**
+
+   A team member adds your public key to the `age` recipients list in `.sops.yaml` and re-encrypts existing files:
+
+   ```bash
+   sops --rotate --add-age age1yourpublickey... --in-place path/to/secret.yaml
+   ```
+
+### Encrypting a new file
+
+```bash
+sops --encrypt --in-place secrets.yaml
+```
+
+SOPS reads `.sops.yaml` for encryption rules and recipient keys automatically.
+
+### Editing an encrypted file
+
+```bash
+sops secrets.yaml
+```
+
+Opens your `$EDITOR`, decrypts for editing, and re-encrypts on save.
+
+### Decrypting to stdout
+
+```bash
+sops --decrypt secrets.yaml
+```
+
+### Key location
+
+| OS | Default path |
+|----|-------------|
+| macOS | `~/Library/Application Support/sops/age/keys.txt` |
+| Linux | `~/.config/sops/age/keys.txt` |
+
+Or set `SOPS_AGE_KEY_FILE` to a custom path.
+
+### CI/CD
+
+Store the age private key as a CI secret named `SOPS_AGE_KEY` and SOPS will use it automatically for decryption.
+
+---
+
 ## Available Scripts
 
 | Command | Description |
