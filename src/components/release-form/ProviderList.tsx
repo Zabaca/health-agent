@@ -39,6 +39,20 @@ const defaultProvider: ProviderFormData = {
   dischargeSummaries: false,
   specificRecords: false,
   allAvailableDates: false,
+  benefitsCoverage: false,
+  claimsPayment: false,
+  eligibilityEnrollment: false,
+  financialBilling: false,
+  medicalRecords: false,
+  dentalRecords: false,
+  otherNonSpecific: false,
+  sensitiveCommDiseases: false,
+  sensitiveReproductiveHealth: false,
+  sensitiveHivAids: false,
+  sensitiveMentalHealth: false,
+  sensitiveSubstanceUse: false,
+  sensitivePsychotherapy: false,
+  sensitiveOther: false,
 };
 
 interface SortableItemProps {

@@ -27,7 +27,6 @@ interface Props {
 const PROVIDER_TYPES = [
   { value: "Insurance", label: "Insurance" },
   { value: "Hospital", label: "Hospital" },
-  { value: "Clinic", label: "Clinic" },
   { value: "Facility", label: "Facility (Clinics, Primary Care Physician, Urgent Care, Labs, etc)" },
 ];
 
@@ -44,8 +43,8 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
   const insuranceName = watch(`providers.${index}.insurance`);
   const isInsurance = providerType === "Insurance";
   const displayName = isInsurance ? (insuranceName || `Provider ${index + 1}`) : providerName;
-  const isFacilityType = providerType === "Hospital" || providerType === "Clinic";
-  const isClinic = providerType === "Clinic";
+  const isFacilityType = providerType === "Hospital" || providerType === "Facility";
+  const isClinic = providerType === "Facility";
   const providerErrors = errors.providers?.[index];
   const hasErrors = !!providerErrors;
 

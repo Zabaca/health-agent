@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const providerBaseShape = {
   providerName: z.string().optional(),
-  providerType: z.enum(["Insurance", "Hospital", "Clinic", "Facility"], {
+  providerType: z.enum(["Insurance", "Hospital", "Facility"], {
     errorMap: () => ({ message: "Please select a provider type" }),
   }),
   physicianName: z.string().optional(),
@@ -25,6 +25,28 @@ const providerBaseShape = {
   dischargeSummaries: z.boolean(),
   specificRecords: z.boolean(),
   specificRecordsDesc: z.string().optional(),
+
+  // Insurance-specific record fields
+  benefitsCoverage: z.boolean().default(false),
+  claimsPayment: z.boolean().default(false),
+  eligibilityEnrollment: z.boolean().default(false),
+  financialBilling: z.boolean().default(false),
+
+  // Hospital/Clinic-specific record fields
+  medicalRecords: z.boolean().default(false),
+  dentalRecords: z.boolean().default(false),
+  otherNonSpecific: z.boolean().default(false),
+  otherNonSpecificDesc: z.string().optional(),
+
+  // Sensitive information fields
+  sensitiveCommDiseases: z.boolean().default(false),
+  sensitiveReproductiveHealth: z.boolean().default(false),
+  sensitiveHivAids: z.boolean().default(false),
+  sensitiveMentalHealth: z.boolean().default(false),
+  sensitiveSubstanceUse: z.boolean().default(false),
+  sensitivePsychotherapy: z.boolean().default(false),
+  sensitiveOther: z.boolean().default(false),
+  sensitiveOtherDesc: z.string().optional(),
   dateRangeFrom: z.string().optional(),
   dateRangeTo: z.string().optional(),
   allAvailableDates: z.boolean(),
@@ -52,9 +74,21 @@ export const providerSchema = z.object(providerBaseShape).superRefine((data, ctx
     }
   }
 
-  const recordFields = ["historyPhysical", "diagnosticResults", "treatmentProcedure", "prescriptionMedication", "imagingRadiology", "dischargeSummaries", "specificRecords"] as const;
-  if (!recordFields.some((f) => data[f])) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select at least one record type", path: ["historyPhysical"] });
+  if (data.providerType === "Insurance") {
+    const insuranceRecordFields = ["benefitsCoverage", "claimsPayment", "eligibilityEnrollment", "financialBilling"] as const;
+    if (!insuranceRecordFields.some((f) => data[f])) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select at least one record type", path: ["benefitsCoverage"] });
+    }
+  } else if (data.providerType === "Hospital" || data.providerType === "Facility") {
+    const hospitalRecordFields = ["medicalRecords", "dentalRecords", "otherNonSpecific"] as const;
+    if (!hospitalRecordFields.some((f) => data[f])) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select at least one record type", path: ["medicalRecords"] });
+    }
+  } else {
+    const recordFields = ["historyPhysical", "diagnosticResults", "treatmentProcedure", "prescriptionMedication", "imagingRadiology", "dischargeSummaries", "specificRecords"] as const;
+    if (!recordFields.some((f) => data[f])) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select at least one record type", path: ["historyPhysical"] });
+    }
   }
 
   if (!data.allAvailableDates) {
@@ -85,6 +119,22 @@ export const myProviderSchema = z.object(providerBaseShape).omit({
   allAvailableDates: true,
   purpose: true,
   purposeOther: true,
+  benefitsCoverage: true,
+  claimsPayment: true,
+  eligibilityEnrollment: true,
+  financialBilling: true,
+  medicalRecords: true,
+  dentalRecords: true,
+  otherNonSpecific: true,
+  otherNonSpecificDesc: true,
+  sensitiveCommDiseases: true,
+  sensitiveReproductiveHealth: true,
+  sensitiveHivAids: true,
+  sensitiveMentalHealth: true,
+  sensitiveSubstanceUse: true,
+  sensitivePsychotherapy: true,
+  sensitiveOther: true,
+  sensitiveOtherDesc: true,
 }).superRefine((data, ctx) => {
   if (data.providerType !== "Insurance" && !data.providerName?.trim()) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Provider name is required", path: ["providerName"] });
