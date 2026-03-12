@@ -84,7 +84,7 @@ export default function AgentsTable({ agents }: { agents: Agent[] }) {
               </Table.Td>
               <Table.Td>{agent.email}</Table.Td>
               <Table.Td>
-                <Badge variant="light" color="violet" tt="capitalize">{agent.type}</Badge>
+                <Badge variant="light" color={agent.type === "admin" ? "teal" : "violet"} tt="capitalize">{agent.type}</Badge>
               </Table.Td>
               <Table.Td>
                 {agent.mustChangePassword ? (
