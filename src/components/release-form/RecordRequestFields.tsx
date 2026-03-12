@@ -68,7 +68,7 @@ export default function RecordRequestFields({ index }: Props) {
   const isHospitalOrClinic = providerType === "Hospital" || providerType === "Facility";
 
   return (
-    <Paper withBorder p="md" radius="md">
+    <Paper withBorder p="md" radius="md" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: "none" }}>
     <Stack gap="sm">
       <Title order={6}>Records to Release <span style={{ color: "var(--mantine-color-error)" }}>*</span></Title>
 

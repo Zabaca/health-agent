@@ -57,6 +57,7 @@ export default function PatientReleasesPanel({
                 <Table.Tr>
                   <Table.Th>Name</Table.Th>
                   <Table.Th>Code</Table.Th>
+                  <Table.Th>Status</Table.Th>
                   <Table.Th>Created</Table.Th>
                   <Table.Th>Updated</Table.Th>
                   <Table.Th>Actions</Table.Th>
@@ -67,6 +68,12 @@ export default function PatientReleasesPanel({
                   <Table.Tr key={r.id}>
                     <Table.Td>{r.firstName} {r.lastName}</Table.Td>
                     <Table.Td><Text size="sm" ff="monospace">{r.releaseCode ?? "—"}</Text></Table.Td>
+                    <Table.Td>
+                      {r.authSignatureImage
+                        ? <Badge color="green">Signed</Badge>
+                        : <Badge color="yellow">Patient Signature Required</Badge>
+                      }
+                    </Table.Td>
                     <Table.Td>{new Date(r.createdAt).toLocaleDateString()}</Table.Td>
                     <Table.Td>{new Date(r.updatedAt).toLocaleDateString()}</Table.Td>
                     <Table.Td>

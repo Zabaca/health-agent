@@ -26,6 +26,7 @@ import type { ReleaseFormData, ProviderFormData } from "@/types/release";
 import type { UserProviderRow } from "@/lib/db/types";
 import { apiClient } from "@/lib/api/client";
 import ProviderCard from "./ProviderCard";
+import RecordRequestFields from "./RecordRequestFields";
 import AddProviderModal from "./AddProviderModal";
 
 const defaultProvider: ProviderFormData = {
@@ -58,10 +59,11 @@ const defaultProvider: ProviderFormData = {
 interface SortableItemProps {
   id: string;
   index: number;
+  isOpen: boolean;
   onRemove: () => void;
 }
 
-function SortableItem({ id, index, onRemove }: SortableItemProps) {
+function SortableItem({ id, index, isOpen, onRemove }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -79,9 +81,11 @@ function SortableItem({ id, index, onRemove }: SortableItemProps) {
     >
       <ProviderCard
         index={index}
+        isOpen={isOpen}
         onRemove={onRemove}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
+      <RecordRequestFields index={index} />
     </div>
   );
 }
@@ -217,6 +221,7 @@ export default function ProviderList({ savedProviders: savedProvidersProp, initi
                 key={field.id}
                 id={field.id}
                 index={index}
+                isOpen={openItems.includes(`provider-${index}`)}
                 onRemove={() => handleRemove(index)}
               />
             ))}

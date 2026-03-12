@@ -8,18 +8,17 @@ import {
   Button,
   Stack,
   Title,
-  Divider,
   Group,
   Text,
 } from "@mantine/core";
 import { IconGripVertical } from "@tabler/icons-react";
 import { useFormContext, Controller } from "react-hook-form";
 import type { ReleaseFormData } from "@/types/release";
-import RecordRequestFields from "./RecordRequestFields";
 import FileUploadField from "./FileUploadField";
 
 interface Props {
   index: number;
+  isOpen: boolean;
   onRemove: () => void;
   dragHandleProps?: object;
 }
@@ -30,7 +29,7 @@ const PROVIDER_TYPES = [
   { value: "Facility", label: "Facility (Clinics, Primary Care Physician, Urgent Care, Labs, etc)" },
 ];
 
-export default function ProviderCard({ index, onRemove, dragHandleProps }: Props) {
+export default function ProviderCard({ index, isOpen, onRemove, dragHandleProps }: Props) {
   const {
     register,
     control,
@@ -51,7 +50,13 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
   return (
     <Accordion.Item
       value={`provider-${index}`}
-      style={hasErrors ? { borderColor: "var(--mantine-color-red-5)" } : undefined}
+      style={{
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+        borderBottom: "none",
+        ...(!isOpen ? { border: "1px solid var(--mantine-color-default-border)", borderBottom: "none" } : {}),
+        ...(hasErrors ? { borderColor: "var(--mantine-color-red-5)" } : {}),
+      }}
     >
       <Accordion.Control>
         <Group gap="xs" wrap="nowrap" align="center">
@@ -215,9 +220,6 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
               {...register(`providers.${index}.providerName`)}
             />
           )}
-
-          <Divider />
-          <RecordRequestFields index={index} />
 
           <Button
             variant="light"

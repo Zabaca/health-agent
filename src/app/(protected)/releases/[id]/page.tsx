@@ -48,15 +48,6 @@ export default async function ViewReleasePage({
 
   const { ssn, dateOfBirth, ...releaseRest } = decryptPii(release);
 
-  const recordLabels: Record<string, string> = {
-    historyPhysical: "History & Physical",
-    diagnosticResults: "Diagnostic Results",
-    treatmentProcedure: "Treatment/Procedure Notes",
-    prescriptionMedication: "Prescription/Medication",
-    imagingRadiology: "Imaging/Radiology",
-    dischargeSummaries: "Discharge Summaries",
-    specificRecords: "Specific Records",
-  };
 
   return (
     <Stack gap="xl" className="release-content">
@@ -155,18 +146,58 @@ export default async function ViewReleasePage({
 
               <Divider variant="dashed" />
               <Title order={6}>Records to Release</Title>
-              <SimpleGrid cols={3}>
-                {Object.entries(recordLabels).map(([key, label]) => (
-                  <Checkbox
-                    key={key}
-                    label={label}
-                    checked={!!p[key as keyof typeof p]}
-                    readOnly
-                  />
-                ))}
-              </SimpleGrid>
-              {p.specificRecords && p.specificRecordsDesc && (
-                <Field label="Specific Records Description" value={p.specificRecordsDesc} />
+              {p.providerType === "Insurance" && (
+                <SimpleGrid cols={3}>
+                  <Checkbox label="Benefits and Coverage" checked={p.benefitsCoverage} readOnly />
+                  <Checkbox label="Claims and Payment" checked={p.claimsPayment} readOnly />
+                  <Checkbox label="Eligibility and Enrollment" checked={p.eligibilityEnrollment} readOnly />
+                  <Checkbox label="Financial/Billing Information" checked={p.financialBilling} readOnly />
+                </SimpleGrid>
+              )}
+              {(p.providerType === "Hospital" || p.providerType === "Facility") && (
+                <>
+                  <SimpleGrid cols={3}>
+                    <Checkbox label="Medical Records" checked={p.medicalRecords} readOnly />
+                    <Checkbox label="Dental Records" checked={p.dentalRecords} readOnly />
+                    <Checkbox label="Other Non-Specific" checked={p.otherNonSpecific} readOnly />
+                  </SimpleGrid>
+                  {p.otherNonSpecific && p.otherNonSpecificDesc && (
+                    <Field label="Other Non-Specific Details" value={p.otherNonSpecificDesc} />
+                  )}
+                </>
+              )}
+              {p.providerType !== "Insurance" && p.providerType !== "Hospital" && p.providerType !== "Facility" && (
+                <>
+                  <SimpleGrid cols={3}>
+                    <Checkbox label="History & Physical" checked={p.historyPhysical} readOnly />
+                    <Checkbox label="Diagnostic Results" checked={p.diagnosticResults} readOnly />
+                    <Checkbox label="Treatment/Procedure Notes" checked={p.treatmentProcedure} readOnly />
+                    <Checkbox label="Prescription/Medication" checked={p.prescriptionMedication} readOnly />
+                    <Checkbox label="Imaging/Radiology" checked={p.imagingRadiology} readOnly />
+                    <Checkbox label="Discharge Summaries" checked={p.dischargeSummaries} readOnly />
+                    <Checkbox label="Specific Records" checked={p.specificRecords} readOnly />
+                  </SimpleGrid>
+                  {p.specificRecords && p.specificRecordsDesc && (
+                    <Field label="Specific Records Description" value={p.specificRecordsDesc} />
+                  )}
+                </>
+              )}
+              {(p.providerType === "Insurance" || p.providerType === "Hospital" || p.providerType === "Facility") && (
+                <>
+                  <Title order={6}>Sensitive Information to be Disclosed</Title>
+                  <SimpleGrid cols={3}>
+                    <Checkbox label="Communicable Diseases" checked={p.sensitiveCommDiseases} readOnly />
+                    <Checkbox label="Reproductive Health" checked={p.sensitiveReproductiveHealth} readOnly />
+                    <Checkbox label="HIV/AIDS status or testing results" checked={p.sensitiveHivAids} readOnly />
+                    <Checkbox label="Mental Health / Behavior Health records" checked={p.sensitiveMentalHealth} readOnly />
+                    <Checkbox label="Substance Use Disorder (Alcohol/Drug treatment)" checked={p.sensitiveSubstanceUse} readOnly />
+                    <Checkbox label="Psychotherapy Notes" checked={p.sensitivePsychotherapy} readOnly />
+                    <Checkbox label="Other (Specify)" checked={p.sensitiveOther} readOnly />
+                  </SimpleGrid>
+                  {p.sensitiveOther && p.sensitiveOtherDesc && (
+                    <Field label="Sensitive Other Details" value={p.sensitiveOtherDesc} />
+                  )}
+                </>
               )}
 
               <Title order={6}>Date Range</Title>
