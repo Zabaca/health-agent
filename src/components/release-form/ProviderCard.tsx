@@ -8,18 +8,17 @@ import {
   Button,
   Stack,
   Title,
-  Divider,
   Group,
   Text,
 } from "@mantine/core";
 import { IconGripVertical } from "@tabler/icons-react";
 import { useFormContext, Controller } from "react-hook-form";
 import type { ReleaseFormData } from "@/types/release";
-import RecordRequestFields from "./RecordRequestFields";
 import FileUploadField from "./FileUploadField";
 
 interface Props {
   index: number;
+  isOpen: boolean;
   onRemove: () => void;
   dragHandleProps?: object;
 }
@@ -27,11 +26,10 @@ interface Props {
 const PROVIDER_TYPES = [
   { value: "Insurance", label: "Insurance" },
   { value: "Hospital", label: "Hospital" },
-  { value: "Clinic", label: "Clinic" },
   { value: "Facility", label: "Facility (Clinics, Primary Care Physician, Urgent Care, Labs, etc)" },
 ];
 
-export default function ProviderCard({ index, onRemove, dragHandleProps }: Props) {
+export default function ProviderCard({ index, isOpen, onRemove, dragHandleProps }: Props) {
   const {
     register,
     control,
@@ -44,15 +42,21 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
   const insuranceName = watch(`providers.${index}.insurance`);
   const isInsurance = providerType === "Insurance";
   const displayName = isInsurance ? (insuranceName || `Provider ${index + 1}`) : providerName;
-  const isFacilityType = providerType === "Hospital" || providerType === "Clinic";
-  const isClinic = providerType === "Clinic";
+  const isFacilityType = providerType === "Hospital" || providerType === "Facility";
+  const isClinic = providerType === "Facility";
   const providerErrors = errors.providers?.[index];
   const hasErrors = !!providerErrors;
 
   return (
     <Accordion.Item
       value={`provider-${index}`}
-      style={hasErrors ? { borderColor: "var(--mantine-color-red-5)" } : undefined}
+      style={{
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+        borderBottom: "none",
+        ...(!isOpen ? { border: "1px solid var(--mantine-color-default-border)", borderBottom: "none" } : {}),
+        ...(hasErrors ? { borderColor: "var(--mantine-color-red-5)" } : {}),
+      }}
     >
       <Accordion.Control>
         <Group gap="xs" wrap="nowrap" align="center">
@@ -216,9 +220,6 @@ export default function ProviderCard({ index, onRemove, dragHandleProps }: Props
               {...register(`providers.${index}.providerName`)}
             />
           )}
-
-          <Divider />
-          <RecordRequestFields index={index} />
 
           <Button
             variant="light"
