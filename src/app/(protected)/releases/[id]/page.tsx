@@ -125,24 +125,6 @@ export default async function ViewReleasePage({
               </SimpleGrid>
               {p.providerType !== "Insurance" && <Field label="Address" value={p.address} />}
 
-              {(p.membershipIdFront || p.membershipIdBack) && (
-                <SimpleGrid cols={2}>
-                  {p.membershipIdFront && (
-                    <Stack gap={2}>
-                      <Text size="xs" c="dimmed" fw={500}>Membership Card (Front)</Text>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.membershipIdFront} alt="Membership Front" style={{ maxWidth: 200, borderRadius: 4, border: "1px solid #dee2e6" }} />
-                    </Stack>
-                  )}
-                  {p.membershipIdBack && (
-                    <Stack gap={2}>
-                      <Text size="xs" c="dimmed" fw={500}>Membership Card (Back)</Text>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.membershipIdBack} alt="Membership Back" style={{ maxWidth: 200, borderRadius: 4, border: "1px solid #dee2e6" }} />
-                    </Stack>
-                  )}
-                </SimpleGrid>
-              )}
 
               <Divider variant="dashed" />
               <Title order={6}>Records to Release</Title>

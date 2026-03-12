@@ -13,7 +13,6 @@ import StaffVoidReleaseButton from "@/components/staff/StaffVoidReleaseButton";
 import PrintButton from "@/components/release-view/PrintButton";
 import ExportTiffButton from "@/components/release-view/ExportTiffButton";
 import FaxButton from "@/components/release-view/FaxButton";
-import MembershipCardImage from "@/components/release-view/MembershipCardImage";
 import ReleaseRequestLogTable from "@/components/release-view/ReleaseRequestLogTable";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
@@ -137,16 +136,6 @@ export default async function AgentReleaseViewPage({
                     <Field label="Insurance Group ID" value={p.groupId} />
                     <Field label="Insurance Plan Name" value={p.planName} />
                   </SimpleGrid>
-                  {(p.membershipIdFront || p.membershipIdBack) && (
-                    <SimpleGrid cols={2} className="no-print">
-                      {p.membershipIdFront && (
-                        <MembershipCardImage src={p.membershipIdFront} label="Membership Card (Front)" />
-                      )}
-                      {p.membershipIdBack && (
-                        <MembershipCardImage src={p.membershipIdBack} label="Membership Card (Back)" />
-                      )}
-                    </SimpleGrid>
-                  )}
                 </>
               )}
               <SimpleGrid cols={3}>
