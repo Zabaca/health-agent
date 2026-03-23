@@ -20,7 +20,7 @@ export default async function MyProvidersPage() {
 
   const providers: MyProviderFormData[] = rows.map((r) => ({
     providerName: r.providerName,
-    providerType: r.providerType as MyProviderFormData["providerType"],
+    providerType: (r.providerType === "Medical Group" ? "Facility" : r.providerType) as MyProviderFormData["providerType"],
     physicianName: r.physicianName ?? "",
     patientId: r.patientId ?? "",
     insurance: r.insurance ?? "",
