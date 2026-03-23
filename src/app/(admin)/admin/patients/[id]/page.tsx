@@ -78,7 +78,7 @@ export default async function AdminPatientPage({
         role="admin"
         defaultProviders={providers.map(({ id: _id, userId: _userId, order: _order, providerType, ...rest }) => ({
           ...Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, v ?? undefined])),
-          providerType: (providerType === "Medical Group" ? "Facility" : providerType) as "Insurance" | "Hospital" | "Facility",
+          providerType: providerType as "Insurance" | "Hospital" | "Facility",
         }))}
       />
       <PatientReleasesPanel

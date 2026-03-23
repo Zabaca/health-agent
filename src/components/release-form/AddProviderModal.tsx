@@ -17,7 +17,7 @@ interface Props {
 export function rowToFormData(row: UserProviderRow): ProviderFormData {
   return {
     providerName: row.providerName,
-    providerType: (row.providerType === "Medical Group" ? "Facility" : row.providerType) as ProviderFormData["providerType"],
+    providerType: row.providerType as ProviderFormData["providerType"],
     physicianName: row.physicianName ?? undefined,
     patientId: row.patientId ?? undefined,
     insurance: row.insurance ?? undefined,

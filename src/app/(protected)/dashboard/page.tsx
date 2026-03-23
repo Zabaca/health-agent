@@ -91,7 +91,7 @@ export default async function DashboardPage() {
 
     initialProviderValues = userProviderRows.map((p) => ({
       providerName: p.providerName,
-      providerType: (p.providerType === "Medical Group" ? "Facility" : p.providerType) as MyProviderFormData["providerType"],
+      providerType: p.providerType as MyProviderFormData["providerType"],
       physicianName: p.physicianName ?? undefined,
       patientId: p.patientId ?? undefined,
       insurance: p.insurance ?? undefined,
@@ -135,7 +135,7 @@ export default async function DashboardPage() {
         authAgentName:        dec.authAgentName        ?? undefined,
         providers: existingRelease.providers.map((p) => ({
           providerName:        p.providerName,
-          providerType:        (p.providerType === "Medical Group" ? "Facility" : p.providerType) as ProviderFormData["providerType"],
+          providerType:        p.providerType as ProviderFormData["providerType"],
           physicianName:       p.physicianName       ?? undefined,
           patientId:           p.patientId           ?? undefined,
           insurance:           p.insurance           ?? undefined,
