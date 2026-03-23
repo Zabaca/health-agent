@@ -370,6 +370,7 @@ export default function RecordRequestFields({ index }: Props) {
             data={PURPOSE_OPTIONS}
             value={field.value || null}
             onChange={field.onChange}
+            allowDeselect={false}
             error={providerErrors?.purpose?.message}
             withAsterisk
           />
