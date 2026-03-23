@@ -62,6 +62,7 @@ export default function ReassignPatientControl({ mode, patientId, staffMembers, 
         data={options}
         value={selectedId}
         onChange={setSelectedId}
+        allowDeselect={false}
         searchable
         style={{ minWidth: 220 }}
         size={inline ? "sm" : "sm"}
