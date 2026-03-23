@@ -87,6 +87,29 @@ export const providers = sqliteTable('Provider', {
   dischargeSummaries: integer('dischargeSummaries', { mode: 'boolean' }).notNull().default(false),
   specificRecords: integer('specificRecords', { mode: 'boolean' }).notNull().default(false),
   specificRecordsDesc: text('specificRecordsDesc'),
+
+  // Insurance-specific record fields
+  benefitsCoverage: integer('benefitsCoverage', { mode: 'boolean' }).notNull().default(false),
+  claimsPayment: integer('claimsPayment', { mode: 'boolean' }).notNull().default(false),
+  eligibilityEnrollment: integer('eligibilityEnrollment', { mode: 'boolean' }).notNull().default(false),
+  financialBilling: integer('financialBilling', { mode: 'boolean' }).notNull().default(false),
+
+  // Hospital/Clinic-specific record fields
+  medicalRecords: integer('medicalRecords', { mode: 'boolean' }).notNull().default(false),
+  dentalRecords: integer('dentalRecords', { mode: 'boolean' }).notNull().default(false),
+  otherNonSpecific: integer('otherNonSpecific', { mode: 'boolean' }).notNull().default(false),
+  otherNonSpecificDesc: text('otherNonSpecificDesc'),
+
+  // Sensitive information fields (Insurance, Hospital, Clinic)
+  sensitiveCommDiseases: integer('sensitiveCommDiseases', { mode: 'boolean' }).notNull().default(false),
+  sensitiveReproductiveHealth: integer('sensitiveReproductiveHealth', { mode: 'boolean' }).notNull().default(false),
+  sensitiveHivAids: integer('sensitiveHivAids', { mode: 'boolean' }).notNull().default(false),
+  sensitiveMentalHealth: integer('sensitiveMentalHealth', { mode: 'boolean' }).notNull().default(false),
+  sensitiveSubstanceUse: integer('sensitiveSubstanceUse', { mode: 'boolean' }).notNull().default(false),
+  sensitivePsychotherapy: integer('sensitivePsychotherapy', { mode: 'boolean' }).notNull().default(false),
+  sensitiveOther: integer('sensitiveOther', { mode: 'boolean' }).notNull().default(false),
+  sensitiveOtherDesc: text('sensitiveOtherDesc'),
+
   dateRangeFrom: text('dateRangeFrom'),
   dateRangeTo: text('dateRangeTo'),
   allAvailableDates: integer('allAvailableDates', { mode: 'boolean' }).notNull().default(false),

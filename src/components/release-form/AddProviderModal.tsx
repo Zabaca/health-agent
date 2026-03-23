@@ -43,6 +43,22 @@ export function rowToFormData(row: UserProviderRow): ProviderFormData {
     allAvailableDates: false,
     purpose: "Personal records",
     purposeOther: undefined,
+    benefitsCoverage: false,
+    claimsPayment: false,
+    eligibilityEnrollment: false,
+    financialBilling: false,
+    medicalRecords: false,
+    dentalRecords: false,
+    otherNonSpecific: false,
+    otherNonSpecificDesc: undefined,
+    sensitiveCommDiseases: false,
+    sensitiveReproductiveHealth: false,
+    sensitiveHivAids: false,
+    sensitiveMentalHealth: false,
+    sensitiveSubstanceUse: false,
+    sensitivePsychotherapy: false,
+    sensitiveOther: false,
+    sensitiveOtherDesc: undefined,
   };
 }
 
