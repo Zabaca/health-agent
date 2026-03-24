@@ -14,6 +14,7 @@ import PrintButton from "@/components/release-view/PrintButton";
 import ExportTiffButton from "@/components/release-view/ExportTiffButton";
 import FaxButton from "@/components/release-view/FaxButton";
 import ReleaseRequestLogTable from "@/components/release-view/ReleaseRequestLogTable";
+import MembershipCardImage from "@/components/release-view/MembershipCardImage";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
 
@@ -114,19 +115,26 @@ export default async function AdminReleaseViewPage({
           {release.providers.map((p, i) => (
             <Stack key={p.id} gap="md">
               {i > 0 && <Divider />}
-              <Group gap="sm">
-                <Title order={5}>{p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName}</Title>
-                <Badge variant="light" className="no-print">{p.providerType}</Badge>
+              <Group gap="sm" justify="space-between" align="center">
+                <Group gap="sm">
+                  <Title order={5}>{p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName}</Title>
+                  <Badge variant="light" className="no-print">{p.providerType}</Badge>
+                </Group>
+                {p.providerType === "Insurance" && (p.membershipIdFront || p.membershipIdBack) && (
+                  <Group gap="xs" align="center" className="no-print">
+                    <Text size="xs" c="dimmed" fw={500}>Insurance Card:</Text>
+                    {p.membershipIdFront && <MembershipCardImage src={p.membershipIdFront} label="Preview Front" />}
+                    {p.membershipIdBack && <MembershipCardImage src={p.membershipIdBack} label="Preview Back" />}
+                  </Group>
+                )}
               </Group>
               {p.providerType === "Insurance" && (
-                <>
-                  <SimpleGrid cols={3}>
-                    <Field label="Insurance" value={p.insurance} />
-                    <Field label="Insurance Member ID" value={p.patientMemberId} />
-                    <Field label="Insurance Group ID" value={p.groupId} />
-                    <Field label="Insurance Plan Name" value={p.planName} />
-                  </SimpleGrid>
-                </>
+                <SimpleGrid cols={3}>
+                  <Field label="Insurance" value={p.insurance} />
+                  <Field label="Insurance Member ID" value={p.patientMemberId} />
+                  <Field label="Insurance Group ID" value={p.groupId} />
+                  <Field label="Insurance Plan Name" value={p.planName} />
+                </SimpleGrid>
               )}
               <SimpleGrid cols={3}>
                 <Field label="Phone" value={p.phone} />

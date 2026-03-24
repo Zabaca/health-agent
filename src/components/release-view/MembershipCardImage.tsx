@@ -1,7 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, Stack, Text } from "@mantine/core";
+import { Modal, Button } from "@mantine/core";
+
+function FilePreview({ src, label }: { src: string; label: string }) {
+  const [useIframe, setUseIframe] = useState(false);
+
+  if (useIframe) {
+    return (
+      <iframe
+        src={src}
+        title={label}
+        style={{ width: "100%", height: "70vh", border: "none" }}
+      />
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={label}
+      onError={() => setUseIframe(true)}
+      style={{ maxWidth: "100%", display: "block" }}
+    />
+  );
+}
 
 export default function MembershipCardImage({
   src,
@@ -14,35 +38,18 @@ export default function MembershipCardImage({
 
   return (
     <>
-      <Stack gap={2}>
-        <Text size="xs" c="dimmed" fw={500}>{label}</Text>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={label}
-          onClick={() => setOpened(true)}
-          style={{
-            maxWidth: 200,
-            borderRadius: 4,
-            border: "1px solid #dee2e6",
-            cursor: "pointer",
-          }}
-        />
-      </Stack>
+      <Button variant="light" size="xs" onClick={() => setOpened(true)}>
+        {label}
+      </Button>
 
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
         title={label}
         centered
-        size="auto"
+        size="xl"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={label}
-          style={{ maxWidth: "80vw", maxHeight: "80vh", display: "block" }}
-        />
+        <FilePreview src={src} label={label} />
       </Modal>
     </>
   );
