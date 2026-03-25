@@ -3,9 +3,9 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { incomingFiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Title, Grid, Stack, Text, Badge, Group, Card, SimpleGrid } from "@mantine/core";
-import DocViewer from "@/components/records/DocViewer";
-import PatientAssignmentPanel from "@/components/records/PatientAssignmentPanel";
+import { Title, Stack, Text, Group, Card, Anchor, Breadcrumbs } from "@mantine/core";
+import Link from "next/link";
+import InlineDocViewer from "@/components/records/InlineDocViewer";
 
 export default async function AdminRecordDetailPage({
   params,
@@ -22,90 +22,75 @@ export default async function AdminRecordDetailPage({
 
   if (!file) notFound();
 
+  const fileName = file.uploadLog?.originalName ?? null;
   const patientName = file.patient
     ? [file.patient.firstName, file.patient.lastName].filter(Boolean).join(' ') || file.patient.email
     : null;
 
   return (
     <Stack gap="lg">
-      <Title order={2}>Received File</Title>
+      {file.patientId && (
+        <Breadcrumbs>
+          <Anchor component={Link} href={`/admin/patients/${file.patientId}?tab=records`} size="sm">
+            {patientName ?? 'Patient'}
+          </Anchor>
+          <Text size="sm">{fileName ?? 'Record'}</Text>
+        </Breadcrumbs>
+      )}
 
-      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-        <Stack gap="md">
-          <Card withBorder>
-            <Title order={5} mb="sm">Document</Title>
-            <DocViewer fileURL={file.fileURL} />
-          </Card>
+      <Title order={2}>{fileName ?? 'Record'}</Title>
 
-          {file.uploadLog && (
-            <Card withBorder>
-              <Title order={5} mb="sm">Upload Metadata</Title>
-              <Stack gap="xs">
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>File name:</Text>
-                  <Text size="sm">{file.uploadLog.originalName}</Text>
-                </Group>
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>Uploaded by:</Text>
-                  <Text size="sm">
-                    {file.uploadLog.uploadedBy
-                      ? [file.uploadLog.uploadedBy.firstName, file.uploadLog.uploadedBy.lastName].filter(Boolean).join(' ') || file.uploadLog.uploadedBy.email
-                      : '—'}
-                  </Text>
-                </Group>
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>Uploaded at:</Text>
-                  <Text size="sm">{new Date(file.uploadLog.uploadedAt).toLocaleString()}</Text>
-                </Group>
-              </Stack>
-            </Card>
-          )}
+      <Card withBorder p="md">
+        <InlineDocViewer fileURL={file.fileURL} />
+      </Card>
 
-          {file.faxLog && (
-            <Card withBorder>
-              <Title order={5} mb="sm">Fax Metadata</Title>
-              <Stack gap="xs">
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>Received:</Text>
-                  <Text size="sm">{file.faxLog.recvdate} {file.faxLog.starttime}</Text>
-                </Group>
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>Pages:</Text>
-                  <Text size="sm">{file.faxLog.pagecount ?? '—'}</Text>
-                </Group>
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>Caller ID:</Text>
-                  <Text size="sm">{file.faxLog.cid ?? '—'}</Text>
-                </Group>
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>DNIS:</Text>
-                  <Text size="sm">{file.faxLog.dnis ?? '—'}</Text>
-                </Group>
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>TSID:</Text>
-                  <Text size="sm">{file.faxLog.tsid ?? '—'}</Text>
-                </Group>
-                <Group gap="xs">
-                  <Text size="sm" fw={500}>Status:</Text>
-                  <Badge size="sm" color={file.faxLog.status === 'retrieved' ? 'green' : file.faxLog.status === 'failed' ? 'red' : 'yellow'}>
-                    {file.faxLog.status}
-                  </Badge>
-                </Group>
-              </Stack>
-            </Card>
-          )}
-        </Stack>
-
+      {file.uploadLog && (
         <Card withBorder>
-          <PatientAssignmentPanel
-            fileId={file.id}
-            currentPatientId={file.patientId ?? null}
-            currentPatientName={patientName}
-            role="admin"
-            listPath="/admin/records"
-          />
+          <Title order={5} mb="sm">Upload Details</Title>
+          <Stack gap="xs">
+            <Group gap="xs">
+              <Text size="sm" fw={500}>Uploaded by:</Text>
+              <Text size="sm">
+                {file.uploadLog.uploadedBy
+                  ? [file.uploadLog.uploadedBy.firstName, file.uploadLog.uploadedBy.lastName].filter(Boolean).join(' ') || file.uploadLog.uploadedBy.email
+                  : '—'}
+              </Text>
+            </Group>
+            <Group gap="xs">
+              <Text size="sm" fw={500}>Uploaded at:</Text>
+              <Text size="sm">{new Date(file.uploadLog.uploadedAt).toLocaleString()}</Text>
+            </Group>
+          </Stack>
         </Card>
-      </SimpleGrid>
+      )}
+
+      {file.faxLog && (
+        <Card withBorder>
+          <Title order={5} mb="sm">Fax Details</Title>
+          <Stack gap="xs">
+            <Group gap="xs">
+              <Text size="sm" fw={500}>Received:</Text>
+              <Text size="sm">{file.faxLog.recvdate} {file.faxLog.starttime}</Text>
+            </Group>
+            <Group gap="xs">
+              <Text size="sm" fw={500}>Pages:</Text>
+              <Text size="sm">{file.faxLog.pagecount ?? '—'}</Text>
+            </Group>
+            <Group gap="xs">
+              <Text size="sm" fw={500}>Caller ID:</Text>
+              <Text size="sm">{file.faxLog.cid ?? '—'}</Text>
+            </Group>
+            <Group gap="xs">
+              <Text size="sm" fw={500}>DNIS:</Text>
+              <Text size="sm">{file.faxLog.dnis ?? '—'}</Text>
+            </Group>
+            <Group gap="xs">
+              <Text size="sm" fw={500}>TSID:</Text>
+              <Text size="sm">{file.faxLog.tsid ?? '—'}</Text>
+            </Group>
+          </Stack>
+        </Card>
+      )}
     </Stack>
   );
 }

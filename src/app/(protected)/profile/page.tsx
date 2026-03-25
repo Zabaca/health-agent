@@ -18,6 +18,7 @@ export default async function ProfilePage() {
 
   return (
     <ProfileForm
+      maw="100%"
       defaultValues={{
         firstName:   user?.firstName   ?? "",
         middleName:  user?.middleName  ?? "",

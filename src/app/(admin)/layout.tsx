@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import AppShell from "@/components/layout/AppShell";
-import { IconUsers, IconUser, IconCalendar, IconUserCog, IconSearch, IconInbox } from "@tabler/icons-react";
+import { IconUsers, IconUser, IconCalendar, IconUserCog, IconSearch } from "@tabler/icons-react";
 
 export default async function AdminLayout({
   children,
@@ -21,7 +21,6 @@ export default async function AdminLayout({
     { href: "/admin/agents", label: "Agents", icon: <IconUserCog size={16} /> },
     { href: "/admin/call-schedule", label: "Call Schedule", icon: <IconCalendar size={16} /> },
     { href: "/admin/releases/lookup", label: "Lookup Release", icon: <IconSearch size={16} /> },
-    { href: "/admin/records", label: "Received Files", icon: <IconInbox size={16} /> },
   ];
 
   const bottomNavItems = [

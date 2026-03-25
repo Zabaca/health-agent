@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export const r2 = new S3Client({
   region: "auto",
@@ -29,6 +29,15 @@ export async function uploadToR2(
 
 export async function getFromR2(key: string) {
   return r2.send(new GetObjectCommand({
+    Bucket: process.env.S3_BUCKET!,
+    Key: key,
+  }));
+}
+
+export async function deleteFromR2(fileURL: string) {
+  // fileURL is in the form /api/files/<key>
+  const key = fileURL.replace(/^\/api\/files\//, '');
+  await r2.send(new DeleteObjectCommand({
     Bucket: process.env.S3_BUCKET!,
     Key: key,
   }));
