@@ -151,7 +151,7 @@ function buildCoverLetterHtml({
   `;
 }
 
-function splitCanvasIntoPageCanvases(canvas: HTMLCanvasElement): HTMLCanvasElement[] {
+function splitCanvasIntoPageCanvases(canvas: HTMLCanvasElement, forcedBreakAtCanvasPx: number | null = null): HTMLCanvasElement[] {
   const { width, height } = canvas;
   const ctx = canvas.getContext("2d")!;
   const pageHeightPx = Math.round(11 * DPI);
@@ -161,12 +161,22 @@ function splitCanvasIntoPageCanvases(canvas: HTMLCanvasElement): HTMLCanvasEleme
   const cuts: number[] = [];
   let scanPos = 0;
   let pageIdx = 0;
+  let pendingForced = forcedBreakAtCanvasPx;
   while (scanPos + pageHeightPx < height) {
     const usable = pageIdx === 0 ? pageHeightPx : pageHeightPx - topMarginPx;
     const ideal  = scanPos + usable;
-    const cut    = findBestCut(ctx, width, ideal, searchWindow);
-    cuts.push(cut);
-    scanPos = cut;
+
+    if (pendingForced !== null && pendingForced > scanPos && pendingForced < ideal) {
+      const cut = findBestCut(ctx, width, pendingForced, searchWindow);
+      cuts.push(cut);
+      scanPos = cut;
+      pendingForced = null;
+    } else {
+      const cut = findBestCut(ctx, width, ideal, searchWindow);
+      cuts.push(cut);
+      scanPos = cut;
+    }
+
     pageIdx++;
   }
 
@@ -499,6 +509,7 @@ export default function FaxButton({
       };
 
       // Capture release content first so we know its page count
+      let forcedBreakAtCanvasPx: number | null = null;
       const contentCanvas = await html2canvas(element, {
         scale: SCALE,
         useCORS: true,
@@ -518,9 +529,20 @@ export default function FaxButton({
             content.style.boxSizing = "border-box";
             content.style.background = "white";
           }
+
+          // Force a page break before .section-providers (same as ExportTiffButton)
+          const providers = clonedDoc.querySelector(".section-providers") as HTMLElement | null;
+          if (content && providers) {
+            const contentRect = content.getBoundingClientRect();
+            const providersRect = providers.getBoundingClientRect();
+            const cssPx = providersRect.top - contentRect.top;
+            if (cssPx > 0) {
+              forcedBreakAtCanvasPx = Math.round(cssPx * SCALE);
+            }
+          }
         },
       });
-      const contentPageCanvases = splitCanvasIntoPageCanvases(contentCanvas);
+      const contentPageCanvases = splitCanvasIntoPageCanvases(contentCanvas, forcedBreakAtCanvasPx);
 
       // First cover pass: count how many pages the cover itself takes
       const coverCountCanvas = await captureCover(0);

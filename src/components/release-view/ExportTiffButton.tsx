@@ -377,6 +377,9 @@ export default function ExportTiffButton({ releaseCode }: Props) {
 
       const { default: html2canvas } = await import("html2canvas");
 
+      // Capture forced break points (in CSS px) from the cloned layout before rendering.
+      let forcedBreakAtCanvasPx: number | null = null;
+
       const canvas = await html2canvas(element, {
         scale: SCALE,
         useCORS: true,
@@ -400,6 +403,17 @@ export default function ExportTiffButton({ releaseCode }: Props) {
             content.style.background = "white";
           }
 
+          // Force a page break before .section-providers by capturing its visual
+          // top position after flex reordering (PRINT_CSS sets order: 3).
+          const providers = clonedDoc.querySelector(".section-providers") as HTMLElement | null;
+          if (content && providers) {
+            const contentRect = content.getBoundingClientRect();
+            const providersRect = providers.getBoundingClientRect();
+            const cssPx = providersRect.top - contentRect.top;
+            if (cssPx > 0) {
+              forcedBreakAtCanvasPx = Math.round(cssPx * SCALE);
+            }
+          }
         },
       });
 
@@ -413,19 +427,31 @@ export default function ExportTiffButton({ releaseCode }: Props) {
       // Matches the 48 CSS-px padding on .release-content (48 × SCALE = 300 canvas px).
       const topMarginPx  = Math.round(48 * SCALE);
 
-      // Compute smart page-break positions: scan upward from each ideal cut
-      // to find the nearest all-white row (gap between elements).
-      // Pages 2+ have a topMarginPx offset injected when drawing, so the usable
-      // content height is reduced by that amount to prevent overflow.
+      // Compute smart page-break positions.
+      // If a forced break point (e.g. start of .section-providers) falls within the
+      // current page range, cut there (searching upward for whitespace near that point)
+      // instead of waiting for the normal full-page cut — guaranteeing the providers
+      // section always starts at the top of a fresh page.
       const cuts: number[] = [];
       let scanPos = 0;
       let pageIdx = 0;
+      let pendingForced = forcedBreakAtCanvasPx;
       while (scanPos + pageHeightPx < height) {
         const usable = pageIdx === 0 ? pageHeightPx : pageHeightPx - topMarginPx;
         const ideal  = scanPos + usable;
-        const cut    = findBestCut(ctx, width, ideal, searchWindow);
-        cuts.push(cut);
-        scanPos = cut;
+
+        if (pendingForced !== null && pendingForced > scanPos && pendingForced < ideal) {
+          // Cut at the forced break point (gap between authorization and providers).
+          const cut = findBestCut(ctx, width, pendingForced, searchWindow);
+          cuts.push(cut);
+          scanPos = cut;
+          pendingForced = null;
+        } else {
+          const cut = findBestCut(ctx, width, ideal, searchWindow);
+          cuts.push(cut);
+          scanPos = cut;
+        }
+
         pageIdx++;
       }
 
