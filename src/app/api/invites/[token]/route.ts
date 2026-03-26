@@ -85,7 +85,7 @@ export async function POST(
         id: agentUserId,
         email: invite.inviteeEmail,
         password: hashed,
-        type: 'patient_designated_agent',
+        type: 'user',
         firstName: body.firstName ?? null,
         lastName: body.lastName ?? null,
         onboarded: true,

@@ -7,7 +7,7 @@ import { isNull, gte, lte, and } from "drizzle-orm";
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.type !== 'agent') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!session.user.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = req.nextUrl;
   const dateFrom = searchParams.get("dateFrom");

@@ -6,11 +6,12 @@ export const users = sqliteTable('User', {
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
   /**
-   * 'patient_designated_agent' — a user invited by a patient to act on their behalf.
-   * This is NOT an organizational agent (admin/agent type). PDAs are patient-initiated
-   * and patient-controlled. A PDA may eventually transition to 'patient' type.
+   * All non-admin users are 'user'. Role elevation is handled via relationship tables:
+   *   - Zabaca agent privilege → zabacaAgentRoles table
+   *   - PDA access to a patient → patientDesignatedAgents table
+   * This keeps user type simple and avoids RBAC being encoded in the users row.
    */
-  type: text('type', { enum: ['patient', 'agent', 'admin', 'patient_designated_agent'] }).notNull().default('patient'),
+  type: text('type', { enum: ['admin', 'user'] }).notNull().default('user'),
   mustChangePassword: integer('mustChangePassword', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
   firstName: text('firstName'),
@@ -144,7 +145,20 @@ export const userProviders = sqliteTable('UserProvider', {
   membershipIdBack: text('membershipIdBack'),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
+/**
+ * zabacaAgentRoles — designates a user as a Zabaca agent (staff).
+ * Presence of a row = the user has agent privileges.
+ * Absence = regular user (patient / PDA / unspecified).
+ * This is separate from users.type so that agent privilege can be granted/revoked
+ * without changing the user record, and so a user can be both a patient and an agent.
+ */
+export const zabacaAgentRoles = sqliteTable('ZabacaAgentRole', {
+  id:        text('id').primaryKey(),
+  userId:    text('userId').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const usersRelations = relations(users, ({ one, many }) => ({
   releases: many(releases),
   userProviders: many(userProviders),
   patientAssignment: many(patientAssignments, { relationName: 'patientAssignment' }),
@@ -154,6 +168,11 @@ export const usersRelations = relations(users, ({ many }) => ({
   incomingFiles: many(incomingFiles),
   designatedAgentsAsPatient: many(patientDesignatedAgents, { relationName: 'pdaPatient' }),
   designatedAgentsAsAgent: many(patientDesignatedAgents, { relationName: 'pdaAgent' }),
+  agentRole: one(zabacaAgentRoles, { fields: [users.id], references: [zabacaAgentRoles.userId] }),
+}));
+
+export const zabacaAgentRolesRelations = relations(zabacaAgentRoles, ({ one }) => ({
+  user: one(users, { fields: [zabacaAgentRoles.userId], references: [users.id] }),
 }));
 
 export const releasesRelations = relations(releases, ({ one, many }) => ({

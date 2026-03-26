@@ -8,8 +8,7 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const role = (session.user as { type?: string }).type;
-  if (role !== 'admin' && role !== 'agent') {
+  if (session.user.type !== 'admin' && !session.user.isAgent) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

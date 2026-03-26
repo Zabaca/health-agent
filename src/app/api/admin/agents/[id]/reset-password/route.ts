@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "@/lib/auth-helpers";
+import { isZabacaAgent } from "@/lib/db/agent-role";
 
 function generatePassword(length = 16): string {
   const charset = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*";
@@ -26,7 +27,7 @@ export async function PUT(
     where: eq(users.id, id),
   });
 
-  if (!agent || (agent.type !== "agent" && agent.type !== "admin")) {
+  if (!agent || (agent.type !== "admin" && !(await isZabacaAgent(id)))) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 

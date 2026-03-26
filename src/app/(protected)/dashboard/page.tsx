@@ -41,7 +41,7 @@ export default async function DashboardPage() {
   const voided: ReleaseSummary[] = voidedReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerName) }));
 
   // Onboarding: only for unboarded patients
-  const isUnboardedPatient = user?.type === 'patient' && !user.onboarded;
+  const isUnboardedPatient = user?.type === 'user' && !user.onboarded;
 
   let assignedAgent: {
     id: string;

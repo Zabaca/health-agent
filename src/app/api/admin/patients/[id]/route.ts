@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users, patientAssignments } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
+import { isZabacaAgent } from "@/lib/db/agent-role";
 
 export const GET = contractRoute(contract.admin.patients.getById, async ({ params }) => {
   const session = await auth();
@@ -52,14 +53,14 @@ export const PATCH = contractRoute(contract.admin.patients.reassign, async ({ pa
   }
 
   const patient = await db.query.users.findFirst({
-    where: and(eq(users.id, params.id), eq(users.type, 'patient')),
+    where: eq(users.id, params.id),
   });
   if (!patient) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const assignee = await db.query.users.findFirst({ where: eq(users.id, body.assignedToId) });
-  if (!assignee || (assignee.type !== 'admin' && assignee.type !== 'agent')) {
+  if (!assignee || (assignee.type !== 'admin' && !(await isZabacaAgent(body.assignedToId)))) {
     return NextResponse.json({ error: "Invalid assignee" }, { status: 400 });
   }
 

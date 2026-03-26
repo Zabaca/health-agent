@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { incomingFiles, patientAssignments, patientDesignatedAgents, patientDesignatedAgentDocumentGrants } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { isZabacaAgent } from "@/lib/db/agent-role";
 
 export async function GET(
   _req: NextRequest,
@@ -27,28 +28,28 @@ export async function GET(
   }
 
   const userId = session.user.id;
-  const userType = session.user.type;
 
-  // Admin can access any file
-  if (userType === 'admin') {
+  // Admin can access any file — trust signed session for this check
+  if (session.user.type === 'admin') {
     return streamFile(key, file.fileType);
   }
 
-  // File not assigned to a patient — only admin or assigned agent may access
+  // For agents and users, verify agent status from DB (source of truth for file access)
+  const agentVerified = session.user.isAgent && await isZabacaAgent(userId);
+
+  // File not assigned to a patient — only admin or verified agent may access
   if (!file.patientId) {
-    if (userType === 'agent') {
-      return streamFile(key, file.fileType);
-    }
+    if (agentVerified) return streamFile(key, file.fileType);
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Patient accessing their own file
+  // Patient (user) accessing their own file
   if (userId === file.patientId) {
     return streamFile(key, file.fileType);
   }
 
-  // Agent with assignment
-  if (userType === 'agent') {
+  // Agent with a patient assignment — DB-verified
+  if (agentVerified) {
     const assignment = await db.query.patientAssignments.findFirst({
       where: and(
         eq(patientAssignments.patientId, file.patientId),
@@ -58,7 +59,7 @@ export async function GET(
     if (assignment) return streamFile(key, file.fileType);
   }
 
-  // PDA with accepted relationship
+  // PDA with accepted relationship and document permission
   const relation = await db.query.patientDesignatedAgents.findFirst({
     where: and(
       eq(patientDesignatedAgents.agentUserId, userId),

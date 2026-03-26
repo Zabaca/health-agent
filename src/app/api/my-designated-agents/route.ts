@@ -10,7 +10,7 @@ import { sendInviteEmail } from "@/lib/email";
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.type !== 'patient') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (session.user.type === 'admin' || session.user.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const patientId = session.user.id;
 
@@ -61,7 +61,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.type !== 'patient') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (session.user.type === 'admin' || session.user.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const patientId = session.user.id;
   const body = await req.json() as {

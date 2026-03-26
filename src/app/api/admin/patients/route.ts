@@ -16,7 +16,7 @@ export const GET = contractRoute(contract.admin.patients.list, async () => {
   }
 
   const allPatients = await db.query.users.findMany({
-    where: inArray(users.type, ['patient', 'agent']),
+    where: eq(users.type, 'user'),
   });
 
   const assignments = await db.query.patientAssignments.findMany();

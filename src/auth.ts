@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, zabacaAgentRoles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth-helpers";
 
@@ -31,7 +31,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isValid) return null;
 
-        return { id: user.id, email: user.email, type: user.type, mustChangePassword: user.mustChangePassword, onboarded: user.onboarded };
+        const agentRole = await db.query.zabacaAgentRoles.findFirst({
+          where: eq(zabacaAgentRoles.userId, user.id),
+        });
+
+        return { id: user.id, email: user.email, type: user.type, isAgent: !!agentRole, mustChangePassword: user.mustChangePassword, onboarded: user.onboarded };
       },
     }),
   ],

@@ -12,7 +12,7 @@ export default async function AgentLayout({
   if (!session) {
     redirect("/login");
   }
-  if (session.user.type !== 'agent') {
+  if (!session.user.isAgent) {
     redirect("/dashboard");
   }
 

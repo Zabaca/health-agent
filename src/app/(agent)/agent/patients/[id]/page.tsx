@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, releases as releasesTable, patientAssignments, userProviders } from "@/lib/db/schema";
-import { and, asc, desc, eq, or } from "drizzle-orm";
+import { users, releases as releasesTable, patientAssignments, userProviders, zabacaAgentRoles } from "@/lib/db/schema";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { Title, Text, Stack, Group } from "@mantine/core";
 import PatientReleasesPanel from "@/components/staff/PatientReleasesPanel";
 import PatientInfoCard from "@/components/staff/PatientInfoCard";
@@ -33,10 +33,12 @@ export default async function AgentPatientPage({
 
   const decryptedPatient = decryptPii(patient);
 
-  const [staffMembers, providers] = await Promise.all([
-    db.query.users.findMany({ where: or(eq(users.type, 'admin'), eq(users.type, 'agent')) }),
-    db.select().from(userProviders).where(eq(userProviders.userId, patientId)).orderBy(asc(userProviders.order)),
-  ]);
+  const agentRoles = await db.query.zabacaAgentRoles.findMany({ with: { user: true } });
+  const agentUsers = agentRoles.map(r => r.user);
+  const adminUsers = await db.query.users.findMany({ where: eq(users.type, 'admin') });
+  const staffMembers = [...adminUsers, ...agentUsers];
+
+  const providers = await db.select().from(userProviders).where(eq(userProviders.userId, patientId)).orderBy(asc(userProviders.order));
 
   const releases = await db
     .select({

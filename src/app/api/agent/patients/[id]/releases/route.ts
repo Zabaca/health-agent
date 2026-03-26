@@ -22,7 +22,7 @@ export const GET = contractRoute(contract.agent.patientReleases.list, async ({ p
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.user.type !== 'agent') {
+  if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -52,7 +52,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.user.type !== 'agent') {
+  if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

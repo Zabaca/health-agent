@@ -11,7 +11,7 @@ export const metadata = { title: "My Designated Agents" };
 export default async function MyDesignatedAgentsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
-  if (session.user.type !== 'patient') redirect("/dashboard");
+  if (session.user.type === 'admin' || session.user.isAgent) redirect("/dashboard");
 
   const patientId = session.user.id;
 
