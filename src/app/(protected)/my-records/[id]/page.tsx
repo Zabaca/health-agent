@@ -3,8 +3,9 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { incomingFiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Title, Stack, Text, Badge, Group, Card } from "@mantine/core";
-import DocViewer from "@/components/records/DocViewer";
+import { Title, Stack, Text, Group, Card, Anchor, Breadcrumbs } from "@mantine/core";
+import Link from "next/link";
+import InlineDocViewer from "@/components/records/InlineDocViewer";
 
 export default async function MyRecordDetailPage({
   params,
@@ -16,19 +17,24 @@ export default async function MyRecordDetailPage({
 
   const file = await db.query.incomingFiles.findFirst({
     where: eq(incomingFiles.id, id),
-    with: { faxLog: true },
+    with: { faxLog: true, uploadLog: true },
   });
 
-  // 404 if not found or not assigned to this patient
   if (!file || file.patientId !== session?.user?.id) notFound();
+
+  const fileName = file.uploadLog?.originalName ?? null;
 
   return (
     <Stack gap="lg">
-      <Title order={2}>My Record</Title>
+      <Breadcrumbs>
+        <Anchor component={Link} href="/my-records" size="sm">My Records</Anchor>
+        <Text size="sm">{fileName ?? 'Record'}</Text>
+      </Breadcrumbs>
 
-      <Card withBorder>
-        <Title order={5} mb="sm">Document</Title>
-        <DocViewer fileURL={file.fileURL} />
+      <Title order={2}>{fileName ?? 'Record'}</Title>
+
+      <Card withBorder p="md">
+        <InlineDocViewer fileURL={file.fileURL} />
       </Card>
 
       {file.faxLog && (
@@ -42,10 +48,6 @@ export default async function MyRecordDetailPage({
             <Group gap="xs">
               <Text size="sm" fw={500}>Pages:</Text>
               <Text size="sm">{file.faxLog.pagecount ?? '—'}</Text>
-            </Group>
-            <Group gap="xs">
-              <Text size="sm" fw={500}>Type:</Text>
-              <Badge size="sm" variant="light">{file.fileType.toUpperCase()}</Badge>
             </Group>
           </Stack>
         </Card>
