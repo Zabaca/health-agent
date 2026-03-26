@@ -40,15 +40,17 @@ interface Props {
   onSave?: (providers: MyProviderFormData[]) => Promise<void>;
   title?: string;
   maw?: number | string;
+  readOnly?: boolean;
 }
 
 interface SortableItemProps {
   id: string;
   index: number;
   onRemove: () => void;
+  readOnly?: boolean;
 }
 
-function SortableItem({ id, index, onRemove }: SortableItemProps) {
+function SortableItem({ id, index, onRemove, readOnly }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -67,13 +69,14 @@ function SortableItem({ id, index, onRemove }: SortableItemProps) {
       <MyProviderCard
         index={index}
         onRemove={onRemove}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        dragHandleProps={readOnly ? undefined : { ...attributes, ...listeners }}
+        readOnly={readOnly}
       />
     </div>
   );
 }
 
-export default function MyProvidersForm({ defaultValues, onComplete, onSave, title = "My Providers", maw = 700 }: Props) {
+export default function MyProvidersForm({ defaultValues, onComplete, onSave, title = "My Providers", maw = 700, readOnly }: Props) {
   const methods = useForm<MyProvidersFormData>({
     resolver: zodResolver(schema),
     defaultValues: { providers: defaultValues },
@@ -157,14 +160,16 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
         <Paper withBorder p="md" radius="md" maw={maw} w="100%">
           <Group justify="space-between" align="center" mb="md">
             <Title order={4}>{title}</Title>
-            <Group gap="sm">
-              <Button variant="light" onClick={handleAddProvider} type="button">
-                + Add Provider
-              </Button>
-              <Button type="submit" loading={methods.formState.isSubmitting} disabled={!methods.formState.isDirty}>
-                Save Providers
-              </Button>
-            </Group>
+            {!readOnly && (
+              <Group gap="sm">
+                <Button variant="light" onClick={handleAddProvider} type="button">
+                  + Add Provider
+                </Button>
+                <Button type="submit" loading={methods.formState.isSubmitting} disabled={!methods.formState.isDirty}>
+                  Save Providers
+                </Button>
+              </Group>
+            )}
           </Group>
 
           {fields.length === 0 && (
@@ -188,6 +193,7 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
                     id={field.id}
                     index={index}
                     onRemove={() => handleRemove(index)}
+                    readOnly={readOnly}
                   />
                 ))}
               </Accordion>

@@ -6,9 +6,10 @@ import type { MyProviderFormData } from "@/lib/schemas/release";
 interface Props {
   defaultValues: MyProviderFormData[];
   patientId: string;
+  readOnly?: boolean;
 }
 
-export default function RepresentingProvidersForm({ defaultValues, patientId }: Props) {
+export default function RepresentingProvidersForm({ defaultValues, patientId, readOnly }: Props) {
   const handleSave = async (providers: MyProviderFormData[]) => {
     const res = await fetch(`/api/representing/${patientId}/providers`, {
       method: 'PUT',
@@ -21,5 +22,5 @@ export default function RepresentingProvidersForm({ defaultValues, patientId }: 
     }
   };
 
-  return <MyProvidersForm defaultValues={defaultValues} onSave={handleSave} />;
+  return <MyProvidersForm defaultValues={defaultValues} onSave={readOnly ? undefined : handleSave} readOnly={readOnly} />;
 }

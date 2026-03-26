@@ -31,10 +31,10 @@ export default async function RepresentingRecordsPage({
     },
   });
 
-  if (!relation || !relation.documentPermission) notFound();
+  if (!relation || !relation.healthRecordsPermission) notFound();
 
   let files;
-  if (relation.documentScope === 'specific') {
+  if (relation.healthRecordsScope === 'specific') {
     const grantedIds = relation.documentGrants.map(g => g.incomingFileId);
     files = grantedIds.length > 0
       ? await db.query.incomingFiles.findMany({

@@ -22,7 +22,7 @@ export async function GET(
     ),
   });
   if (!relation) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!relation.canManageProviders) return NextResponse.json({ error: "No provider access" }, { status: 403 });
+  if (!relation.manageProvidersPermission) return NextResponse.json({ error: "No provider access" }, { status: 403 });
 
   const providers = await db
     .select()
@@ -51,7 +51,7 @@ export async function PUT(
     ),
   });
   if (!relation) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!relation.canManageProviders) return NextResponse.json({ error: "No provider access" }, { status: 403 });
+  if (relation.manageProvidersPermission !== 'editor') return NextResponse.json({ error: "No write access to providers" }, { status: 403 });
 
   const { providers } = await req.json() as { providers: Array<Record<string, unknown>> };
 

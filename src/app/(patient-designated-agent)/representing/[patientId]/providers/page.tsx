@@ -29,7 +29,7 @@ export default async function RepresentingProvidersPage({
     with: { patient: true },
   });
 
-  if (!relation || !relation.canManageProviders) notFound();
+  if (!relation || relation.manageProvidersPermission == null) notFound();
 
   const rows = await db
     .select()
@@ -65,7 +65,7 @@ export default async function RepresentingProvidersPage({
         <Anchor component={Link} href={`/representing/${patientId}`} size="sm">{patientName}</Anchor>
         <Text size="sm">Providers</Text>
       </Breadcrumbs>
-      <RepresentingProvidersForm defaultValues={providers} patientId={patientId} />
+      <RepresentingProvidersForm defaultValues={providers} patientId={patientId} readOnly={relation.manageProvidersPermission === 'viewer'} />
     </>
   );
 }

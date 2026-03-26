@@ -13,7 +13,6 @@ import {
   Modal,
   TextInput,
   Autocomplete,
-  Checkbox,
   Radio,
   Divider,
   Alert,
@@ -36,10 +35,10 @@ interface DesignatedAgent {
   inviteeEmail: string;
   relationship: string | null;
   status: 'pending' | 'accepted' | 'revoked';
-  documentPermission: 'viewer' | 'editor' | null;
-  documentScope: 'all' | 'specific' | null;
-  canUpload: boolean;
-  canManageProviders: boolean;
+  healthRecordsPermission: 'viewer' | 'editor' | null;
+  healthRecordsScope: 'all' | 'specific' | null;
+  manageProvidersPermission: 'viewer' | 'editor' | null;
+  releasePermission: 'viewer' | 'editor' | null;
   createdAt: string;
   tokenExpiresAt: string | null;
   agentUser: { id: string; email: string; firstName: string | null; lastName: string | null } | null;
@@ -53,10 +52,10 @@ interface Props {
 const inviteSchema = z.object({
   inviteeEmail: z.string().email("Valid email required"),
   relationship: z.string().optional(),
-  documentPermission: z.enum(['', 'viewer', 'editor']).optional(),
-  documentScope: z.enum(['', 'all', 'specific']).optional(),
-  canUpload: z.boolean().optional(),
-  canManageProviders: z.boolean().optional(),
+  healthRecordsPermission: z.enum(['', 'viewer', 'editor']).optional(),
+  healthRecordsScope: z.enum(['', 'all', 'specific']).optional(),
+  manageProvidersPermission: z.enum(['', 'viewer', 'editor']).optional(),
+  releasePermission: z.enum(['', 'viewer', 'editor']).optional(),
 });
 
 type InviteFormData = z.infer<typeof inviteSchema>;
@@ -66,26 +65,27 @@ const RELATIONSHIP_SUGGESTIONS = ['Spouse', 'Son', 'Daughter', 'Parent', 'Siblin
 const statusColor = { pending: 'yellow', accepted: 'green', revoked: 'red' } as const;
 
 function PermissionsForm({ control, watch }: { control: any; watch: any }) {
-  const docPermission = watch('documentPermission');
+  const healthRecordsPermission = watch('healthRecordsPermission');
   return (
-    <Stack gap="xs">
+    <Stack gap="md">
       <Text fw={500} size="sm">Permissions (optional)</Text>
+
       <Controller
-        name="documentPermission"
+        name="healthRecordsPermission"
         control={control}
         render={({ field }) => (
-          <Radio.Group label="Document access" {...field} value={field.value ?? ''}>
+          <Radio.Group label="Health Records" {...field} value={field.value ?? ''}>
             <Stack gap="xs" mt="xs">
-              <Radio value="" label="No access" />
+              <Radio value="" label="None" />
               <Radio value="viewer" label="Viewer — read only" />
               <Radio value="editor" label="Editor — view, upload, delete" />
             </Stack>
           </Radio.Group>
         )}
       />
-      {(docPermission === 'viewer' || docPermission === 'editor') && (
+      {(healthRecordsPermission === 'viewer' || healthRecordsPermission === 'editor') && (
         <Controller
-          name="documentScope"
+          name="healthRecordsScope"
           control={control}
           render={({ field }) => (
             <Radio.Group label="Which documents?" {...field} value={field.value ?? ''}>
@@ -97,15 +97,32 @@ function PermissionsForm({ control, watch }: { control: any; watch: any }) {
           )}
         />
       )}
+
       <Controller
-        name="canManageProviders"
+        name="manageProvidersPermission"
         control={control}
         render={({ field }) => (
-          <Checkbox
-            label="Manage providers"
-            checked={field.value ?? false}
-            onChange={e => field.onChange(e.currentTarget.checked)}
-          />
+          <Radio.Group label="Manage Providers" {...field} value={field.value ?? ''}>
+            <Stack gap="xs" mt="xs">
+              <Radio value="" label="None" />
+              <Radio value="viewer" label="Viewer — read only" />
+              <Radio value="editor" label="Editor — full access" />
+            </Stack>
+          </Radio.Group>
+        )}
+      />
+
+      <Controller
+        name="releasePermission"
+        control={control}
+        render={({ field }) => (
+          <Radio.Group label="HIPAA Release Request" {...field} value={field.value ?? ''}>
+            <Stack gap="xs" mt="xs">
+              <Radio value="" label="None" />
+              <Radio value="viewer" label="Viewer — read only" />
+              <Radio value="editor" label="Editor — view & manage" />
+            </Stack>
+          </Radio.Group>
         )}
       />
     </Stack>
@@ -121,7 +138,7 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
 
   const inviteForm = useForm<InviteFormData>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { documentPermission: '', documentScope: '', canUpload: false, canManageProviders: false },
+    defaultValues: { healthRecordsPermission: '', healthRecordsScope: '', manageProvidersPermission: '', releasePermission: '' },
   });
 
   const editForm = useForm<InviteFormData>({
@@ -146,10 +163,10 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
         body: JSON.stringify({
           inviteeEmail: data.inviteeEmail,
           relationship: data.relationship || undefined,
-          documentPermission: data.documentPermission || null,
-          documentScope: data.documentScope || null,
-          canUpload: data.canUpload ?? false,
-          canManageProviders: data.canManageProviders ?? false,
+          healthRecordsPermission: data.healthRecordsPermission || null,
+          healthRecordsScope: data.healthRecordsScope || null,
+          manageProvidersPermission: data.manageProvidersPermission || null,
+          releasePermission: data.releasePermission || null,
         }),
       });
       if (!res.ok) {
@@ -159,7 +176,7 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
       }
       await reload();
       closeInvite();
-      inviteForm.reset({ documentPermission: '', documentScope: '', canUpload: false, canManageProviders: false });
+      inviteForm.reset({ healthRecordsPermission: '', healthRecordsScope: '', manageProvidersPermission: '', releasePermission: '' });
     } finally {
       setLoading(false);
     }
@@ -175,9 +192,10 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           relationship: data.relationship || null,
-          documentPermission: data.documentPermission || null,
-          documentScope: data.documentScope || null,
-          canManageProviders: data.canManageProviders ?? false,
+          healthRecordsPermission: data.healthRecordsPermission || null,
+          healthRecordsScope: data.healthRecordsScope || null,
+          manageProvidersPermission: data.manageProvidersPermission || null,
+          releasePermission: data.releasePermission || null,
         }),
       });
       if (!res.ok) {
@@ -202,9 +220,10 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
     setEditTarget(agent);
     editForm.reset({
       relationship: agent.relationship ?? '',
-      documentPermission: agent.documentPermission ?? '',
-      documentScope: agent.documentScope ?? '',
-      canManageProviders: agent.canManageProviders,
+      healthRecordsPermission: agent.healthRecordsPermission ?? '',
+      healthRecordsScope: agent.healthRecordsScope ?? '',
+      manageProvidersPermission: agent.manageProvidersPermission ?? '',
+      releasePermission: agent.releasePermission ?? '',
     });
   };
 
@@ -270,14 +289,17 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
                     })()}
                   </Text>
                   <Group gap="xs" mt="xs">
-                    {agent.documentPermission && (
-                      <Badge size="xs" variant="outline">{agent.documentPermission}</Badge>
+                    {agent.healthRecordsPermission && (
+                      <Badge size="xs" variant="outline">records: {agent.healthRecordsPermission}</Badge>
                     )}
-                    {agent.documentScope && (
-                      <Badge size="xs" variant="outline" color="gray">{agent.documentScope} docs</Badge>
+                    {agent.healthRecordsScope && (
+                      <Badge size="xs" variant="outline" color="gray">{agent.healthRecordsScope} docs</Badge>
                     )}
-                    {agent.canManageProviders && (
-                      <Badge size="xs" variant="outline" color="teal">providers</Badge>
+                    {agent.manageProvidersPermission && (
+                      <Badge size="xs" variant="outline" color="teal">providers: {agent.manageProvidersPermission}</Badge>
+                    )}
+                    {agent.releasePermission && (
+                      <Badge size="xs" variant="outline" color="violet">releases: {agent.releasePermission}</Badge>
                     )}
                   </Group>
                 </div>

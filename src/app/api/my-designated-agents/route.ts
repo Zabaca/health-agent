@@ -40,10 +40,10 @@ export async function GET() {
       inviteeEmail: p.inviteeEmail,
       relationship: p.relationship,
       status: p.status,
-      documentPermission: p.documentPermission,
-      documentScope: p.documentScope,
-      canUpload: p.canUpload,
-      canManageProviders: p.canManageProviders,
+      healthRecordsPermission: p.healthRecordsPermission,
+      healthRecordsScope: p.healthRecordsScope,
+      manageProvidersPermission: p.manageProvidersPermission,
+      releasePermission: p.releasePermission,
       createdAt: p.createdAt,
       agentUser: p.agentUser
         ? {
@@ -67,10 +67,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json() as {
     inviteeEmail: string;
     relationship?: string;
-    documentPermission?: 'viewer' | 'editor' | null;
-    documentScope?: 'all' | 'specific' | null;
-    canUpload?: boolean;
-    canManageProviders?: boolean;
+    healthRecordsPermission?: 'viewer' | 'editor' | null;
+    healthRecordsScope?: 'all' | 'specific' | null;
+    manageProvidersPermission?: 'viewer' | 'editor' | null;
+    releasePermission?: 'viewer' | 'editor' | null;
   };
 
   if (!body.inviteeEmail) {
@@ -103,10 +103,10 @@ export async function POST(req: NextRequest) {
     token,
     tokenExpiresAt,
     status: 'pending',
-    documentPermission: body.documentPermission ?? null,
-    documentScope: body.documentScope ?? null,
-    canUpload: body.canUpload ?? false,
-    canManageProviders: body.canManageProviders ?? false,
+    healthRecordsPermission: body.healthRecordsPermission ?? null,
+    healthRecordsScope: body.healthRecordsScope ?? null,
+    manageProvidersPermission: body.manageProvidersPermission ?? null,
+    releasePermission: body.releasePermission ?? null,
   });
 
   const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';

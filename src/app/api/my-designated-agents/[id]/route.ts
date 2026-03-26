@@ -25,20 +25,20 @@ export async function PATCH(
 
   const body = await req.json() as {
     relationship?: string | null;
-    documentPermission?: 'viewer' | 'editor' | null;
-    documentScope?: 'all' | 'specific' | null;
-    canUpload?: boolean;
-    canManageProviders?: boolean;
+    healthRecordsPermission?: 'viewer' | 'editor' | null;
+    healthRecordsScope?: 'all' | 'specific' | null;
+    manageProvidersPermission?: 'viewer' | 'editor' | null;
+    releasePermission?: 'viewer' | 'editor' | null;
   };
 
   await db
     .update(patientDesignatedAgents)
     .set({
       ...(body.relationship !== undefined && { relationship: body.relationship }),
-      ...(body.documentPermission !== undefined && { documentPermission: body.documentPermission }),
-      ...(body.documentScope !== undefined && { documentScope: body.documentScope }),
-      ...(body.canUpload !== undefined && { canUpload: body.canUpload }),
-      ...(body.canManageProviders !== undefined && { canManageProviders: body.canManageProviders }),
+      ...(body.healthRecordsPermission !== undefined && { healthRecordsPermission: body.healthRecordsPermission }),
+      ...(body.healthRecordsScope !== undefined && { healthRecordsScope: body.healthRecordsScope }),
+      ...(body.manageProvidersPermission !== undefined && { manageProvidersPermission: body.manageProvidersPermission }),
+      ...(body.releasePermission !== undefined && { releasePermission: body.releasePermission }),
       updatedAt: new Date().toISOString(),
     })
     .where(eq(patientDesignatedAgents.id, id));

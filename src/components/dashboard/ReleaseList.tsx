@@ -87,6 +87,13 @@ export default function ReleaseList({ releases }: Props) {
         )}
       </Table.Td>
       <Table.Td>
+        {r.releaseAuthAgent && (r.authAgentFirstName || r.authAgentLastName) ? (
+          <Text size="sm">{[r.authAgentFirstName, r.authAgentLastName].filter(Boolean).join(' ')}</Text>
+        ) : (
+          <Text size="sm" c="dimmed">—</Text>
+        )}
+      </Table.Td>
+      <Table.Td>
         {r.releaseCode ? (
           <Text size="sm" ff="monospace">{r.releaseCode}</Text>
         ) : (
@@ -134,6 +141,7 @@ export default function ReleaseList({ releases }: Props) {
           <Table.Tr>
             <Table.Th>Patient Name</Table.Th>
             <Table.Th>Provider</Table.Th>
+            <Table.Th>Authorized Agent</Table.Th>
             <Table.Th>Release Code</Table.Th>
             <Table.Th>Created</Table.Th>
             <Table.Th>Last Updated</Table.Th>

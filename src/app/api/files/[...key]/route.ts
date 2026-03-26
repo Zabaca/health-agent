@@ -68,11 +68,11 @@ export async function GET(
     ),
   });
 
-  if (relation && relation.documentPermission) {
-    if (relation.documentScope === 'all') {
+  if (relation && relation.healthRecordsPermission) {
+    if (relation.healthRecordsScope === 'all') {
       return streamFile(key, file.fileType);
     }
-    if (relation.documentScope === 'specific') {
+    if (relation.healthRecordsScope === 'specific') {
       const grant = await db.query.patientDesignatedAgentDocumentGrants.findFirst({
         where: and(
           eq(patientDesignatedAgentDocumentGrants.patientDesignatedAgentRelationId, relation.id),

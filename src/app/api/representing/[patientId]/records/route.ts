@@ -47,10 +47,10 @@ export async function GET(
   });
 
   if (!relation) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!relation.documentPermission) return NextResponse.json({ error: "No document access" }, { status: 403 });
+  if (!relation.healthRecordsPermission) return NextResponse.json({ error: "No document access" }, { status: 403 });
 
   const grantedIds = relation.documentGrants.map(g => g.incomingFileId);
-  const files = await fetchFiles(relation.documentScope, patientId, grantedIds);
+  const files = await fetchFiles(relation.healthRecordsScope, patientId, grantedIds);
 
   return NextResponse.json({
     files: files.map(f => ({
@@ -65,7 +65,7 @@ export async function GET(
         ? { id: f.uploadLog.uploadedBy.id, firstName: f.uploadLog.uploadedBy.firstName, lastName: f.uploadLog.uploadedBy.lastName }
         : null,
     })),
-    permission: relation.documentPermission,
-    canUpload: relation.canUpload,
+    permission: relation.healthRecordsPermission,
+    canUpload: relation.healthRecordsPermission === 'editor',
   });
 }

@@ -16,7 +16,7 @@ import { rowToFormData } from "@/components/release-form/AddProviderModal";
 import type { UserProviderRow } from "@/lib/db/types";
 
 interface Props {
-  mode: 'admin' | 'agent';
+  mode: 'admin' | 'agent' | 'pda';
   patientId: string;
   defaultValues?: Partial<StaffReleaseFormData>;
   agentInfo: {
@@ -116,6 +116,17 @@ export default function StaffReleaseForm({
             setServerError(errorSchema.safeParse(result.body).data?.error || "Failed to save.");
             return;
           }
+        }
+      } else if (mode === 'pda') {
+        const res = await fetch(`/api/representing/${patientId}/releases`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          setServerError(d.error || "Failed to save.");
+          return;
         }
       } else {
         if (releaseId) {

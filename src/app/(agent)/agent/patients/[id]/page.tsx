@@ -58,6 +58,9 @@ export default async function AgentPatientPage({
       voided: releasesTable.voided,
       authSignatureImage: releasesTable.authSignatureImage,
       releaseCode: releasesTable.releaseCode,
+      releaseAuthAgent: releasesTable.releaseAuthAgent,
+      authAgentFirstName: releasesTable.authAgentFirstName,
+      authAgentLastName: releasesTable.authAgentLastName,
     })
     .from(releasesTable)
     .where(eq(releasesTable.userId, patientId))

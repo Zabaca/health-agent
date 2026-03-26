@@ -59,8 +59,10 @@ export default auth((req) => {
     // to also access /representing/* alongside their own /dashboard. For now, allow it
     // since all non-admin/non-agent users can be both patients and PDAs.
 
-    // Unboarded users may only access /dashboard
-    if (!session?.user?.onboarded && !nextUrl.pathname.startsWith('/dashboard')) {
+    // Unboarded users may only access /dashboard or /representing (PDA workspace)
+    if (!session?.user?.onboarded &&
+        !nextUrl.pathname.startsWith('/dashboard') &&
+        !nextUrl.pathname.startsWith('/representing')) {
       return NextResponse.redirect(new URL('/dashboard', nextUrl));
     }
   }

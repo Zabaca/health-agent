@@ -88,7 +88,7 @@ export async function POST(
         type: 'user',
         firstName: body.firstName ?? null,
         lastName: body.lastName ?? null,
-        onboarded: true,
+        onboarded: false,
       });
     }
   } else {

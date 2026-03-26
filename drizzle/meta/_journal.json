@@ -120,6 +120,13 @@
       "when": 1773200000000,
       "tag": "0017_user_role_refactor",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1773300000000,
+      "tag": "0018_pda_permission_refactor",
+      "breakpoints": true
     }
   ]
 }

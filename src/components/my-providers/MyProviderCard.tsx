@@ -19,6 +19,7 @@ interface Props {
   index: number;
   onRemove: () => void;
   dragHandleProps?: object;
+  readOnly?: boolean;
 }
 
 const PROVIDER_TYPES = [
@@ -27,7 +28,7 @@ const PROVIDER_TYPES = [
   { value: "Facility", label: "Facility (Clinics, Primary Care Physician, Urgent Care, Labs, etc)" },
 ];
 
-export default function MyProviderCard({ index, onRemove, dragHandleProps }: Props) {
+export default function MyProviderCard({ index, onRemove, dragHandleProps, readOnly }: Props) {
   const {
     register,
     control,
@@ -191,15 +192,17 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps }: Pro
             />
           )}
 
-          <Button
-            variant="light"
-            color="red"
-            size="sm"
-            onClick={onRemove}
-            mt="sm"
-          >
-            Remove Provider
-          </Button>
+          {!readOnly && (
+            <Button
+              variant="light"
+              color="red"
+              size="sm"
+              onClick={onRemove}
+              mt="sm"
+            >
+              Remove Provider
+            </Button>
+          )}
         </Stack>
       </Accordion.Panel>
     </Accordion.Item>

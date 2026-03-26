@@ -305,10 +305,10 @@ export const fileUploadLogRelations = relations(fileUploadLog, ({ one }) => ({
  * Access is fully patient-controlled and can be revoked at any time.
  *
  * Permissions are per-relationship:
- *   - documentPermission: null=no access, 'viewer'=read-only, 'editor'=read/write/delete/upload
- *   - documentScope: null=no access, 'all'=all docs including future, 'specific'=see grants table
- *   - canUpload: upload files on behalf of patient (implied by editor, but set explicitly)
- *   - canManageProviders: view/edit the patient's provider list
+ *   - healthRecordsPermission: null=no access, 'viewer'=read-only, 'editor'=view+upload
+ *   - healthRecordsScope: null=no access, 'all'=all docs including future, 'specific'=see grants table
+ *   - manageProvidersPermission: null=no access, 'viewer'=read-only, 'editor'=add/edit/delete
+ *   - releasePermission: null=no access, 'viewer'=see releases where PDA is auth agent, 'editor'=create+view
  *
  * Note: a PDA may eventually transition to a 'patient' type user. The relationship
  * record will remain valid regardless of the agent user's type.
@@ -321,11 +321,11 @@ export const patientDesignatedAgents = sqliteTable('PatientDesignatedAgent', {
   relationship:       text('relationship'), // e.g. "Spouse", "Son", "Daughter", free text
   token:              text('token'),        // invite token, cleared after acceptance
   tokenExpiresAt:     text('tokenExpiresAt'),
-  status:             text('status', { enum: ['pending', 'accepted', 'revoked'] }).notNull().default('pending'),
-  documentPermission: text('documentPermission', { enum: ['viewer', 'editor'] }),
-  documentScope:      text('documentScope', { enum: ['all', 'specific'] }),
-  canUpload:          integer('canUpload', { mode: 'boolean' }).notNull().default(false),
-  canManageProviders: integer('canManageProviders', { mode: 'boolean' }).notNull().default(false),
+  status:                   text('status', { enum: ['pending', 'accepted', 'revoked'] }).notNull().default('pending'),
+  healthRecordsPermission:  text('healthRecordsPermission', { enum: ['viewer', 'editor'] }),
+  healthRecordsScope:       text('healthRecordsScope', { enum: ['all', 'specific'] }),
+  manageProvidersPermission: text('manageProvidersPermission', { enum: ['viewer', 'editor'] }),
+  releasePermission:        text('releasePermission', { enum: ['viewer', 'editor'] }),
   createdAt:          text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt:          text('updatedAt').notNull().$defaultFn(() => new Date().toISOString()),
 });
