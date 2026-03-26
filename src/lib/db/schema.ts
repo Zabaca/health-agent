@@ -256,6 +256,7 @@ export const incomingFiles = sqliteTable('IncomingFile', {
   source:           text('source').notNull().default('fax'),
   incomingFaxLogId: text('incomingFaxLogId').references(() => incomingFaxLog.id),
   patientId:        text('patientId').references(() => users.id),
+  releaseCode:      text('releaseCode'),
   createdAt:        text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
 });
 

@@ -1,33 +1,37 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Table, Badge, Anchor, Text, Group, ActionIcon, Modal, TextInput, Button, Stack, Combobox, useCombobox, InputBase, ScrollArea } from '@mantine/core';
+import { Table, Badge, Title, Group, Anchor, Text, Paper, ActionIcon, Modal, TextInput, Button, Stack, Combobox, useCombobox, InputBase, ScrollArea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import UploadFileButton from './UploadFileButton';
 
-export interface MyRecordRow {
+export interface PatientDocumentRow {
   id: string;
   createdAt: string;
   fileType: string;
   fileURL: string;
   originalName: string | null;
   releaseCode: string | null;
-  pagecount: number | null;
+  source: string;
   uploadedBy: string | null;
 }
 
 interface ReleaseOption {
   id: string;
-  releaseCode: string;
-  providerNames: string[];
+  releaseCode: string | null;
+  providerNames?: string[];
 }
 
 interface Props {
-  rows: MyRecordRow[];
+  patientId: string;
+  role: 'admin' | 'agent';
+  documents: PatientDocumentRow[];
   releases?: ReleaseOption[];
+  recordsBasePath: string;
 }
 
 function fuzzyMatch(query: string, target: string): boolean {
@@ -43,7 +47,7 @@ function fuzzyMatch(query: string, target: string): boolean {
 interface ReleaseSelectProps {
   value: string | null;
   onChange: (val: string | null) => void;
-  options: ReleaseOption[];
+  options: { releaseCode: string; providerNames: string[] }[];
 }
 
 function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
@@ -104,39 +108,45 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
   );
 }
 
-export default function MyRecordsTable({ rows, releases = [] }: Props) {
+export default function PatientDocumentsPanel({ patientId, documents, releases, recordsBasePath }: Props) {
   const router = useRouter();
 
-  const [editRow, setEditRow] = useState<MyRecordRow | null>(null);
+  // Edit state
+  const [editDoc, setEditDoc] = useState<PatientDocumentRow | null>(null);
   const [editName, setEditName] = useState('');
   const [editReleaseCode, setEditReleaseCode] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
 
-  const [deleteRow, setDeleteRow] = useState<MyRecordRow | null>(null);
+  // Delete state
+  const [deleteDoc, setDeleteDoc] = useState<PatientDocumentRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteOpened, { open: openDelete, close: closeDelete }] = useDisclosure(false);
 
-  function handleEditClick(row: MyRecordRow) {
-    setEditRow(row);
-    setEditName(row.originalName ?? '');
-    setEditReleaseCode(row.releaseCode);
+  const releaseOptions = (releases ?? [])
+    .filter(r => r.releaseCode)
+    .map(r => ({ releaseCode: r.releaseCode!, providerNames: r.providerNames ?? [] }));
+
+  function handleEditClick(doc: PatientDocumentRow) {
+    setEditDoc(doc);
+    setEditName(doc.originalName ?? '');
+    setEditReleaseCode(doc.releaseCode);
     openEdit();
   }
 
-  function handleDeleteClick(row: MyRecordRow) {
-    setDeleteRow(row);
+  function handleDeleteClick(doc: PatientDocumentRow) {
+    setDeleteDoc(doc);
     openDelete();
   }
 
   async function handleSave() {
-    if (!editRow) return;
+    if (!editDoc) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/documents/${editRow.id}`, {
+      const res = await fetch(`/api/documents/${editDoc.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ originalName: editName.trim() || editRow.originalName, releaseCode: editReleaseCode }),
+        body: JSON.stringify({ originalName: editName.trim() || editDoc.originalName, releaseCode: editReleaseCode }),
       });
       if (!res.ok) throw new Error('Failed to save');
       closeEdit();
@@ -149,10 +159,10 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
   }
 
   async function handleDelete() {
-    if (!deleteRow) return;
+    if (!deleteDoc) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/documents/${deleteRow.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/documents/${deleteDoc.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
       closeDelete();
       router.refresh();
@@ -164,72 +174,75 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
   }
 
   return (
-    <>
-      <Table striped highlightOnHover withTableBorder>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>File Name</Table.Th>
-            <Table.Th>Date</Table.Th>
-            <Table.Th>Type</Table.Th>
-            <Table.Th>Release Code</Table.Th>
-            <Table.Th>Uploaded By</Table.Th>
-            <Table.Th>Pages</Table.Th>
-            <Table.Th />
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {rows.length === 0 ? (
+    <Paper withBorder p="md" radius="md">
+      <Group justify="space-between" align="center" mb="md">
+        <Title order={4}>Records</Title>
+        <UploadFileButton patientId={patientId} releases={releases} />
+      </Group>
+
+      {documents.length === 0 ? (
+        <Text size="sm" c="dimmed">No documents yet.</Text>
+      ) : (
+        <Table striped highlightOnHover>
+          <Table.Thead>
             <Table.Tr>
-              <Table.Td colSpan={7} style={{ textAlign: 'center', color: 'var(--mantine-color-dimmed)' }}>
-                No records yet.
-              </Table.Td>
+              <Table.Th>File Name</Table.Th>
+              <Table.Th>Date</Table.Th>
+              <Table.Th>Type</Table.Th>
+              <Table.Th>Release Code</Table.Th>
+              <Table.Th>Source</Table.Th>
+              <Table.Th>Uploaded By</Table.Th>
+              <Table.Th />
             </Table.Tr>
-          ) : rows.map(r => (
-            <Table.Tr key={r.id}>
-              <Table.Td>
-                {r.fileType === 'zip' ? (
-                  <Anchor href={r.fileURL} download={r.originalName ?? true} size="sm">
-                    {r.originalName ?? '—'}
-                  </Anchor>
-                ) : (
-                  <Anchor component={Link} href={`/my-records/${r.id}`} size="sm">
-                    {r.originalName ?? '—'}
-                  </Anchor>
-                )}
-              </Table.Td>
-              <Table.Td>
-                <Text size="sm">{new Date(r.createdAt).toLocaleDateString()}</Text>
-              </Table.Td>
-              <Table.Td>
-                <Badge variant="light" size="sm">{r.fileType.toUpperCase()}</Badge>
-              </Table.Td>
-              <Table.Td>
-                {r.releaseCode
-                  ? <Badge variant="outline" size="sm" color="blue">{r.releaseCode}</Badge>
-                  : '—'
-                }
-              </Table.Td>
-              <Table.Td>
-                <Text size="sm">{r.uploadedBy ?? '—'}</Text>
-              </Table.Td>
-              <Table.Td>{r.pagecount ?? '—'}</Table.Td>
-              <Table.Td>
-                <Group gap="xs" justify="flex-end">
-                  <ActionIcon variant="subtle" size="sm" onClick={() => handleEditClick(r)}>
-                    <IconEdit size={16} />
-                  </ActionIcon>
-                  <ActionIcon variant="subtle" color="red" size="sm" onClick={() => handleDeleteClick(r)}>
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-              </Table.Td>
-            </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
+          </Table.Thead>
+          <Table.Tbody>
+            {documents.map(doc => (
+              <Table.Tr key={doc.id}>
+                <Table.Td>
+                  {doc.fileType === 'zip' ? (
+                    <Anchor href={doc.fileURL} download={doc.originalName ?? true} size="sm">
+                      {doc.originalName ?? '—'}
+                    </Anchor>
+                  ) : (
+                    <Anchor component={Link} href={`${recordsBasePath}/${doc.id}`} size="sm">
+                      {doc.originalName ?? '—'}
+                    </Anchor>
+                  )}
+                </Table.Td>
+                <Table.Td>{new Date(doc.createdAt).toLocaleDateString()}</Table.Td>
+                <Table.Td>
+                  <Badge variant="light" size="sm">{doc.fileType.toUpperCase()}</Badge>
+                </Table.Td>
+                <Table.Td>
+                  {doc.releaseCode
+                    ? <Badge variant="outline" size="sm" color="blue">{doc.releaseCode}</Badge>
+                    : '—'
+                  }
+                </Table.Td>
+                <Table.Td>
+                  <Badge variant="light" size="sm" color="gray">{doc.source}</Badge>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm">{doc.uploadedBy ?? '—'}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Group gap="xs" justify="flex-end">
+                    <ActionIcon variant="subtle" size="sm" onClick={() => handleEditClick(doc)}>
+                      <IconEdit size={16} />
+                    </ActionIcon>
+                    <ActionIcon variant="subtle" color="red" size="sm" onClick={() => handleDeleteClick(doc)}>
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      )}
 
       {/* Edit Modal */}
-      <Modal opened={editOpened} onClose={closeEdit} title="Edit Record" size="sm" centered>
+      <Modal opened={editOpened} onClose={closeEdit} title="Edit Document" size="sm" centered>
         <Stack gap="md">
           <TextInput
             label="File Name"
@@ -237,11 +250,11 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
             onChange={e => setEditName(e.currentTarget.value)}
             placeholder="Enter file name"
           />
-          {releases.length > 0 && (
+          {releaseOptions.length > 0 && (
             <ReleaseSelect
               value={editReleaseCode}
               onChange={setEditReleaseCode}
-              options={releases}
+              options={releaseOptions}
             />
           )}
           <Group justify="flex-end" gap="sm">
@@ -252,10 +265,10 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal opened={deleteOpened} onClose={closeDelete} title="Delete Record" size="sm" centered>
+      <Modal opened={deleteOpened} onClose={closeDelete} title="Delete Document" size="sm" centered>
         <Stack gap="md">
           <Text size="sm">
-            Are you sure you want to delete <strong>{deleteRow?.originalName ?? 'this file'}</strong>? This action cannot be undone.
+            Are you sure you want to delete <strong>{deleteDoc?.originalName ?? 'this file'}</strong>? This action cannot be undone.
           </Text>
           <Group justify="flex-end" gap="sm">
             <Button variant="default" onClick={closeDelete} disabled={deleting}>Cancel</Button>
@@ -263,6 +276,6 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
           </Group>
         </Stack>
       </Modal>
-    </>
+    </Paper>
   );
 }

@@ -39,14 +39,14 @@ export default async function RepresentingRecordsPage({
     files = grantedIds.length > 0
       ? await db.query.incomingFiles.findMany({
           where: inArray(incomingFiles.id, grantedIds),
-          with: { faxLog: true, uploadLog: true },
+          with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
           orderBy: (f, { desc }) => [desc(f.createdAt)],
         })
       : [];
   } else {
     files = await db.query.incomingFiles.findMany({
       where: eq(incomingFiles.patientId, patientId),
-      with: { faxLog: true, uploadLog: true },
+      with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
       orderBy: (f, { desc }) => [desc(f.createdAt)],
     });
   }
@@ -60,7 +60,13 @@ export default async function RepresentingRecordsPage({
     id: f.id,
     createdAt: f.createdAt,
     fileType: f.fileType,
+    fileURL: f.fileURL,
+    originalName: f.uploadLog?.originalName ?? null,
+    releaseCode: f.releaseCode ?? null,
     pagecount: f.faxLog?.pagecount ?? null,
+    uploadedBy: f.uploadLog?.uploadedBy
+      ? [f.uploadLog.uploadedBy.firstName, f.uploadLog.uploadedBy.lastName].filter(Boolean).join(' ') || f.uploadLog.uploadedBy.email
+      : null,
   }));
 
   return (

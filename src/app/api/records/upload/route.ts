@@ -8,13 +8,19 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (session.user.type !== 'admin' && !session.user.isAgent) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const { fileURL, fileType, originalName, patientId, releaseCode } = await req.json();
 
-  const { fileURL, fileType, originalName } = await req.json();
   if (!fileURL || !fileType || !originalName) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  }
+
+  let assignedPatientId: string | null = null;
+
+  if (session.user.type === 'admin' || session.user.isAgent) {
+    assignedPatientId = patientId ?? null;
+  } else {
+    // Regular users (patients/PDAs) always upload to themselves
+    assignedPatientId = session.user.id;
   }
 
   const id = nanoid();
@@ -24,7 +30,8 @@ export async function POST(req: Request) {
     fileType,
     source: 'upload',
     incomingFaxLogId: null,
-    patientId: null,
+    patientId: assignedPatientId,
+    releaseCode: releaseCode ?? null,
   });
 
   await db.insert(fileUploadLog).values({

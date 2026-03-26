@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Accordion, Alert, Button, Paper, Stack, Text, Title } from "@mantine/core";
+import { Accordion, Alert, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -155,9 +155,17 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
     <FormProvider {...methods}>
       <form onSubmit={methods.handleSubmit(onSubmit)}>
         <Paper withBorder p="md" radius="md" maw={maw} w="100%">
-          <Title order={4} mb="md">
-            {title}
-          </Title>
+          <Group justify="space-between" align="center" mb="md">
+            <Title order={4}>{title}</Title>
+            <Group gap="sm">
+              <Button variant="light" onClick={handleAddProvider} type="button">
+                + Add Provider
+              </Button>
+              <Button type="submit" loading={methods.formState.isSubmitting} disabled={!methods.formState.isDirty}>
+                Save Providers
+              </Button>
+            </Group>
+          </Group>
 
           {fields.length === 0 && (
             <Text c="dimmed" size="sm" mb="md">
@@ -187,10 +195,6 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
           </DndContext>
 
           <Stack gap="sm">
-            <Button variant="light" onClick={handleAddProvider} type="button">
-              + Add Provider
-            </Button>
-
             {success && (
               <Alert color="green" title="Saved">
                 Your providers have been saved successfully.
@@ -201,10 +205,6 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
                 {error}
               </Alert>
             )}
-
-            <Button type="submit" loading={methods.formState.isSubmitting} disabled={!methods.formState.isDirty}>
-              Save Providers
-            </Button>
           </Stack>
         </Paper>
       </form>

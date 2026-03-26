@@ -1,7 +1,7 @@
 import { Paper, Title, SimpleGrid, Stack, Text } from "@mantine/core";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 
-interface Patient {
+export interface Patient {
   firstName: string | null;
   middleName: string | null;
   lastName: string | null;
