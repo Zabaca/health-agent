@@ -24,7 +24,7 @@ export const authConfig = {
     },
     async session({ session, token }) {
       session.user.id = token.id as string;
-      session.user.type = token.type as 'patient' | 'agent' | 'admin';
+      session.user.type = token.type as 'patient' | 'agent' | 'admin' | 'patient_designated_agent';
       session.user.mustChangePassword = token.mustChangePassword as boolean;
       session.user.onboarded = token.onboarded as boolean | undefined;
       return session;

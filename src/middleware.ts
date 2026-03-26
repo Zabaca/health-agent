@@ -10,6 +10,11 @@ export default auth((req) => {
   const userType = session?.user?.type;
   const mustChange = session?.user?.mustChangePassword;
 
+  // Invite pages are publicly accessible (no auth required to view the invite)
+  if (nextUrl.pathname.startsWith("/invite/")) {
+    return NextResponse.next();
+  }
+
   const isAuthPage =
     nextUrl.pathname.startsWith("/login") ||
     nextUrl.pathname.startsWith("/register");
@@ -18,6 +23,7 @@ export default auth((req) => {
     if (!isLoggedIn) return NextResponse.next();
     if (userType === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', nextUrl));
     if (userType === 'agent') return NextResponse.redirect(new URL('/agent/dashboard', nextUrl));
+    if (userType === 'patient_designated_agent') return NextResponse.redirect(new URL('/representing', nextUrl));
     return NextResponse.redirect(new URL('/dashboard', nextUrl));
   }
 
@@ -43,8 +49,17 @@ export default auth((req) => {
       return NextResponse.redirect(new URL('/agent/change-password', nextUrl));
     if (!nextUrl.pathname.startsWith('/agent'))
       return NextResponse.redirect(new URL('/agent/dashboard', nextUrl));
-  } else {
+  } else if (userType === 'patient_designated_agent') {
     if (nextUrl.pathname.startsWith('/admin') || nextUrl.pathname.startsWith('/agent'))
+      return NextResponse.redirect(new URL('/representing', nextUrl));
+    if (!nextUrl.pathname.startsWith('/representing'))
+      return NextResponse.redirect(new URL('/representing', nextUrl));
+  } else {
+    // TODO: A patient may also be a PDA (if they registered as a patient after being invited as a PDA).
+    // In that case, they should also be able to access /representing/* to switch context between their
+    // patient area and the patients they represent. Currently, patients are blocked from /representing.
+    // This requires checking patientDesignatedAgents at request time — defer until context-switch UI is built.
+    if (nextUrl.pathname.startsWith('/admin') || nextUrl.pathname.startsWith('/agent') || nextUrl.pathname.startsWith('/representing'))
       return NextResponse.redirect(new URL('/dashboard', nextUrl));
 
     // Unboarded patients may only access /dashboard
@@ -57,5 +72,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|api/register|api/fax/incoming|api/fax/confirm|_next/static|_next/image|uploads|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|api/register|api/fax/incoming|api/fax/confirm|api/invites|_next/static|_next/image|uploads|favicon.ico).*)"],
 };

@@ -28,6 +28,7 @@ export const contract = c.router({
     path: '/api/register',
     body: z.object({ email: z.string().email(), password: z.string().min(8) }),
     responses: {
+      200: registerResponseSchema,
       201: registerResponseSchema,
       400: errorSchema,
       409: errorSchema,

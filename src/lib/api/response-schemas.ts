@@ -119,7 +119,7 @@ export const releaseCreateResponseSchema = z.array(releaseWithProvidersSchema);
 export const errorSchema = z.object({ error: z.string() });
 export const successSchema = z.object({ success: z.boolean() });
 export const uploadResponseSchema = z.object({ url: z.string() });
-export const registerResponseSchema = z.object({ id: z.string(), email: z.string() });
+export const registerResponseSchema = z.object({ id: z.string(), email: z.string(), upgraded: z.boolean().optional() });
 
 export const scheduledCallSchema = z.object({
   id: z.string(),
