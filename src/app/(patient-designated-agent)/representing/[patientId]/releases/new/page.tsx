@@ -52,6 +52,7 @@ export default async function RepresentingNewReleasePage({
         address: pda.address ?? "",
         phone: pda.phoneNumber ?? "",
         email: pda.email,
+        relationship: relation.relationship ?? null,
       }}
       savedProviders={savedProviders}
       redirectAfterSave={`/representing/${patientId}/releases`}

@@ -68,14 +68,15 @@ export default async function AgentPatientPage({
 
   const releaseIds = releases.map(r => r.id);
   const releaseProviders = releaseIds.length
-    ? await db.select({ releaseId: releaseProvidersTable.releaseId, providerName: releaseProvidersTable.providerName })
+    ? await db.select({ releaseId: releaseProvidersTable.releaseId, providerName: releaseProvidersTable.providerName, insurance: releaseProvidersTable.insurance, providerType: releaseProvidersTable.providerType })
         .from(releaseProvidersTable)
         .where(inArray(releaseProvidersTable.releaseId, releaseIds))
     : [];
   const providersByRelease = new Map<string, string[]>();
   for (const p of releaseProviders) {
     const names = providersByRelease.get(p.releaseId) ?? [];
-    names.push(p.providerName);
+    const displayName = p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName;
+    names.push(displayName);
     providersByRelease.set(p.releaseId, names);
   }
 

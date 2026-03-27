@@ -26,6 +26,7 @@ interface Props {
     address: string;
     phone: string;
     email: string;
+    relationship?: string | null;
   };
   savedProviders: UserProviderRow[];
   releaseId?: string;

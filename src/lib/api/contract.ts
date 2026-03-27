@@ -86,6 +86,8 @@ export const contract = c.router({
         signatureImage: z.string().min(1),
         printedName: z.string().min(1),
         authDate: z.string().min(1),
+        expirationDate: z.string().min(1),
+        expirationEvent: z.string().optional(),
       }),
       responses: { 200: successSchema, 401: errorSchema, 404: errorSchema, 409: errorSchema },
     },

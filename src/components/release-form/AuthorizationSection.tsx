@@ -31,6 +31,7 @@ interface StaffModeProps {
     address: string;
     phone: string;
     email: string;
+    relationship?: string | null;
   };
 }
 
@@ -202,7 +203,14 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
                 <TextInput label="First Name" disabled {...register("authAgentFirstName")} />
                 <TextInput label="Last Name" disabled {...register("authAgentLastName")} />
               </SimpleGrid>
-              <AgentField label="Relationship to Patient" value="Authorized Representative" />
+              <AgentField
+                label="Relationship to Patient"
+                value={
+                  staffMode.agentInfo.relationship && staffMode.agentInfo.relationship !== 'Other'
+                    ? `Authorized Representative (${staffMode.agentInfo.relationship})`
+                    : "Authorized Representative"
+                }
+              />
               <TextInput label="Organization" disabled {...register("authAgentOrganization")} />
               <TextInput label="Address" disabled {...register("authAgentAddress")} />
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -213,70 +221,74 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
           </Paper>
         )}
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <Controller
-            name="authExpirationDate"
-            control={control}
-            render={({ field }) => (
-              <DatePickerInput
-                label="Authorization Expiration Date"
-                placeholder="MM/DD/YYYY"
-                required
-                minDate={minExpirationDate}
-                popoverProps={{ withinPortal: true, zIndex: 300 }}
-                error={errors.authExpirationDate?.message}
-                value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
-                onChange={(date) =>
-                  field.onChange(
-                    date
-                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
-                      : ""
-                  )
-                }
+        {!staffMode && (
+          <>
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              <Controller
+                name="authExpirationDate"
+                control={control}
+                render={({ field }) => (
+                  <DatePickerInput
+                    label="Authorization Expiration Date"
+                    placeholder="MM/DD/YYYY"
+                    required
+                    minDate={minExpirationDate}
+                    popoverProps={{ withinPortal: true, zIndex: 300 }}
+                    error={errors.authExpirationDate?.message}
+                    value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
+                    onChange={(date) =>
+                      field.onChange(
+                        date
+                          ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+                          : ""
+                      )
+                    }
+                  />
+                )}
               />
-            )}
-          />
-          <TextInput
-            label="Expiration Event"
-            placeholder="e.g., Upon completion of treatment"
-            error={errors.authExpirationEvent?.message}
-            {...register("authExpirationEvent")}
-          />
-        </SimpleGrid>
+              <TextInput
+                label="Expiration Event"
+                placeholder="e.g., Upon completion of treatment"
+                error={errors.authExpirationEvent?.message}
+                {...register("authExpirationEvent")}
+              />
+            </SimpleGrid>
 
-        <SimpleGrid cols={{ base: 1, sm: 2 }}>
-          <TextInput
-            label="Patient Printed Name"
-            required={!staffMode}
-            error={errors.authPrintedName?.message}
-            {...register("authPrintedName")}
-          />
-          <Controller
-            name="authDate"
-            control={control}
-            render={({ field }) => (
-              <DatePickerInput
-                label="Date"
-                placeholder="MM/DD/YYYY"
-                required={!staffMode}
-                minDate={today}
-                popoverProps={{ withinPortal: true, zIndex: 300 }}
-                error={errors.authDate?.message}
-                value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
-                onChange={(date) =>
-                  field.onChange(
-                    date
-                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
-                      : ""
-                  )
-                }
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              <TextInput
+                label="Patient Printed Name"
+                required
+                error={errors.authPrintedName?.message}
+                {...register("authPrintedName")}
               />
-            )}
-          />
-        </SimpleGrid>
+              <Controller
+                name="authDate"
+                control={control}
+                render={({ field }) => (
+                  <DatePickerInput
+                    label="Date"
+                    placeholder="MM/DD/YYYY"
+                    required
+                    minDate={today}
+                    popoverProps={{ withinPortal: true, zIndex: 300 }}
+                    error={errors.authDate?.message}
+                    value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
+                    onChange={(date) =>
+                      field.onChange(
+                        date
+                          ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+                          : ""
+                      )
+                    }
+                  />
+                )}
+              />
+            </SimpleGrid>
+          </>
+        )}
 
         {staffMode ? (
-          <TextInput label="Patient Signature" disabled placeholder="Patient Signature" />
+          <TextInput label="Patient Signature" disabled placeholder="Patient will sign when reviewing" />
         ) : (
           <Controller
             name="authSignatureImage"

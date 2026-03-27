@@ -5,6 +5,7 @@ import { patientDesignatedAgents, releases, users, providers as providersTable }
 import { eq, and, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { staffReleaseSchema } from "@/lib/schemas/release";
+import { generateReleaseCode } from "@/lib/utils/releaseCode";
 
 // GET /api/representing/[patientId]/releases — list releases where PDA is authorized agent
 export async function GET(
@@ -40,7 +41,7 @@ export async function GET(
       eq(releases.userId, patientId),
       eq(releases.releaseAuthAgent, true),
     ),
-    with: { providers: { columns: { providerName: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
+    with: { providers: { columns: { providerName: true, insurance: true, providerType: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
     orderBy: [desc(releases.updatedAt)],
   });
 
@@ -62,7 +63,7 @@ export async function GET(
     releaseAuthAgent: r.releaseAuthAgent,
     authAgentFirstName: r.authAgentFirstName,
     authAgentLastName: r.authAgentLastName,
-    providerNames: r.providers.map(p => p.providerName),
+    providerNames: r.providers.map(p => p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName),
   })));
 }
 
@@ -100,87 +101,91 @@ export async function POST(
   }
 
   const data = parsed.data;
-  const releaseId = nanoid();
+  const now = new Date().toISOString();
 
-  await db.transaction(async (tx) => {
-    await tx.insert(releases).values({
-      id: releaseId,
-      userId: patientId,
-      firstName: data.firstName,
-      middleName: data.middleName ?? null,
-      lastName: data.lastName,
-      dateOfBirth: data.dateOfBirth,
-      mailingAddress: data.mailingAddress,
-      phoneNumber: data.phoneNumber,
-      email: data.email,
-      ssn: data.ssn,
-      releaseAuthAgent: true,
-      releaseAuthZabaca: false,
-      authAgentFirstName: pda.firstName ?? '',
-      authAgentLastName: pda.lastName ?? '',
-      authAgentAddress: pda.address ?? '',
-      authAgentPhone: pda.phoneNumber ?? '',
-      authAgentEmail: pda.email,
-      authExpirationDate: data.authExpirationDate ?? null,
-      authExpirationEvent: data.authExpirationEvent ?? null,
-      authPrintedName: data.authPrintedName,
-      authSignatureImage: null, // patient must sign
-      authDate: data.authDate,
-    });
+  const releaseBase = {
+    userId: patientId,
+    firstName: data.firstName,
+    middleName: data.middleName ?? null,
+    lastName: data.lastName,
+    dateOfBirth: data.dateOfBirth,
+    mailingAddress: data.mailingAddress,
+    phoneNumber: data.phoneNumber,
+    email: data.email,
+    ssn: data.ssn,
+    releaseAuthAgent: true,
+    releaseAuthZabaca: false,
+    authAgentFirstName: pda.firstName ?? '',
+    authAgentLastName: pda.lastName ?? '',
+    authAgentAddress: pda.address ?? '',
+    authAgentPhone: pda.phoneNumber ?? '',
+    authAgentEmail: pda.email,
+    authExpirationDate: data.authExpirationDate ?? null,
+    authExpirationEvent: data.authExpirationEvent ?? null,
+    authPrintedName: data.authPrintedName,
+    authSignatureImage: null as null, // patient must sign
+    authDate: data.authDate,
+    createdAt: now,
+    updatedAt: now,
+  };
 
-    if (data.providers.length > 0) {
-      await tx.insert(providersTable).values(
-        data.providers.map((p, i) => ({
-          id: nanoid(),
-          releaseId,
-          order: i,
-          providerName: p.providerName ?? '',
-          providerType: p.providerType,
-          physicianName: p.physicianName ?? null,
-          patientId: p.patientId ?? null,
-          insurance: p.insurance ?? null,
-          patientMemberId: p.patientMemberId ?? null,
-          groupId: p.groupId ?? null,
-          planName: p.planName ?? null,
-          phone: p.phone ?? null,
-          fax: p.fax ?? null,
-          providerEmail: p.providerEmail ?? null,
-          address: p.address ?? null,
-          membershipIdFront: p.membershipIdFront ?? null,
-          membershipIdBack: p.membershipIdBack ?? null,
-          historyPhysical: p.historyPhysical,
-          diagnosticResults: p.diagnosticResults,
-          treatmentProcedure: p.treatmentProcedure,
-          prescriptionMedication: p.prescriptionMedication,
-          imagingRadiology: p.imagingRadiology,
-          dischargeSummaries: p.dischargeSummaries,
-          specificRecords: p.specificRecords,
-          specificRecordsDesc: p.specificRecordsDesc ?? null,
-          benefitsCoverage: p.benefitsCoverage,
-          claimsPayment: p.claimsPayment,
-          eligibilityEnrollment: p.eligibilityEnrollment,
-          financialBilling: p.financialBilling,
-          medicalRecords: p.medicalRecords,
-          dentalRecords: p.dentalRecords,
-          otherNonSpecific: p.otherNonSpecific,
-          otherNonSpecificDesc: p.otherNonSpecificDesc ?? null,
-          sensitiveCommDiseases: p.sensitiveCommDiseases,
-          sensitiveReproductiveHealth: p.sensitiveReproductiveHealth,
-          sensitiveHivAids: p.sensitiveHivAids,
-          sensitiveMentalHealth: p.sensitiveMentalHealth,
-          sensitiveSubstanceUse: p.sensitiveSubstanceUse,
-          sensitivePsychotherapy: p.sensitivePsychotherapy,
-          sensitiveOther: p.sensitiveOther,
-          sensitiveOtherDesc: p.sensitiveOtherDesc ?? null,
-          dateRangeFrom: p.dateRangeFrom ?? null,
-          dateRangeTo: p.dateRangeTo ?? null,
-          allAvailableDates: p.allAvailableDates,
-          purpose: p.purpose ?? null,
-          purposeOther: p.purposeOther ?? null,
-        }))
-      );
+  const firstId = await db.transaction(async (tx) => {
+    const ids: string[] = [];
+    for (const p of data.providers) {
+      const releaseId = nanoid();
+      await tx.insert(releases).values({ id: releaseId, ...releaseBase, releaseCode: generateReleaseCode() });
+      await tx.insert(providersTable).values({
+        id: nanoid(),
+        releaseId,
+        order: 0,
+        providerName: p.providerName ?? '',
+        providerType: p.providerType,
+        physicianName: p.physicianName ?? null,
+        patientId: p.patientId ?? null,
+        insurance: p.insurance ?? null,
+        patientMemberId: p.patientMemberId ?? null,
+        groupId: p.groupId ?? null,
+        planName: p.planName ?? null,
+        phone: p.phone ?? null,
+        fax: p.fax ?? null,
+        providerEmail: p.providerEmail ?? null,
+        address: p.address ?? null,
+        membershipIdFront: p.membershipIdFront ?? null,
+        membershipIdBack: p.membershipIdBack ?? null,
+        historyPhysical: p.historyPhysical,
+        diagnosticResults: p.diagnosticResults,
+        treatmentProcedure: p.treatmentProcedure,
+        prescriptionMedication: p.prescriptionMedication,
+        imagingRadiology: p.imagingRadiology,
+        dischargeSummaries: p.dischargeSummaries,
+        specificRecords: p.specificRecords,
+        specificRecordsDesc: p.specificRecordsDesc ?? null,
+        benefitsCoverage: p.benefitsCoverage,
+        claimsPayment: p.claimsPayment,
+        eligibilityEnrollment: p.eligibilityEnrollment,
+        financialBilling: p.financialBilling,
+        medicalRecords: p.medicalRecords,
+        dentalRecords: p.dentalRecords,
+        otherNonSpecific: p.otherNonSpecific,
+        otherNonSpecificDesc: p.otherNonSpecificDesc ?? null,
+        sensitiveCommDiseases: p.sensitiveCommDiseases,
+        sensitiveReproductiveHealth: p.sensitiveReproductiveHealth,
+        sensitiveHivAids: p.sensitiveHivAids,
+        sensitiveMentalHealth: p.sensitiveMentalHealth,
+        sensitiveSubstanceUse: p.sensitiveSubstanceUse,
+        sensitivePsychotherapy: p.sensitivePsychotherapy,
+        sensitiveOther: p.sensitiveOther,
+        sensitiveOtherDesc: p.sensitiveOtherDesc ?? null,
+        dateRangeFrom: p.dateRangeFrom ?? null,
+        dateRangeTo: p.dateRangeTo ?? null,
+        allAvailableDates: p.allAvailableDates,
+        purpose: p.purpose ?? null,
+        purposeOther: p.purposeOther ?? null,
+      });
+      ids.push(releaseId);
     }
+    return ids[0];
   });
 
-  return NextResponse.json({ id: releaseId }, { status: 201 });
+  return NextResponse.json({ id: firstId }, { status: 201 });
 }

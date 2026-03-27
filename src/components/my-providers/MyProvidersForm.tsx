@@ -178,7 +178,7 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
             </Text>
           )}
 
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext id="providers-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
               <Accordion
                 multiple

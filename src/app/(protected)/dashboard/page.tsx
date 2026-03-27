@@ -25,20 +25,20 @@ export default async function DashboardPage() {
     db.query.releases.findMany({
       where: and(eq(releasesTable.userId, userId), eq(releasesTable.voided, false)),
       columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true, releaseCode: true, releaseAuthAgent: true, authAgentFirstName: true, authAgentLastName: true },
-      with: { providers: { columns: { providerName: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
+      with: { providers: { columns: { providerName: true, insurance: true, providerType: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
       orderBy: [desc(releasesTable.updatedAt)],
     }),
     db.query.releases.findMany({
       where: and(eq(releasesTable.userId, userId), eq(releasesTable.voided, true)),
       columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true, releaseCode: true, releaseAuthAgent: true, authAgentFirstName: true, authAgentLastName: true },
-      with: { providers: { columns: { providerName: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
+      with: { providers: { columns: { providerName: true, insurance: true, providerType: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
       orderBy: [desc(releasesTable.updatedAt)],
     }),
     db.query.users.findFirst({ where: eq(users.id, userId) }),
   ]);
 
-  const active: ReleaseSummary[] = activeReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerName) }));
-  const voided: ReleaseSummary[] = voidedReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerName) }));
+  const active: ReleaseSummary[] = activeReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName) }));
+  const voided: ReleaseSummary[] = voidedReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName) }));
 
   // Onboarding: only for unboarded patients
   const isUnboardedPatient = user?.type === 'user' && !user.onboarded;

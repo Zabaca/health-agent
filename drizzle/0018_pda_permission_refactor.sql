@@ -3,6 +3,7 @@
 --           canManageProviders(bool)→manageProvidersPermission('editor'|null)
 -- New:      releasePermission (null for all existing rows)
 
+PRAGMA foreign_keys = OFF;--> statement-breakpoint
 CREATE TABLE `PatientDesignatedAgent_new` (
   `id` text PRIMARY KEY NOT NULL,
   `patientId` text NOT NULL,
@@ -32,5 +33,6 @@ INSERT INTO `PatientDesignatedAgent_new`
     createdAt, updatedAt
   FROM `PatientDesignatedAgent`;
 
-DROP TABLE `PatientDesignatedAgent`;
-ALTER TABLE `PatientDesignatedAgent_new` RENAME TO `PatientDesignatedAgent`;
+DROP TABLE `PatientDesignatedAgent`;--> statement-breakpoint
+ALTER TABLE `PatientDesignatedAgent_new` RENAME TO `PatientDesignatedAgent`;--> statement-breakpoint
+PRAGMA foreign_keys = ON;

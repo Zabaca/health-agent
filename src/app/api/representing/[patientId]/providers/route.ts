@@ -62,14 +62,21 @@ export async function PUT(
         providers.map((p, i) => ({
           id: crypto.randomUUID(),
           userId: patientId,
+          order: i,
           providerName: (p.providerName as string) ?? "",
           providerType: (p.providerType as string) ?? null,
+          physicianName: (p.physicianName as string) ?? null,
+          patientId: (p.patientId as string) ?? null,
+          insurance: (p.insurance as string) ?? null,
+          patientMemberId: (p.patientMemberId as string) ?? null,
+          groupId: (p.groupId as string) ?? null,
+          planName: (p.planName as string) ?? null,
+          phone: (p.phone as string) ?? null,
           fax: (p.fax as string) ?? null,
           providerEmail: (p.providerEmail as string) ?? null,
           address: (p.address as string) ?? null,
           membershipIdFront: (p.membershipIdFront as string) ?? null,
           membershipIdBack: (p.membershipIdBack as string) ?? null,
-          order: i,
         }))
       );
     }

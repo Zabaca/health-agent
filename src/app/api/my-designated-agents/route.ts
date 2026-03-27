@@ -17,7 +17,7 @@ export async function GET() {
   const [pdas, assignment] = await Promise.all([
     db.query.patientDesignatedAgents.findMany({
       where: eq(patientDesignatedAgents.patientId, patientId),
-      with: { agentUser: true },
+      with: { agentUser: true, documentGrants: true },
       orderBy: (t, { desc }) => [desc(t.createdAt)],
     }),
     db.query.patientAssignments.findFirst({
@@ -45,12 +45,15 @@ export async function GET() {
       manageProvidersPermission: p.manageProvidersPermission,
       releasePermission: p.releasePermission,
       createdAt: p.createdAt,
+      tokenExpiresAt: p.tokenExpiresAt ?? null,
+      grantedFileIds: p.documentGrants.map((g: { incomingFileId: string }) => g.incomingFileId),
       agentUser: p.agentUser
         ? {
             id: p.agentUser.id,
             email: p.agentUser.email,
             firstName: p.agentUser.firstName,
             lastName: p.agentUser.lastName,
+            avatarUrl: p.agentUser.avatarUrl ?? null,
           }
         : null,
     })),

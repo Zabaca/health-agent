@@ -33,28 +33,31 @@ export default async function PatientDesignatedAgentLayout({
     orderBy: (t, { asc }) => [asc(t.createdAt)],
   });
 
-  const navItems = relations.flatMap(r => {
+  const navItems = relations.map(r => {
     const patientName =
       [r.patient?.firstName, r.patient?.lastName].filter(Boolean).join(' ') ||
       r.patient?.email ||
       'Patient';
-    const items = [
-      { href: `/representing/${r.patientId}`, label: patientName, icon: <IconUsers size={16} /> },
-    ];
+    const children = [];
     if (r.healthRecordsPermission) {
-      items.push({ href: `/representing/${r.patientId}/records`, label: 'Health Records', icon: <IconFolder size={16} /> });
+      children.push({ href: `/representing/${r.patientId}/records`, label: 'Health Records', icon: <IconFolder size={16} /> });
     }
     if (r.manageProvidersPermission) {
-      items.push({ href: `/representing/${r.patientId}/providers`, label: 'Providers', icon: <IconBuildingHospital size={16} /> });
+      children.push({ href: `/representing/${r.patientId}/providers`, label: 'Providers', icon: <IconBuildingHospital size={16} /> });
     }
     if (r.releasePermission) {
-      items.push({ href: `/representing/${r.patientId}/releases`, label: 'HIPAA Releases', icon: <IconFileText size={16} /> });
+      children.push({ href: `/representing/${r.patientId}/releases`, label: 'HIPAA Releases', icon: <IconFileText size={16} /> });
     }
-    return items;
+    return {
+      href: `/representing/${r.patientId}`,
+      label: patientName,
+      icon: <IconUsers size={16} />,
+      children,
+    };
   });
 
   const bottomNavItems = [
-    { href: "#", label: "My Account", icon: <IconUser size={16} /> },
+    { href: "/account", label: "My Account", icon: <IconUser size={16} /> },
   ];
 
   return (

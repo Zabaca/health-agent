@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { patientDesignatedAgents, patientDesignatedAgentDocumentGrants, incomingFiles } from "@/lib/db/schema";
+import { patientDesignatedAgents, incomingFiles, releases, users } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
-import { Title, Breadcrumbs, Anchor, Text } from "@mantine/core";
+import { Title, Breadcrumbs, Anchor, Text, Group } from "@mantine/core";
 import Link from "next/link";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
+import UploadFileButton from "@/components/records/UploadFileButton";
 
 export const metadata = { title: "Patient Records" };
 
@@ -56,6 +57,33 @@ export default async function RepresentingRecordsPage({
     relation.patient?.email ||
     'Patient';
 
+  // Fetch releases where this PDA is the authorized agent
+  const pdaUser = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+    columns: { firstName: true, lastName: true, email: true },
+  });
+  const pdaFullName = [pdaUser?.firstName, pdaUser?.lastName].filter(Boolean).join(' ') || pdaUser?.email || '';
+
+  const allReleases = await db.query.releases.findMany({
+    where: and(
+      eq(releases.userId, patientId),
+      eq(releases.releaseAuthAgent, true),
+    ),
+    with: { providers: { columns: { providerName: true, insurance: true, providerType: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
+  });
+
+  const releaseOptions = allReleases
+    .filter(r => {
+      const agentName = [r.authAgentFirstName, r.authAgentLastName].filter(Boolean).join(' ');
+      return agentName === pdaFullName || r.authAgentEmail === pdaUser?.email;
+    })
+    .filter(r => r.releaseCode)
+    .map(r => ({
+      id: r.id,
+      releaseCode: r.releaseCode!,
+      providerNames: r.providers.map(p => p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName),
+    }));
+
   const rows = files.map(f => ({
     id: f.id,
     createdAt: f.createdAt,
@@ -75,8 +103,13 @@ export default async function RepresentingRecordsPage({
         <Anchor component={Link} href={`/representing/${patientId}`} size="sm">{patientName}</Anchor>
         <Text size="sm">Records</Text>
       </Breadcrumbs>
-      <Title order={2} mb="lg">Records</Title>
-      <MyRecordsTable rows={rows} />
+      <Group justify="space-between" align="center" mb="lg">
+        <Title order={2}>{patientName} Records</Title>
+        {relation.healthRecordsPermission === 'editor' && (
+          <UploadFileButton patientId={patientId} releases={releaseOptions} />
+        )}
+      </Group>
+      <MyRecordsTable rows={rows} releases={releaseOptions} />
     </>
   );
 }

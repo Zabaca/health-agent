@@ -16,20 +16,51 @@ interface Props {
 export default function Sidebar({ onNavLinkClick, navItems, bottomNavItems }: Props) {
   const pathname = usePathname();
 
+  function renderItem(item: (typeof navItems)[number]) {
+    if (item.children?.length) {
+      const isChildActive = item.children.some(c => pathname.startsWith(c.href));
+      return (
+        <NavLink
+          key={item.href}
+          component={Link}
+          href={item.href}
+          label={item.label}
+          leftSection={item.icon}
+          active={pathname === item.href || isChildActive}
+          defaultOpened={isChildActive || pathname === item.href}
+          onClick={onNavLinkClick}
+        >
+          {item.children.map(child => (
+            <NavLink
+              key={child.href}
+              component={Link}
+              href={child.href}
+              label={child.label}
+              leftSection={child.icon}
+              active={pathname === child.href}
+              onClick={onNavLinkClick}
+            />
+          ))}
+        </NavLink>
+      );
+    }
+    return (
+      <NavLink
+        key={item.href}
+        component={Link}
+        href={item.href}
+        label={item.label}
+        leftSection={item.icon}
+        active={pathname === item.href}
+        onClick={onNavLinkClick}
+      />
+    );
+  }
+
   return (
     <Stack h="100%" justify="space-between" p="md">
       <Stack gap={4}>
-        {navItems.map((item) => (
-          <NavLink
-            key={item.href}
-            component={Link}
-            href={item.href}
-            label={item.label}
-            leftSection={item.icon}
-            active={pathname === item.href}
-            onClick={onNavLinkClick}
-          />
-        ))}
+        {navItems.map(renderItem)}
       </Stack>
       <Stack gap={4}>
         {bottomNavItems?.map((item) => (

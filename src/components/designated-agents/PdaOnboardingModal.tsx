@@ -8,7 +8,6 @@ import {
   TextInput,
   Button,
   Stack,
-  Title,
   Text,
   Group,
   Center,
@@ -46,7 +45,7 @@ export default function PdaOnboardingModal({ firstName, lastName }: Props) {
     setServerError("");
     try {
       const profileRes = await fetch("/api/profile", {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phoneNumber: data.phoneNumber,
@@ -85,7 +84,7 @@ export default function PdaOnboardingModal({ firstName, lastName }: Props) {
       closeOnEscape={false}
       centered
       size="sm"
-      title={<Title order={4}>Complete your profile</Title>}
+      title="Complete your profile"
     >
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="md">

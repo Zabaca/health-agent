@@ -135,6 +135,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps, readO
                       accept="image/*,application/pdf"
                       required
                       error={providerErrors?.membershipIdFront?.message}
+                      readOnly={readOnly}
                     />
                   )}
                 />
@@ -149,6 +150,7 @@ export default function MyProviderCard({ index, onRemove, dragHandleProps, readO
                       accept="image/*,application/pdf"
                       required
                       error={providerErrors?.membershipIdBack?.message}
+                      readOnly={readOnly}
                     />
                   )}
                 />

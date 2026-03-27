@@ -8,6 +8,7 @@ export interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  children?: NavItem[];
 }
 
 interface Props {

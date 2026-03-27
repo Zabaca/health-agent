@@ -23,8 +23,10 @@ export async function GET(
     where: (f, { like }) => like(f.fileURL, `%${key}`),
   });
 
+  // File not tracked in DB (avatars, signatures, insurance cards, etc.) —
+  // allow any authenticated user to access it
   if (!file) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return streamFile(key);
   }
 
   const userId = session.user.id;

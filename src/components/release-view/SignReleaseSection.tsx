@@ -12,21 +12,31 @@ const SignaturePad = dynamic(() => import("@/components/release-form/SignaturePa
 
 export default function SignReleaseSection({ releaseId }: { releaseId: string }) {
   const router = useRouter();
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const minExpirationDate = new Date();
+  minExpirationDate.setHours(0, 0, 0, 0);
+  minExpirationDate.setDate(minExpirationDate.getDate() + 90);
 
   const [sigValue, setSigValue] = useState("");
   const [printedName, setPrintedName] = useState("");
   const [authDate, setAuthDate] = useState<Date | null>(today);
+  const [expirationDate, setExpirationDate] = useState<Date | null>(null);
+  const [expirationEvent, setExpirationEvent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const [nameError, setNameError] = useState("");
   const [dateError, setDateError] = useState("");
+  const [expirationDateError, setExpirationDateError] = useState("");
 
   const handleSign = async () => {
     let valid = true;
     setNameError("");
     setDateError("");
+    setExpirationDateError("");
     setError("");
 
     if (!printedName.trim()) {
@@ -35,6 +45,13 @@ export default function SignReleaseSection({ releaseId }: { releaseId: string })
     }
     if (!authDate) {
       setDateError("Date is required");
+      valid = false;
+    }
+    if (!expirationDate) {
+      setExpirationDateError("Expiration date is required");
+      valid = false;
+    } else if (expirationDate < minExpirationDate) {
+      setExpirationDateError("Expiration date must be at least 90 days from today");
       valid = false;
     }
     if (!sigValue) return;
@@ -55,6 +72,8 @@ export default function SignReleaseSection({ releaseId }: { releaseId: string })
           signatureImage: signatureUrl,
           printedName: printedName.trim(),
           authDate: authDate!.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }),
+          expirationDate: expirationDate!.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }),
+          expirationEvent: expirationEvent.trim() || undefined,
         },
       });
 
@@ -77,6 +96,26 @@ export default function SignReleaseSection({ releaseId }: { releaseId: string })
         <Alert color="yellow" variant="light">
           This release was prepared on your behalf and requires your signature to be complete.
         </Alert>
+
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
+          <DatePickerInput
+            label="Authorization Expiration Date"
+            placeholder="MM/DD/YYYY"
+            required
+            minDate={minExpirationDate}
+            value={expirationDate}
+            onChange={setExpirationDate}
+            popoverProps={{ withinPortal: true, zIndex: 300 }}
+            error={expirationDateError}
+          />
+          <TextInput
+            label="Expiration Event"
+            placeholder="e.g., Upon completion of treatment"
+            value={expirationEvent}
+            onChange={(e) => setExpirationEvent(e.currentTarget.value)}
+          />
+        </SimpleGrid>
+
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <TextInput
             label="Patient Printed Name"
@@ -95,7 +134,8 @@ export default function SignReleaseSection({ releaseId }: { releaseId: string })
             error={dateError}
           />
         </SimpleGrid>
-        <SignaturePad value={sigValue} onChange={setSigValue} />
+
+        <SignaturePad value={sigValue} onChange={setSigValue} typedName={printedName} />
         {error && <Text c="red" size="sm">{error}</Text>}
         <Button
           leftSection={<IconPencil size={16} />}

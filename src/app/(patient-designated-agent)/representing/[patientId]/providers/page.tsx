@@ -65,7 +65,7 @@ export default async function RepresentingProvidersPage({
         <Anchor component={Link} href={`/representing/${patientId}`} size="sm">{patientName}</Anchor>
         <Text size="sm">Providers</Text>
       </Breadcrumbs>
-      <RepresentingProvidersForm defaultValues={providers} patientId={patientId} readOnly={relation.manageProvidersPermission === 'viewer'} />
+      <RepresentingProvidersForm defaultValues={providers} patientId={patientId} title={`${patientName} Providers`} readOnly={relation.manageProvidersPermission === 'viewer'} />
     </>
   );
 }
