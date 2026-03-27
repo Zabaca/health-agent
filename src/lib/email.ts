@@ -1,12 +1,17 @@
 /**
- * Email service abstraction.
- * Currently implemented via SendGrid REST API.
- * Swap provider by replacing the fetch call in sendEmail() — the interface stays the same.
- *
+ * Email service — implemented via Resend.
  * Required env vars:
- *   SENDGRID_API_KEY — SendGrid API key
- *   EMAIL_FROM       — sender address (e.g. "noreply@yourdomain.com")
+ *   RESEND_API_KEY — Resend API key
+ *   EMAIL_FROM     — sender address (e.g. "noreply@yourdomain.com")
  */
+
+import { Resend } from 'resend';
+
+function getClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  return new Resend(apiKey);
+}
 
 interface SendEmailOptions {
   to: string;
@@ -16,36 +21,16 @@ interface SendEmailOptions {
 }
 
 async function sendEmail({ to, subject, html, text }: SendEmailOptions): Promise<void> {
-  const apiKey = process.env.SENDGRID_API_KEY;
   const from = process.env.EMAIL_FROM;
+  const client = getClient();
 
-  if (!apiKey || !from) {
-    // In development, log the email instead of sending
+  if (!client || !from) {
     console.log('[EMAIL] Would send email:', { to, subject, text: text ?? html });
     return;
   }
 
-  const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email: to }] }],
-      from: { email: from },
-      subject,
-      content: [
-        { type: 'text/html', value: html },
-        ...(text ? [{ type: 'text/plain', value: text }] : []),
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`SendGrid error ${res.status}: ${body}`);
-  }
+  const { error } = await client.emails.send({ from, to, subject, html, text });
+  if (error) throw new Error(`Resend error: ${error.message}`);
 }
 
 export interface InviteEmailOptions {
