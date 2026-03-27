@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { incomingFiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Stack, Text, Group, Card, Anchor, Breadcrumbs } from "@mantine/core";
+import { Stack, Text, Group, Card, Anchor, Breadcrumbs, Title } from "@mantine/core";
 import Link from "next/link";
 import InlineDocViewer from "@/components/records/InlineDocViewer";
 

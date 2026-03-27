@@ -123,7 +123,7 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
   const [pageSize, setPageSize] = useState(5);
 
   const fileTypeOptions = useMemo(() =>
-    [...new Set(rows.map(r => r.fileType.toUpperCase()))].sort().map(t => ({ value: t, label: t })),
+    Array.from(new Set(rows.map(r => r.fileType.toUpperCase()))).sort().map(t => ({ value: t, label: t })),
     [rows],
   );
 
