@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, patientAssignments, incomingFiles, patientDesignatedAgentDocumentGrants } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Title } from "@mantine/core";
 import MyDesignatedAgentsClient from "@/components/designated-agents/MyDesignatedAgentsClient";
 
 export const metadata = { title: "My Designated Agents" };
@@ -74,7 +73,6 @@ export default async function MyDesignatedAgentsPage() {
 
   return (
     <>
-      <Title order={2} mb="lg">My Designated Agents</Title>
       <MyDesignatedAgentsClient
         assignedAgent={assignedAgent}
         designatedAgents={designatedAgents}

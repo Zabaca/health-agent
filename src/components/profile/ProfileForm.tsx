@@ -5,8 +5,6 @@ import {
   TextInput,
   PasswordInput,
   Button,
-  Paper,
-  Title,
   SimpleGrid,
   Stack,
   Alert,
@@ -18,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, type ProfileFormData } from "@/lib/schemas/profile";
 import { apiClient } from "@/lib/api/client";
 import AvatarUpload from "@/components/shared/AvatarUpload";
+import PageHeader from "@/components/shared/PageHeader";
 
 interface ProfileFormProps {
   defaultValues: ProfileFormData;
@@ -70,10 +69,11 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
   };
 
   return (
-    <Paper withBorder p="xl" radius="md" maw={maw} w="100%">
-      <Title order={3} mb="lg">
-        My Profile
-      </Title>
+    <form onSubmit={handleSubmit(onSubmit)} style={{ maxWidth: maw, width: "100%" }}>
+      <PageHeader
+        title="My Profile"
+        action={<Button type="submit" loading={loading} disabled={!isDirty}>Save Profile</Button>}
+      />
 
       {success && (
         <Alert color="green" mb="md">
@@ -86,93 +86,85 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack>
+      <Stack>
+        <Controller
+          name="avatarUrl"
+          control={control}
+          render={({ field }) => (
+            <AvatarUpload
+              value={field.value}
+              onChange={field.onChange}
+              name={nameForInitials}
+            />
+          )}
+        />
+
+        <SimpleGrid cols={{ base: 1, sm: 3 }}>
+          <TextInput
+            label="First Name"
+            required
+            error={errors.firstName?.message}
+            {...register("firstName")}
+          />
+          <TextInput
+            label="Middle Name"
+            error={errors.middleName?.message}
+            {...register("middleName")}
+          />
+          <TextInput
+            label="Last Name"
+            required
+            error={errors.lastName?.message}
+            {...register("lastName")}
+          />
+        </SimpleGrid>
+
+        <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Controller
-            name="avatarUrl"
+            name="dateOfBirth"
             control={control}
             render={({ field }) => (
-              <AvatarUpload
-                value={field.value}
-                onChange={field.onChange}
-                name={nameForInitials}
+              <DatePickerInput
+                label="Date of Birth"
+                placeholder="MM/DD/YYYY"
+                required
+                maxDate={new Date()}
+                popoverProps={{ withinPortal: true, zIndex: 300 }}
+                error={errors.dateOfBirth?.message}
+                value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
+                onChange={(date) =>
+                  field.onChange(
+                    date
+                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
+                      : ""
+                  )
+                }
               />
             )}
           />
-
-          <SimpleGrid cols={{ base: 1, sm: 3 }}>
-            <TextInput
-              label="First Name"
-              required
-              error={errors.firstName?.message}
-              {...register("firstName")}
-            />
-            <TextInput
-              label="Middle Name"
-              error={errors.middleName?.message}
-              {...register("middleName")}
-            />
-            <TextInput
-              label="Last Name"
-              required
-              error={errors.lastName?.message}
-              {...register("lastName")}
-            />
-          </SimpleGrid>
-
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <Controller
-              name="dateOfBirth"
-              control={control}
-              render={({ field }) => (
-                <DatePickerInput
-                  label="Date of Birth"
-                  placeholder="MM/DD/YYYY"
-                  required
-                  maxDate={new Date()}
-                  popoverProps={{ withinPortal: true, zIndex: 300 }}
-                  error={errors.dateOfBirth?.message}
-                  value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
-                  onChange={(date) =>
-                    field.onChange(
-                      date
-                        ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
-                        : ""
-                    )
-                  }
-                />
-              )}
-            />
-            <PasswordInput
-              label="Social Security Number"
-              placeholder="XXX-XX-XXXX"
-              required
-              error={errors.ssn?.message}
-              {...register("ssn")}
-            />
-          </SimpleGrid>
-
-          <TextInput
-            label="Address"
+          <PasswordInput
+            label="Social Security Number"
+            placeholder="XXX-XX-XXXX"
             required
-            error={errors.address?.message}
-            {...register("address")}
+            error={errors.ssn?.message}
+            {...register("ssn")}
           />
+        </SimpleGrid>
 
-          <TextInput
-            label="Phone Number"
-            required
-            error={errors.phoneNumber?.message}
-            {...register("phoneNumber")}
-          />
+        <TextInput
+          label="Address"
+          required
+          error={errors.address?.message}
+          {...register("address")}
+        />
 
-          <Group justify="flex-end">
-            <Button type="submit" loading={loading} disabled={!isDirty}>
-              Save Profile
-            </Button>
-          </Group>
-        </Stack>
-      </form>
-    </Paper>
+        <TextInput
+          label="Phone Number"
+          required
+          error={errors.phoneNumber?.message}
+          {...register("phoneNumber")}
+        />
+      </Stack>
+    </form>
   );
 }

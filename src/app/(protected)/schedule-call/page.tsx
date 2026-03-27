@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { patientAssignments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Title, Alert } from "@mantine/core";
+import { Alert } from "@mantine/core";
 import { IconInfoCircle } from "@tabler/icons-react";
 import ScheduleCallForm from "@/components/schedule-call/ScheduleCallForm";
 
@@ -32,7 +32,6 @@ export default async function ScheduleCallPage() {
 
   return (
     <>
-      <Title order={2} mb="lg">Schedule a Call</Title>
       {!assignment ? (
         <Alert icon={<IconInfoCircle size={16} />} color="blue">
           You do not have an assigned agent yet. Please contact support.

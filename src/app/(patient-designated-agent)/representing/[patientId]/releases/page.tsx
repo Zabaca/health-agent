@@ -3,9 +3,10 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, releases, users } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { Title, Breadcrumbs, Anchor, Text, Button, Group } from "@mantine/core";
+import { Breadcrumbs, Anchor, Text, Button } from "@mantine/core";
 import Link from "next/link";
 import ReleasesTable from "./ReleasesTable";
+import BreadcrumbHeader from "@/components/shared/BreadcrumbHeader";
 
 export const metadata = { title: "HIPAA Releases" };
 
@@ -55,19 +56,18 @@ export default async function RepresentingReleasesPage({
 
   return (
     <>
-      <Breadcrumbs mb="md">
-        <Anchor component={Link} href={`/representing/${patientId}`} size="sm">{patientName}</Anchor>
-        <Text size="sm">HIPAA Releases</Text>
-      </Breadcrumbs>
-
-      <Group justify="space-between" align="center" mb="lg">
-        <Title order={2}>HIPAA Release Requests</Title>
-        {relation.releasePermission === 'editor' && (
-          <Button component={Link} href={`/representing/${patientId}/releases/new`}>
-            New Release
-          </Button>
-        )}
-      </Group>
+      <BreadcrumbHeader
+        breadcrumb={
+          <Breadcrumbs>
+            <Anchor component={Link} href={`/representing/${patientId}`}>{patientName}</Anchor>
+            <Text>HIPAA Releases</Text>
+          </Breadcrumbs>
+        }
+        action={relation.releasePermission === 'editor'
+          ? <Button component={Link} href={`/representing/${patientId}/releases/new`}>New Release</Button>
+          : undefined}
+        mb="lg"
+      />
 
       {myReleases.length === 0 ? (
         <Text c="dimmed">No releases yet.{relation.releasePermission === 'editor' && ' Create one to get started.'}</Text>

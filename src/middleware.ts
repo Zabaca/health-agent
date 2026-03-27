@@ -9,7 +9,13 @@ export default auth((req) => {
   const isLoggedIn = !!session;
   const userType = session?.user?.type;
   const isAgent = session?.user?.isAgent;
+  const isPda = session?.user?.isPda;
+  const isPatient = session?.user?.isPatient;
+  const isOnboarded = session?.user?.onboarded;
   const mustChange = session?.user?.mustChangePassword;
+
+  // isPdaOnly: has PDA relationships but is NOT a patient (no patientAssignment row)
+  const isPdaOnly = isPda && !isPatient;
 
   // Invite pages are publicly accessible (no auth required to view the invite)
   if (nextUrl.pathname.startsWith("/invite/")) {
@@ -24,6 +30,8 @@ export default auth((req) => {
     if (!isLoggedIn) return NextResponse.next();
     if (userType === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', nextUrl));
     if (isAgent) return NextResponse.redirect(new URL('/agent/dashboard', nextUrl));
+    // PDA-only users go to the representing workspace; patients (including patient+PDA) go to dashboard
+    if (isPdaOnly) return NextResponse.redirect(new URL('/representing', nextUrl));
     return NextResponse.redirect(new URL('/dashboard', nextUrl));
   }
 
@@ -52,18 +60,24 @@ export default auth((req) => {
   } else {
     // Regular user (patient / PDA / both)
     // Block access to admin and agent areas
-    if (nextUrl.pathname.startsWith('/admin') || nextUrl.pathname.startsWith('/agent'))
-      return NextResponse.redirect(new URL('/dashboard', nextUrl));
+    if (nextUrl.pathname.startsWith('/admin') || nextUrl.pathname.startsWith('/agent')) {
+      const home = isPdaOnly ? '/representing' : '/dashboard';
+      return NextResponse.redirect(new URL(home, nextUrl));
+    }
 
-    // TODO: Once context-switch UI is built, allow users with accepted PDA relationships
-    // to also access /representing/* alongside their own /dashboard. For now, allow it
-    // since all non-admin/non-agent users can be both patients and PDAs.
-
-    // Unboarded users may only access /dashboard or /representing (PDA workspace)
-    if (!session?.user?.onboarded &&
-        !nextUrl.pathname.startsWith('/dashboard') &&
-        !nextUrl.pathname.startsWith('/representing')) {
-      return NextResponse.redirect(new URL('/dashboard', nextUrl));
+    if (isPdaOnly) {
+      // PDA-only users may only access /representing and /account
+      if (!nextUrl.pathname.startsWith('/representing') && !nextUrl.pathname.startsWith('/account')) {
+        return NextResponse.redirect(new URL('/representing', nextUrl));
+      }
+    } else {
+      // Patient (or patient+PDA) — may access patient routes and /representing
+      // Unboarded patients may only access /dashboard or /representing
+      if (!isOnboarded &&
+          !nextUrl.pathname.startsWith('/dashboard') &&
+          !nextUrl.pathname.startsWith('/representing')) {
+        return NextResponse.redirect(new URL('/dashboard', nextUrl));
+      }
     }
   }
 

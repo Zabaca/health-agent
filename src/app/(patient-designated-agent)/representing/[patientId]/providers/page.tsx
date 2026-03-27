@@ -6,6 +6,7 @@ import { eq, and, asc } from "drizzle-orm";
 import { Breadcrumbs, Anchor, Text } from "@mantine/core";
 import Link from "next/link";
 import RepresentingProvidersForm from "@/components/representing/RepresentingProvidersForm";
+import BreadcrumbHeader from "@/components/shared/BreadcrumbHeader";
 import type { MyProviderFormData } from "@/lib/schemas/release";
 
 export const metadata = { title: "Patient Providers" };
@@ -61,11 +62,15 @@ export default async function RepresentingProvidersPage({
 
   return (
     <>
-      <Breadcrumbs mb="md">
-        <Anchor component={Link} href={`/representing/${patientId}`} size="sm">{patientName}</Anchor>
-        <Text size="sm">Providers</Text>
-      </Breadcrumbs>
-      <RepresentingProvidersForm defaultValues={providers} patientId={patientId} title={`${patientName} Providers`} readOnly={relation.manageProvidersPermission === 'viewer'} />
+      <BreadcrumbHeader
+        breadcrumb={
+          <Breadcrumbs>
+            <Anchor component={Link} href={`/representing/${patientId}`}>{patientName}</Anchor>
+            <Text>Providers</Text>
+          </Breadcrumbs>
+        }
+      />
+      <RepresentingProvidersForm defaultValues={providers} patientId={patientId} readOnly={relation.manageProvidersPermission === 'viewer'} />
     </>
   );
 }

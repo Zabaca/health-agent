@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { scheduledCalls } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { Title, Paper, Stack, Text, Badge } from "@mantine/core";
+import { Paper, Stack, Text, Badge } from "@mantine/core";
 import PatientCallActions from "@/components/schedule-call/PatientCallActions";
 
 export const dynamic = 'force-dynamic';
@@ -44,7 +44,6 @@ export default async function ScheduledCallPage({ params }: Props) {
 
   return (
     <>
-      <Title order={2} mb="lg">Scheduled Call</Title>
       <Paper withBorder p="lg" radius="md" maw={500}>
         <Stack gap="md">
           <div>

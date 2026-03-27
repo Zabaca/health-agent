@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { incomingFiles, releases as releasesTable, providers as releaseProvidersTable } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
-import { Title, Group } from "@mantine/core";
+import PageHeader from "@/components/shared/PageHeader";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
 import UploadFileButton from "@/components/records/UploadFileButton";
 
@@ -68,10 +68,7 @@ export default async function MyRecordsPage() {
 
   return (
     <>
-      <Group justify="space-between" mb="lg">
-        <Title order={2}>My Records</Title>
-        <UploadFileButton releases={releaseOptions} />
-      </Group>
+      <PageHeader title="My Health Records" action={<UploadFileButton releases={releaseOptions} />} />
       <MyRecordsTable rows={rows} releases={releaseOptions} />
     </>
   );

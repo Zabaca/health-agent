@@ -35,5 +35,5 @@ export default async function MyProvidersPage() {
     membershipIdBack: r.membershipIdBack ?? "",
   }));
 
-  return <MyProvidersForm defaultValues={providers} maw="100%" />;
+  return <MyProvidersForm defaultValues={providers} maw="100%" title="Health Providers" titleOrder={3} noBorder />;
 }

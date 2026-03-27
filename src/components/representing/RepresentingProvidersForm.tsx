@@ -23,5 +23,5 @@ export default function RepresentingProvidersForm({ defaultValues, patientId, ti
     }
   };
 
-  return <MyProvidersForm defaultValues={defaultValues} onSave={readOnly ? undefined : handleSave} readOnly={readOnly} title={title} maw="100%" />;
+  return <MyProvidersForm defaultValues={defaultValues} onSave={readOnly ? undefined : handleSave} readOnly={readOnly} title={title} hideTitle noBorder maw="100%" />;
 }

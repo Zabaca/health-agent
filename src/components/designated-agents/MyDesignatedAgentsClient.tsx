@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  Title,
   Text,
   Stack,
   Card,
@@ -27,6 +26,7 @@ import { IconPlus, IconTrash, IconEdit, IconUser, IconFiles } from "@tabler/icon
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import PageHeader from "@/components/shared/PageHeader";
 
 interface AssignedAgent {
   id: string;
@@ -278,9 +278,13 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
 
   return (
     <Stack>
+      <PageHeader
+        title="My Designated Agents"
+        action={<Button leftSection={<IconPlus size={14} />} onClick={openInvite}>Invite Representative</Button>}
+      />
+
       {/* Assigned Agent (read-only) */}
       <div>
-        <Title order={4} mb="sm">Zabaca Assigned Agent</Title>
         {assignedAgent ? (
           <Card withBorder padding="md" radius="md">
             <Group>
@@ -300,14 +304,6 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
       </div>
 
       <Divider />
-
-      {/* Designated Agents */}
-      <Group justify="space-between" align="center">
-        <Title order={4}>Invites</Title>
-        <Button leftSection={<IconPlus size={14} />} size="sm" onClick={openInvite}>
-          Invite Representative
-        </Button>
-      </Group>
 
       {agents.length === 0 ? (
         <Text c="dimmed" size="sm">No representatives yet. Invite a family member or caregiver.</Text>

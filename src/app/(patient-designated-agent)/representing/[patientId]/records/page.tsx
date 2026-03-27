@@ -3,10 +3,11 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, incomingFiles, releases, users } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
-import { Title, Breadcrumbs, Anchor, Text, Group } from "@mantine/core";
+import { Breadcrumbs, Anchor, Text } from "@mantine/core";
 import Link from "next/link";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
 import UploadFileButton from "@/components/records/UploadFileButton";
+import BreadcrumbHeader from "@/components/shared/BreadcrumbHeader";
 
 export const metadata = { title: "Patient Records" };
 
@@ -99,16 +100,18 @@ export default async function RepresentingRecordsPage({
 
   return (
     <>
-      <Breadcrumbs mb="md">
-        <Anchor component={Link} href={`/representing/${patientId}`} size="sm">{patientName}</Anchor>
-        <Text size="sm">Records</Text>
-      </Breadcrumbs>
-      <Group justify="space-between" align="center" mb="lg">
-        <Title order={2}>{patientName} Records</Title>
-        {relation.healthRecordsPermission === 'editor' && (
-          <UploadFileButton patientId={patientId} releases={releaseOptions} />
-        )}
-      </Group>
+      <BreadcrumbHeader
+        breadcrumb={
+          <Breadcrumbs>
+            <Anchor component={Link} href={`/representing/${patientId}`}>{patientName}</Anchor>
+            <Text>Records</Text>
+          </Breadcrumbs>
+        }
+        action={relation.healthRecordsPermission === 'editor'
+          ? <UploadFileButton patientId={patientId} releases={releaseOptions} />
+          : undefined}
+        mb="lg"
+      />
       <MyRecordsTable rows={rows} releases={releaseOptions} />
     </>
   );

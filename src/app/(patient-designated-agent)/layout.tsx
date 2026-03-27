@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { patientDesignatedAgents, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import AppShell from "@/components/layout/AppShell";
-import { IconUser, IconUsers, IconFileText, IconBuildingHospital, IconFolder } from "@tabler/icons-react";
+import { IconUser, IconUsers, IconFileText, IconBuildingHospital, IconFolder, IconArrowsLeftRight } from "@tabler/icons-react";
 import PdaOnboardingModal from "@/components/designated-agents/PdaOnboardingModal";
 
 export default async function PatientDesignatedAgentLayout({
@@ -39,14 +39,14 @@ export default async function PatientDesignatedAgentLayout({
       r.patient?.email ||
       'Patient';
     const children = [];
-    if (r.healthRecordsPermission) {
-      children.push({ href: `/representing/${r.patientId}/records`, label: 'Health Records', icon: <IconFolder size={16} /> });
-    }
     if (r.manageProvidersPermission) {
       children.push({ href: `/representing/${r.patientId}/providers`, label: 'Providers', icon: <IconBuildingHospital size={16} /> });
     }
     if (r.releasePermission) {
       children.push({ href: `/representing/${r.patientId}/releases`, label: 'HIPAA Releases', icon: <IconFileText size={16} /> });
+    }
+    if (r.healthRecordsPermission) {
+      children.push({ href: `/representing/${r.patientId}/records`, label: 'Health Records', icon: <IconFolder size={16} /> });
     }
     return {
       href: `/representing/${r.patientId}`,
@@ -56,8 +56,13 @@ export default async function PatientDesignatedAgentLayout({
     };
   });
 
+  const isPatient = session.user.isPatient;
+
   const bottomNavItems = [
     { href: "/account", label: "My Account", icon: <IconUser size={16} /> },
+    ...(isPatient
+      ? [{ href: "/dashboard", label: "Patient View", icon: <IconArrowsLeftRight size={16} /> }]
+      : []),
   ];
 
   return (

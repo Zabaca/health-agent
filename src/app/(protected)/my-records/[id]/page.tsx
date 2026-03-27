@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { incomingFiles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { Title, Stack, Text, Group, Card, Anchor, Breadcrumbs } from "@mantine/core";
+import { Stack, Text, Group, Card, Anchor, Breadcrumbs } from "@mantine/core";
 import Link from "next/link";
 import InlineDocViewer from "@/components/records/InlineDocViewer";
 
@@ -27,11 +27,9 @@ export default async function MyRecordDetailPage({
   return (
     <Stack gap="lg">
       <Breadcrumbs>
-        <Anchor component={Link} href="/my-records" size="sm">My Records</Anchor>
-        <Text size="sm">{fileName ?? 'Record'}</Text>
+        <Anchor component={Link} href="/my-records">My Records</Anchor>
+        <Text>{fileName ?? 'Record'}</Text>
       </Breadcrumbs>
-
-      <Title order={2}>{fileName ?? 'Record'}</Title>
 
       <Card withBorder p="md">
         <InlineDocViewer fileURL={file.fileURL} />
