@@ -40,6 +40,7 @@
     "react-dropzone": "^15.0.0",
     "react-hook-form": "^7.54.0",
     "react-signature-canvas": "^1.0.6",
+    "resend": "^6.9.4",
     "utif": "^3.1.0",
     "uuid": "^11.0.0",
     "zod": "^3.24.0"
