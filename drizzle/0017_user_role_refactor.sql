@@ -7,11 +7,11 @@ CREATE TABLE `ZabacaAgentRole` (
   `userId` text NOT NULL UNIQUE REFERENCES `User`(`id`) ON DELETE CASCADE,
   `createdAt` text NOT NULL
 );
--->statement-breakpoint
+--> statement-breakpoint
 -- Backfill: promote all existing 'agent' users into ZabacaAgentRole BEFORE type is changed
 INSERT INTO ZabacaAgentRole (id, userId, createdAt)
 SELECT lower(hex(randomblob(16))), id, createdAt
 FROM User WHERE type = 'agent';
--->statement-breakpoint
+--> statement-breakpoint
 -- Convert all non-admin users to 'user' type
 UPDATE User SET type = 'user' WHERE type != 'admin';

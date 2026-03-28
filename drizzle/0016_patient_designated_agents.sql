@@ -18,7 +18,7 @@ CREATE TABLE `PatientDesignatedAgent` (
   `createdAt` text NOT NULL,
   `updatedAt` text NOT NULL
 );
--->statement-breakpoint
+--> statement-breakpoint
 -- PatientDesignatedAgentDocumentGrant: per-document access for PDAs with documentScope='specific'.
 CREATE TABLE `PatientDesignatedAgentDocumentGrant` (
   `id` text PRIMARY KEY NOT NULL,

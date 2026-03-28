@@ -22,7 +22,7 @@ CREATE TABLE `PatientDesignatedAgent_new` (
   FOREIGN KEY (`patientId`) REFERENCES `User`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`agentUserId`) REFERENCES `User`(`id`) ON DELETE SET NULL
 );
-
+--> statement-breakpoint
 INSERT INTO `PatientDesignatedAgent_new`
   SELECT
     id, patientId, agentUserId, inviteeEmail, relationship, token, tokenExpiresAt, status,
@@ -32,7 +32,8 @@ INSERT INTO `PatientDesignatedAgent_new`
     NULL                      AS releasePermission,
     createdAt, updatedAt
   FROM `PatientDesignatedAgent`;
-
-DROP TABLE `PatientDesignatedAgent`;--> statement-breakpoint
+--> statement-breakpoint
+DROP TABLE `PatientDesignatedAgent`;
+--> statement-breakpoint
 ALTER TABLE `PatientDesignatedAgent_new` RENAME TO `PatientDesignatedAgent`;--> statement-breakpoint
 PRAGMA foreign_keys = ON;
