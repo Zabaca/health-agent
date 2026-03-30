@@ -221,8 +221,23 @@ export const contract = c.router({
         responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema },
       },
     }),
+    patientScheduledCalls: c.router({
+      create: {
+        method: 'POST',
+        path: '/api/admin/patients/:id/scheduled-calls',
+        pathParams: z.object({ id: z.string() }),
+        body: z.object({ scheduledAt: z.string() }),
+        responses: { 201: staffScheduledCallSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+      },
+    }),
   }),
   staffScheduledCalls: c.router({
+    create: {
+      method: 'POST',
+      path: '/api/staff/scheduled-calls',
+      body: z.object({ patientId: z.string(), scheduledAt: z.string() }),
+      responses: { 201: staffScheduledCallSchema, 400: errorSchema, 401: errorSchema, 403: errorSchema, 404: errorSchema },
+    },
     getById: {
       method: 'GET',
       path: '/api/staff/scheduled-calls/:id',

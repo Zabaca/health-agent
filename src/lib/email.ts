@@ -33,6 +33,61 @@ async function sendEmail({ to, subject, html, text }: SendEmailOptions): Promise
   if (error) throw new Error(`Resend error: ${error.message}`);
 }
 
+export interface ScheduledCallEmailOptions {
+  to: string;
+  recipientName: string;
+  schedulerName: string;
+  scheduledAt: string;
+}
+
+export async function sendScheduledCallEmail({
+  to,
+  recipientName,
+  schedulerName,
+  scheduledAt,
+}: ScheduledCallEmailOptions): Promise<void> {
+  const date = new Date(scheduledAt);
+  const formattedDate = date.toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+
+  const subject = `A call has been scheduled with you on ${formattedDate}`;
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Call Scheduled</h2>
+      <p>Hi ${recipientName},</p>
+      <p>
+        <strong>${schedulerName}</strong> has scheduled a call with you.
+      </p>
+      <p style="font-size: 16px;">
+        <strong>Date &amp; Time:</strong> ${formattedDate}
+      </p>
+      <p style="color: #666; font-size: 13px;">
+        If you have any questions, please reach out to your care team.
+      </p>
+    </div>
+  `;
+
+  const text = `
+Hi ${recipientName},
+
+${schedulerName} has scheduled a call with you.
+
+Date & Time: ${formattedDate}
+
+If you have any questions, please reach out to your care team.
+  `.trim();
+
+  await sendEmail({ to, subject, html, text });
+}
+
 export interface InviteEmailOptions {
   to: string;
   inviteUrl: string;
