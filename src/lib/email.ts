@@ -3,7 +3,14 @@
  * Required env vars:
  *   RESEND_API_KEY — Resend API key
  *   EMAIL_FROM     — sender address (e.g. "noreply@yourdomain.com")
+ *   SITE_DOMAIN    — domain used for links in emails (e.g. "app.yourdomain.com")
+ *                    defaults to localhost:3000 when not set
  */
+
+export function getSiteBaseUrl(): string {
+  const domain = process.env.SITE_DOMAIN;
+  return domain ? `https://${domain}` : 'http://localhost:3000';
+}
 
 import { Resend } from 'resend';
 
