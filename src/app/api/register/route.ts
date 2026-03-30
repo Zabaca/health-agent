@@ -10,6 +10,7 @@ export const POST = contractRoute(contract.register, async ({ body }) => {
   const { email, password } = body;
 
   const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
+
   if (existing) {
     return NextResponse.json({ error: "Email already registered" }, { status: 409 });
   }

@@ -289,7 +289,16 @@ export default function OnboardingModal({
                     }
               }
               savedProviders={initialProviderRows}
-              assignedAgent={assignedAgent}
+              recipients={assignedAgent ? [{
+                id: assignedAgent.id,
+                type: 'agent' as const,
+                label: [assignedAgent.firstName, assignedAgent.lastName].filter(Boolean).join(' ') || assignedAgent.email,
+                firstName: assignedAgent.firstName,
+                lastName: assignedAgent.lastName,
+                email: assignedAgent.email,
+                phoneNumber: assignedAgent.phoneNumber,
+                address: assignedAgent.address,
+              }] : []}
               onComplete={(id) => {
                 setSavedReleaseId(id);
                 setActiveStep(4);

@@ -7,7 +7,7 @@ import { eq, and } from "drizzle-orm";
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.user.type !== 'agent') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!session.user.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   const { patientId } = await req.json();

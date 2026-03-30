@@ -8,7 +8,19 @@ export default auth((req) => {
   const { nextUrl, auth: session } = req;
   const isLoggedIn = !!session;
   const userType = session?.user?.type;
+  const isAgent = session?.user?.isAgent;
+  const isPda = session?.user?.isPda;
+  const isPatient = session?.user?.isPatient;
+  const isOnboarded = session?.user?.onboarded;
   const mustChange = session?.user?.mustChangePassword;
+
+  // isPdaOnly: has PDA relationships but is NOT a patient (no patientAssignment row)
+  const isPdaOnly = isPda && !isPatient;
+
+  // Invite pages are publicly accessible (no auth required to view the invite)
+  if (nextUrl.pathname.startsWith("/invite/")) {
+    return NextResponse.next();
+  }
 
   const isAuthPage =
     nextUrl.pathname.startsWith("/login") ||
@@ -17,7 +29,9 @@ export default auth((req) => {
   if (isAuthPage) {
     if (!isLoggedIn) return NextResponse.next();
     if (userType === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', nextUrl));
-    if (userType === 'agent') return NextResponse.redirect(new URL('/agent/dashboard', nextUrl));
+    if (isAgent) return NextResponse.redirect(new URL('/agent/dashboard', nextUrl));
+    // PDA-only users go to the representing workspace; patients (including patient+PDA) go to dashboard
+    if (isPdaOnly) return NextResponse.redirect(new URL('/representing', nextUrl));
     return NextResponse.redirect(new URL('/dashboard', nextUrl));
   }
 
@@ -38,18 +52,32 @@ export default auth((req) => {
       return NextResponse.redirect(new URL('/admin/change-password', nextUrl));
     if (!nextUrl.pathname.startsWith('/admin'))
       return NextResponse.redirect(new URL('/admin/dashboard', nextUrl));
-  } else if (userType === 'agent') {
+  } else if (isAgent) {
     if (mustChange && !nextUrl.pathname.startsWith('/agent/change-password'))
       return NextResponse.redirect(new URL('/agent/change-password', nextUrl));
     if (!nextUrl.pathname.startsWith('/agent'))
       return NextResponse.redirect(new URL('/agent/dashboard', nextUrl));
   } else {
-    if (nextUrl.pathname.startsWith('/admin') || nextUrl.pathname.startsWith('/agent'))
-      return NextResponse.redirect(new URL('/dashboard', nextUrl));
+    // Regular user (patient / PDA / both)
+    // Block access to admin and agent areas
+    if (nextUrl.pathname.startsWith('/admin') || nextUrl.pathname.startsWith('/agent')) {
+      const home = isPdaOnly ? '/representing' : '/dashboard';
+      return NextResponse.redirect(new URL(home, nextUrl));
+    }
 
-    // Unboarded patients may only access /dashboard
-    if (!session?.user?.onboarded && !nextUrl.pathname.startsWith('/dashboard')) {
-      return NextResponse.redirect(new URL('/dashboard', nextUrl));
+    if (isPdaOnly) {
+      // PDA-only users may only access /representing and /account
+      if (!nextUrl.pathname.startsWith('/representing') && !nextUrl.pathname.startsWith('/account')) {
+        return NextResponse.redirect(new URL('/representing', nextUrl));
+      }
+    } else {
+      // Patient (or patient+PDA) — may access patient routes and /representing
+      // Unboarded patients may only access /dashboard or /representing
+      if (!isOnboarded &&
+          !nextUrl.pathname.startsWith('/dashboard') &&
+          !nextUrl.pathname.startsWith('/representing')) {
+        return NextResponse.redirect(new URL('/dashboard', nextUrl));
+      }
     }
   }
 
@@ -57,5 +85,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|api/register|api/fax/incoming|api/fax/confirm|_next/static|_next/image|uploads|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|api/register|api/fax/incoming|api/fax/confirm|api/invites|_next/static|_next/image|uploads|favicon.ico).*)"],
 };

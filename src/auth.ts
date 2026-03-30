@@ -2,8 +2,8 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { users, zabacaAgentRoles, patientDesignatedAgents, patientAssignments } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth-helpers";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -31,7 +31,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isValid) return null;
 
-        return { id: user.id, email: user.email, type: user.type, mustChangePassword: user.mustChangePassword, onboarded: user.onboarded };
+        const [agentRole, pdaRelation, patientAssignment] = await Promise.all([
+          db.query.zabacaAgentRoles.findFirst({ where: eq(zabacaAgentRoles.userId, user.id) }),
+          db.query.patientDesignatedAgents.findFirst({
+            where: and(
+              eq(patientDesignatedAgents.agentUserId, user.id),
+              eq(patientDesignatedAgents.status, 'accepted'),
+            ),
+            columns: { id: true },
+          }),
+          db.query.patientAssignments.findFirst({
+            where: eq(patientAssignments.patientId, user.id),
+            columns: { id: true },
+          }),
+        ]);
+
+        return {
+          id: user.id,
+          email: user.email,
+          type: user.type,
+          isAgent: !!agentRole,
+          isPda: !!pdaRelation,
+          isPatient: !!patientAssignment,
+          mustChangePassword: user.mustChangePassword,
+          onboarded: user.onboarded,
+        };
       },
     }),
   ],

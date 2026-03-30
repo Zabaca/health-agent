@@ -52,7 +52,7 @@ export default function RegisterForm() {
         body: { email: data.email, password: data.password },
       });
 
-      if (result.status !== 201) {
+      if (result.status !== 201 && result.status !== 200) {
         setServerError((result.body as { error: string }).error || "Registration failed");
         return;
       }

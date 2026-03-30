@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, notInArray } from "drizzle-orm";
 import { decryptPii } from "@/lib/crypto";
+import { getAgentUserIds } from "@/lib/db/agent-role";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -15,8 +16,11 @@ export async function GET(req: NextRequest) {
   const dob = searchParams.get("dob");
   const ssnLast4 = searchParams.get("ssn");
 
+  const agentIds = await getAgentUserIds();
   const allPatients = await db.query.users.findMany({
-    where: eq(users.type, 'patient'),
+    where: agentIds.length > 0
+      ? notInArray(users.id, agentIds)
+      : eq(users.type, 'user'),
   });
 
   const results = allPatients

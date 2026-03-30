@@ -30,6 +30,8 @@ export const POST = contractRoute(contract.releases.sign, async ({ params, body 
       authSignatureImage: body.signatureImage,
       authPrintedName: body.printedName,
       authDate: body.authDate,
+      authExpirationDate: body.expirationDate,
+      authExpirationEvent: body.expirationEvent ?? null,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(releasesTable.id, params.id));

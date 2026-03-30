@@ -5,7 +5,10 @@ declare module "next-auth" {
     user: {
       id: string;
       email?: string | null;
-      type: 'patient' | 'agent' | 'admin';
+      type: 'admin' | 'user';
+      isAgent: boolean;
+      isPda: boolean;
+      isPatient: boolean;
       mustChangePassword: boolean;
       onboarded?: boolean;
     };

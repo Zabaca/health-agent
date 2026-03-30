@@ -11,7 +11,7 @@ export const GET = contractRoute(contract.agent.patients.list, async () => {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.user.type !== 'agent') {
+  if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

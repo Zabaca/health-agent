@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import AppShell from "@/components/layout/AppShell";
-import { IconFiles, IconUser, IconBuildingHospital, IconPhone, IconFolder } from "@tabler/icons-react";
+import { IconFiles, IconUser, IconBuildingHospital, IconPhone, IconFolder, IconUsers, IconArrowsLeftRight } from "@tabler/icons-react";
 
 export default async function ProtectedLayout({
   children,
@@ -19,7 +19,13 @@ export default async function ProtectedLayout({
     { href: "/my-providers", label: "My Providers", icon: <IconBuildingHospital size={16} /> },
     { href: "/scheduled-calls", label: "Scheduled Calls", icon: <IconPhone size={16} /> },
     { href: "/my-records", label: "My Records", icon: <IconFolder size={16} /> },
+    { href: "/my-designated-agents", label: "My Designated Agents", icon: <IconUsers size={16} /> },
   ];
 
-  return <AppShell navItems={navItems}>{children}</AppShell>;
+  // Only show switcher for users who are both a patient AND have PDA relationships
+  const bottomNavItems = (session.user.isPda && session.user.isPatient)
+    ? [{ href: "/representing", label: "Representative View", icon: <IconArrowsLeftRight size={16} /> }]
+    : [];
+
+  return <AppShell navItems={navItems} bottomNavItems={bottomNavItems}>{children}</AppShell>;
 }

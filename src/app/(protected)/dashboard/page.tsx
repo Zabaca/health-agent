@@ -2,10 +2,10 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { releases as releasesTable, users, patientAssignments, userProviders } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
-import { Button, Group, Title } from "@mantine/core";
+import { Button } from "@mantine/core";
 import Link from "next/link";
+import PageHeader from "@/components/shared/PageHeader";
 import ReleaseList from "@/components/dashboard/ReleaseList";
-import VoidedReleaseList from "@/components/dashboard/VoidedReleaseList";
 import type { ReleaseSummary } from "@/types/release";
 import { decrypt, decryptPii } from "@/lib/crypto";
 import OnboardingModal from "@/components/onboarding/OnboardingModal";
@@ -21,27 +21,20 @@ export default async function DashboardPage() {
   const userId = session?.user?.id;
   if (!userId) return null;
 
-  const [activeReleases, voidedReleases, user] = await Promise.all([
+  const [allReleases, user] = await Promise.all([
     db.query.releases.findMany({
-      where: and(eq(releasesTable.userId, userId), eq(releasesTable.voided, false)),
-      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true, releaseCode: true },
-      with: { providers: { columns: { providerName: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
-      orderBy: [desc(releasesTable.updatedAt)],
-    }),
-    db.query.releases.findMany({
-      where: and(eq(releasesTable.userId, userId), eq(releasesTable.voided, true)),
-      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true, releaseCode: true },
-      with: { providers: { columns: { providerName: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
+      where: eq(releasesTable.userId, userId),
+      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true, releaseCode: true, releaseAuthAgent: true, authAgentFirstName: true, authAgentLastName: true },
+      with: { providers: { columns: { providerName: true, insurance: true, providerType: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
       orderBy: [desc(releasesTable.updatedAt)],
     }),
     db.query.users.findFirst({ where: eq(users.id, userId) }),
   ]);
 
-  const active: ReleaseSummary[] = activeReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerName) }));
-  const voided: ReleaseSummary[] = voidedReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerName) }));
+  const releases: ReleaseSummary[] = allReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName) }));
 
   // Onboarding: only for unboarded patients
-  const isUnboardedPatient = user?.type === 'patient' && !user.onboarded;
+  const isUnboardedPatient = user?.type === 'user' && !user.onboarded;
 
   let assignedAgent: {
     id: string;
@@ -219,19 +212,11 @@ export default async function DashboardPage() {
           initialReleaseId={initialReleaseId}
         />
       )}
-      <Group justify="space-between" mb="lg">
-        <Title order={2}>My Releases</Title>
-        <Button component={Link} href="/releases/new">
-          + New Release
-        </Button>
-      </Group>
-      <ReleaseList releases={active} />
-      {voided.length > 0 && (
-        <>
-          <Title order={3} mt="xl" mb="lg">Voided Releases</Title>
-          <VoidedReleaseList releases={voided} />
-        </>
-      )}
+      <PageHeader
+        title="HIPAA Releases"
+        action={<Button component={Link} href="/releases/new">+ New Release</Button>}
+      />
+      <ReleaseList releases={releases} />
     </>
   );
 }

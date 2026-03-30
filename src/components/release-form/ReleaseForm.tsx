@@ -14,25 +14,18 @@ import ProviderList from "./ProviderList";
 import AuthorizationSection from "./AuthorizationSection";
 import { rowToFormData } from "./AddProviderModal";
 import type { UserProviderRow } from "@/lib/db/types";
-
-interface AssignedAgent {
-  firstName: string | null;
-  lastName: string | null;
-  email: string;
-  phoneNumber: string | null;
-  address: string | null;
-}
+import type { RecipientOption } from "./AuthorizationSection";
 
 interface Props {
   releaseId?: string;
   defaultValues?: Partial<ReleaseFormData>;
-  assignedAgent?: AssignedAgent | null;
+  recipients?: RecipientOption[];
   savedProviders?: UserProviderRow[];
   onComplete?: (releaseId: string) => void;
   onBack?: () => void;
 }
 
-export default function ReleaseForm({ releaseId, defaultValues, assignedAgent, savedProviders, onComplete, onBack }: Props) {
+export default function ReleaseForm({ releaseId, defaultValues, recipients, savedProviders, onComplete, onBack }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -155,7 +148,7 @@ export default function ReleaseForm({ releaseId, defaultValues, assignedAgent, s
             savedProviders={savedProviders}
             initialUsedProviderIds={savedProviders?.map((p) => p.id)}
           />
-          <AuthorizationSection assignedAgent={assignedAgent} />
+          <AuthorizationSection recipients={recipients} />
 
           <Group justify="flex-end">
             <Button variant="default" onClick={() => onBack ? onBack() : router.back()}>

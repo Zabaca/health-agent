@@ -13,6 +13,7 @@ interface Props {
   accept?: string;
   required?: boolean;
   error?: string;
+  readOnly?: boolean;
 }
 
 async function uploadFile(file: File): Promise<string> {
@@ -25,7 +26,7 @@ async function uploadFile(file: File): Promise<string> {
   return url;
 }
 
-export default function FileUploadField({ label, value, onChange, required, error: fieldError }: Props) {
+export default function FileUploadField({ label, value, onChange, required, error: fieldError, readOnly }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [previewOpened, { open: openPreview, close: closePreview }] = useDisclosure(false);
@@ -67,6 +68,39 @@ export default function FileUploadField({ label, value, onChange, required, erro
       {value ? (
         <>
         <Box>
+          {readOnly ? (
+            // View-only: show image/PDF with preview but no replace interaction
+            isPdf ? (
+              <Box
+                onClick={openPreview}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "6px 10px",
+                  border: "1px solid #dee2e6",
+                  borderRadius: 6,
+                  background: "#fff5f5",
+                  cursor: "pointer",
+                }}
+              >
+                <ThemeIcon color="red" variant="light" size="sm">
+                  <IconFileTypePdf size={14} />
+                </ThemeIcon>
+                <Text size="xs" c="red.7">PDF uploaded</Text>
+              </Box>
+            ) : (
+              <Box onClick={openPreview}>
+                <Image
+                  src={value}
+                  alt={label}
+                  maw={200}
+                  radius="sm"
+                  style={{ border: "1px solid #dee2e6", display: "block", cursor: "pointer" }}
+                />
+              </Box>
+            )
+          ) : (
           <Box
             {...getRootProps()}
             style={{
@@ -126,6 +160,8 @@ export default function FileUploadField({ label, value, onChange, required, erro
               <Text size="xs" c="white" fw={600}>Drop to replace</Text>
             </Box>
           </Box>
+          )}
+          {!readOnly && (
           <Text
             size="xs"
             c="dimmed"
@@ -135,6 +171,7 @@ export default function FileUploadField({ label, value, onChange, required, erro
           >
             {uploading ? "Uploading…" : "Click or drop to replace"}
           </Text>
+          )}
         </Box>
 
         <Modal
@@ -206,6 +243,8 @@ export default function FileUploadField({ label, value, onChange, required, erro
           </Box>
         </Modal>
         </>
+      ) : readOnly ? (
+        <Text size="sm" c="dimmed">—</Text>
       ) : (
         <Box
           {...getRootProps()}

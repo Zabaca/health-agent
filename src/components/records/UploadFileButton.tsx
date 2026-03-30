@@ -147,10 +147,10 @@ export default function UploadFileButton({ patientId, releases }: Props) {
   return (
     <>
       <Button leftSection={<IconUpload size={16} />} onClick={open}>
-        Upload File
+        Upload Record
       </Button>
 
-      <Modal opened={opened} onClose={handleClose} title="Upload File" size="lg" centered closeOnClickOutside={!uploading} closeOnEscape={!uploading} withCloseButton={!uploading}>
+      <Modal opened={opened} onClose={handleClose} title="Upload Record" size="lg" centered closeOnClickOutside={!uploading} closeOnEscape={!uploading} withCloseButton={!uploading}>
         <Stack gap="md">
           <Box
             {...getRootProps()}

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, releases as releasesTable, patientAssignments, userProviders, incomingFiles, providers as releaseProvidersTable } from "@/lib/db/schema";
-import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
+import { users, releases as releasesTable, patientAssignments, userProviders, incomingFiles, providers as releaseProvidersTable, zabacaAgentRoles } from "@/lib/db/schema";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { Title, Text, Stack } from "@mantine/core";
 import PatientDetailTabs from "@/components/staff/PatientDetailTabs";
 import { decryptPii } from "@/lib/crypto";
@@ -33,8 +33,9 @@ export default async function AgentPatientPage({
 
   const decryptedPatient = decryptPii(patient);
 
-  const [staffMembers, providers, documents] = await Promise.all([
-    db.query.users.findMany({ where: or(eq(users.type, 'admin'), eq(users.type, 'agent')) }),
+  const [agentRoles, adminUsers, providers, documents] = await Promise.all([
+    db.query.zabacaAgentRoles.findMany({ with: { user: true } }),
+    db.query.users.findMany({ where: eq(users.type, 'admin') }),
     db.select().from(userProviders).where(eq(userProviders.userId, patientId)).orderBy(asc(userProviders.order)),
     db.query.incomingFiles.findMany({
       where: eq(incomingFiles.patientId, patientId),
@@ -42,6 +43,10 @@ export default async function AgentPatientPage({
       orderBy: (f, { desc }) => [desc(f.createdAt)],
     }),
   ]);
+  const staffMembers = [
+    ...adminUsers.map(u => ({ ...u, _role: 'admin' as const })),
+    ...agentRoles.map(r => ({ ...r.user, _role: 'agent' as const })),
+  ];
 
   const releases = await db
     .select({
@@ -53,6 +58,9 @@ export default async function AgentPatientPage({
       voided: releasesTable.voided,
       authSignatureImage: releasesTable.authSignatureImage,
       releaseCode: releasesTable.releaseCode,
+      releaseAuthAgent: releasesTable.releaseAuthAgent,
+      authAgentFirstName: releasesTable.authAgentFirstName,
+      authAgentLastName: releasesTable.authAgentLastName,
     })
     .from(releasesTable)
     .where(eq(releasesTable.userId, patientId))
@@ -60,14 +68,15 @@ export default async function AgentPatientPage({
 
   const releaseIds = releases.map(r => r.id);
   const releaseProviders = releaseIds.length
-    ? await db.select({ releaseId: releaseProvidersTable.releaseId, providerName: releaseProvidersTable.providerName })
+    ? await db.select({ releaseId: releaseProvidersTable.releaseId, providerName: releaseProvidersTable.providerName, insurance: releaseProvidersTable.insurance, providerType: releaseProvidersTable.providerType })
         .from(releaseProvidersTable)
         .where(inArray(releaseProvidersTable.releaseId, releaseIds))
     : [];
   const providersByRelease = new Map<string, string[]>();
   for (const p of releaseProviders) {
     const names = providersByRelease.get(p.releaseId) ?? [];
-    names.push(p.providerName);
+    const displayName = p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName;
+    names.push(displayName);
     providersByRelease.set(p.releaseId, names);
   }
 
@@ -112,7 +121,7 @@ export default async function AgentPatientPage({
         patientId={patientId}
         activeTab={activeTab}
         patient={decryptedPatient}
-        staffMembers={staffMembers.map(s => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, email: s.email, type: s.type as "admin" | "agent" }))}
+        staffMembers={staffMembers.map(s => ({ id: s.id, firstName: s.firstName, lastName: s.lastName, email: s.email, type: s._role }))}
         currentAssignedToId={assignment.assignedToId}
         defaultProviders={providers.map(({ id: _id, userId: _userId, order: _order, providerType, ...rest }) => ({
           ...Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, v ?? undefined])),

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Accordion, Alert, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
+import { Accordion, Alert, Button, Group, Paper, Stack, Text } from "@mantine/core";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,6 +26,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { myProviderSchema, type MyProvidersFormData, type MyProviderFormData } from "@/lib/schemas/release";
 import { apiClient } from "@/lib/api/client";
 import MyProviderCard from "./MyProviderCard";
+import PageHeader from "@/components/shared/PageHeader";
 
 const schema = z.object({ providers: z.array(myProviderSchema) });
 
@@ -39,16 +40,21 @@ interface Props {
   onComplete?: (providers: MyProviderFormData[]) => void;
   onSave?: (providers: MyProviderFormData[]) => Promise<void>;
   title?: string;
+  titleOrder?: 1 | 2 | 3 | 4 | 5 | 6;
+  hideTitle?: boolean;
+  noBorder?: boolean;
   maw?: number | string;
+  readOnly?: boolean;
 }
 
 interface SortableItemProps {
   id: string;
   index: number;
   onRemove: () => void;
+  readOnly?: boolean;
 }
 
-function SortableItem({ id, index, onRemove }: SortableItemProps) {
+function SortableItem({ id, index, onRemove, readOnly }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -67,13 +73,14 @@ function SortableItem({ id, index, onRemove }: SortableItemProps) {
       <MyProviderCard
         index={index}
         onRemove={onRemove}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        dragHandleProps={readOnly ? undefined : { ...attributes, ...listeners }}
+        readOnly={readOnly}
       />
     </div>
   );
 }
 
-export default function MyProvidersForm({ defaultValues, onComplete, onSave, title = "My Providers", maw = 700 }: Props) {
+export default function MyProvidersForm({ defaultValues, onComplete, onSave, title = "My Providers", titleOrder = 4, hideTitle, noBorder, maw = 700, readOnly }: Props) {
   const methods = useForm<MyProvidersFormData>({
     resolver: zodResolver(schema),
     defaultValues: { providers: defaultValues },
@@ -154,18 +161,25 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
   return (
     <FormProvider {...methods}>
       <form onSubmit={methods.handleSubmit(onSubmit)}>
-        <Paper withBorder p="md" radius="md" maw={maw} w="100%">
-          <Group justify="space-between" align="center" mb="md">
-            <Title order={4}>{title}</Title>
-            <Group gap="sm">
-              <Button variant="light" onClick={handleAddProvider} type="button">
-                + Add Provider
-              </Button>
-              <Button type="submit" loading={methods.formState.isSubmitting} disabled={!methods.formState.isDirty}>
-                Save Providers
-              </Button>
+        <Paper withBorder={!noBorder} p={noBorder ? 0 : "md"} radius={noBorder ? 0 : "md"} maw={maw} w="100%">
+          {!hideTitle ? (
+            <PageHeader
+              title={title}
+              titleOrder={titleOrder}
+              action={!readOnly ? (
+                <Group gap="sm">
+                  <Button variant="light" onClick={handleAddProvider} type="button">+ Add Provider</Button>
+                  <Button type="submit" loading={methods.formState.isSubmitting} disabled={!methods.formState.isDirty}>Save Providers</Button>
+                </Group>
+              ) : undefined}
+              mb="md"
+            />
+          ) : !readOnly ? (
+            <Group justify="flex-end" mb="md">
+              <Button variant="light" onClick={handleAddProvider} type="button">+ Add Provider</Button>
+              <Button type="submit" loading={methods.formState.isSubmitting} disabled={!methods.formState.isDirty}>Save Providers</Button>
             </Group>
-          </Group>
+          ) : null}
 
           {fields.length === 0 && (
             <Text c="dimmed" size="sm" mb="md">
@@ -173,7 +187,7 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
             </Text>
           )}
 
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext id="providers-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
               <Accordion
                 multiple
@@ -188,6 +202,7 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
                     id={field.id}
                     index={index}
                     onRemove={() => handleRemove(index)}
+                    readOnly={readOnly}
                   />
                 ))}
               </Accordion>

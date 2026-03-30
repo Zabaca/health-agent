@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { scheduledCalls } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
-import { Title } from "@mantine/core";
 import RescheduleCallForm from "@/components/schedule-call/RescheduleCallForm";
 
 export const dynamic = 'force-dynamic';
@@ -40,7 +39,6 @@ export default async function RescheduleCallPage({ params }: Props) {
 
   return (
     <>
-      <Title order={2} mb="lg">Reschedule Call</Title>
       <RescheduleCallForm
         callId={call.id}
         agentInfo={call.agent}

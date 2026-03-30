@@ -8,7 +8,6 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const role = (session.user as { type?: string }).type;
   const { fileURL, fileType, originalName, patientId, releaseCode } = await req.json();
 
   if (!fileURL || !fileType || !originalName) {
@@ -17,13 +16,11 @@ export async function POST(req: Request) {
 
   let assignedPatientId: string | null = null;
 
-  if (role === 'patient') {
-    // Patients always upload to themselves
-    assignedPatientId = session.user.id;
-  } else if (role === 'admin' || role === 'agent') {
+  if (session.user.type === 'admin' || session.user.isAgent) {
     assignedPatientId = patientId ?? null;
   } else {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Regular users (patients/PDAs) always upload to themselves
+    assignedPatientId = session.user.id;
   }
 
   const id = nanoid();

@@ -8,6 +8,7 @@ export interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  children?: NavItem[];
 }
 
 interface Props {
@@ -18,7 +19,7 @@ interface Props {
   bottomNavItems?: NavItem[];
 }
 
-export default function AppShell({ children, title = "Medical Records", primaryColor = "blue", navItems, bottomNavItems }: Props) {
+export default function AppShell({ children, title = "Zabaca", primaryColor = "blue", navItems, bottomNavItems }: Props) {
   const [opened, { toggle, close }] = useDisclosure();
   const theme = createTheme({ primaryColor: primaryColor as any });
 

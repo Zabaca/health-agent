@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Table, Badge, Anchor, Text, Group, ActionIcon, Modal, TextInput, Button, Stack, Combobox, useCombobox, InputBase, ScrollArea } from '@mantine/core';
+import { Table, Badge, Anchor, Text, Group, ActionIcon, Modal, TextInput, Button, Stack, Combobox, useCombobox, InputBase, ScrollArea, MultiSelect, Pagination, Select } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconTrash, IconSearch } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import classes from './MyRecordsTable.module.css';
 
 export interface MyRecordRow {
   id: string;
@@ -30,7 +32,14 @@ interface Props {
   releases?: ReleaseOption[];
 }
 
-function fuzzyMatch(query: string, target: string): boolean {
+function fuzzyMatch(query: string, ...fields: (string | null | undefined)[]): boolean {
+  const q = query.toLowerCase().trim();
+  if (!q) return true;
+  const haystack = fields.filter(Boolean).join(' ').toLowerCase();
+  return q.split(/\s+/).every((token) => haystack.includes(token));
+}
+
+function comboFuzzy(query: string, target: string): boolean {
   const q = query.toLowerCase();
   const t = target.toLowerCase();
   let qi = 0;
@@ -56,7 +65,7 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
     if (!search.trim()) return options;
     return options.filter(o => {
       const combined = [o.releaseCode, ...o.providerNames].join(' ');
-      return fuzzyMatch(search, combined);
+      return comboFuzzy(search, combined);
     });
   }, [search, options]);
 
@@ -106,6 +115,36 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
 
 export default function MyRecordsTable({ rows, releases = [] }: Props) {
   const router = useRouter();
+
+  const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [fileTypeFilter, setFileTypeFilter] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  const fileTypeOptions = useMemo(() =>
+    Array.from(new Set(rows.map(r => r.fileType.toUpperCase()))).sort().map(t => ({ value: t, label: t })),
+    [rows],
+  );
+
+  const filtered = useMemo(() => {
+    const [from, to] = dateRange;
+    return rows.filter(r => {
+      if (!fuzzyMatch(search, r.originalName, r.uploadedBy, r.releaseCode)) return false;
+
+      const created = new Date(r.createdAt);
+      if (from) { const s = new Date(from); s.setHours(0, 0, 0, 0); if (created < s) return false; }
+      if (to)   { const e = new Date(to);   e.setHours(23, 59, 59, 999); if (created > e) return false; }
+
+      if (fileTypeFilter.length > 0 && !fileTypeFilter.includes(r.fileType.toUpperCase())) return false;
+
+      return true;
+    });
+  }, [rows, search, dateRange, fileTypeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const [editRow, setEditRow] = useState<MyRecordRow | null>(null);
   const [editName, setEditName] = useState('');
@@ -165,6 +204,32 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
 
   return (
     <>
+      <Stack gap="sm" mb="md">
+        <TextInput
+          placeholder="Search file name, uploaded by, or release code…"
+          leftSection={<IconSearch size={16} />}
+          value={search}
+          onChange={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
+        />
+        <Group gap="sm" grow>
+          <DatePickerInput
+            type="range"
+            placeholder="Filter by date range"
+            value={dateRange}
+            onChange={(val) => { setDateRange(val); setPage(1); }}
+            clearable
+            valueFormat="MM/DD/YYYY"
+          />
+          <MultiSelect
+            placeholder="Filter by file type"
+            data={fileTypeOptions}
+            value={fileTypeFilter}
+            onChange={(val) => { setFileTypeFilter(val); setPage(1); }}
+            clearable
+          />
+        </Group>
+      </Stack>
+
       <Table striped highlightOnHover withTableBorder>
         <Table.Thead>
           <Table.Tr>
@@ -173,7 +238,7 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
             <Table.Th>Type</Table.Th>
             <Table.Th>Release Code</Table.Th>
             <Table.Th>Uploaded By</Table.Th>
-            <Table.Th>Pages</Table.Th>
+            <Table.Th className={classes.hideOnMobile}>Pages</Table.Th>
             <Table.Th />
           </Table.Tr>
         </Table.Thead>
@@ -184,7 +249,13 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
                 No records yet.
               </Table.Td>
             </Table.Tr>
-          ) : rows.map(r => (
+          ) : filtered.length === 0 ? (
+            <Table.Tr>
+              <Table.Td colSpan={7} style={{ textAlign: 'center', color: 'var(--mantine-color-dimmed)' }}>
+                No records match your filters.
+              </Table.Td>
+            </Table.Tr>
+          ) : paginated.map(r => (
             <Table.Tr key={r.id}>
               <Table.Td>
                 {r.fileType === 'zip' ? (
@@ -212,7 +283,7 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
               <Table.Td>
                 <Text size="sm">{r.uploadedBy ?? '—'}</Text>
               </Table.Td>
-              <Table.Td>{r.pagecount ?? '—'}</Table.Td>
+              <Table.Td className={classes.hideOnMobile}>{r.pagecount ?? '—'}</Table.Td>
               <Table.Td>
                 <Group gap="xs" justify="flex-end">
                   <ActionIcon variant="subtle" size="sm" onClick={() => handleEditClick(r)}>
@@ -227,6 +298,21 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
           ))}
         </Table.Tbody>
       </Table>
+
+      <Group justify="space-between" align="center" mt="md">
+        <Group gap="xs" align="center">
+          <Text size="sm" c="dimmed">Rows per page:</Text>
+          <Select
+            value={String(pageSize)}
+            onChange={(val) => { setPageSize(Number(val)); setPage(1); }}
+            data={['5', '20', '50', '100']}
+            w={80}
+            size="xs"
+          />
+          <Text size="sm" c="dimmed">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</Text>
+        </Group>
+        <Pagination total={totalPages} value={currentPage} onChange={setPage} size="sm" />
+      </Group>
 
       {/* Edit Modal */}
       <Modal opened={editOpened} onClose={closeEdit} title="Edit Record" size="sm" centered>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, zabacaAgentRoles } from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth-helpers";
 import { eq } from "drizzle-orm";
 
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     id,
     email: email.toLowerCase().trim(),
     password: hashedPassword,
-    type: "agent",
+    type: "user",
     mustChangePassword: true,
     firstName: firstName.trim(),
     middleName: middleName?.trim() || null,
@@ -51,6 +51,8 @@ export async function POST(req: Request) {
     phoneNumber: phoneNumber?.trim() || null,
     address: address?.trim() || null,
   });
+
+  await db.insert(zabacaAgentRoles).values({ id: crypto.randomUUID(), userId: id });
 
   return NextResponse.json(
     { id, email: email.toLowerCase().trim(), firstName: firstName.trim(), lastName: lastName.trim(), plainPassword },

@@ -2,7 +2,8 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { scheduledCalls } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { Title, Group, Button } from "@mantine/core";
+import { Button } from "@mantine/core";
+import PageHeader from "@/components/shared/PageHeader";
 import Link from "next/link";
 import ScheduledCallsTable from "@/components/schedule-call/ScheduledCallsTable";
 
@@ -33,10 +34,10 @@ export default async function ScheduledCallsPage() {
 
   return (
     <>
-      <Group justify="space-between" mb="lg">
-        <Title order={2}>Scheduled Calls</Title>
-        <Button component={Link} href="/schedule-call">+ Schedule a Call</Button>
-      </Group>
+      <PageHeader
+        title="Scheduled Calls"
+        action={<Button component={Link} href="/schedule-call">+ Schedule a Call</Button>}
+      />
       <ScheduledCallsTable calls={calls} />
     </>
   );

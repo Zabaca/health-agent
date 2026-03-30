@@ -5,13 +5,14 @@ import { users, patientAssignments } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
+import { isZabacaAgent } from "@/lib/db/agent-role";
 
 export const GET = contractRoute(contract.agent.patients.getById, async ({ params }) => {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.user.type !== 'agent') {
+  if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -50,7 +51,7 @@ export const PATCH = contractRoute(contract.agent.patients.reassign, async ({ pa
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.user.type !== 'agent') {
+  if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -65,7 +66,7 @@ export const PATCH = contractRoute(contract.agent.patients.reassign, async ({ pa
   }
 
   const assignee = await db.query.users.findFirst({ where: eq(users.id, body.assignedToId) });
-  if (!assignee || (assignee.type !== 'admin' && assignee.type !== 'agent')) {
+  if (!assignee || (assignee.type !== 'admin' && !(await isZabacaAgent(body.assignedToId)))) {
     return NextResponse.json({ error: "Invalid assignee" }, { status: 400 });
   }
 

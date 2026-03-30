@@ -11,6 +11,9 @@ export const authConfig = {
       if (user) {
         token.id = user.id;
         token.type = (user as any).type;
+        token.isAgent = (user as any).isAgent;
+        token.isPda = (user as any).isPda;
+        token.isPatient = (user as any).isPatient;
         token.mustChangePassword = (user as any).mustChangePassword;
         token.onboarded = (user as any).onboarded;
       }
@@ -24,7 +27,10 @@ export const authConfig = {
     },
     async session({ session, token }) {
       session.user.id = token.id as string;
-      session.user.type = token.type as 'patient' | 'agent' | 'admin';
+      session.user.type = token.type as 'admin' | 'user';
+      session.user.isAgent = token.isAgent as boolean;
+      session.user.isPda = token.isPda as boolean;
+      session.user.isPatient = token.isPatient as boolean;
       session.user.mustChangePassword = token.mustChangePassword as boolean;
       session.user.onboarded = token.onboarded as boolean | undefined;
       return session;

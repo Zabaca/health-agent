@@ -1,19 +1,18 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, patientAssignments } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { patientAssignments, users } from "@/lib/db/schema";
+import { inArray } from "drizzle-orm";
 import { Title, Text } from "@mantine/core";
 import PatientsTable from "@/components/staff/PatientsTable";
 import { decrypt } from "@/lib/crypto";
+import { getPatientUsers } from "@/lib/db/agent-role";
 
 export const metadata = { title: "Dashboard — Admin Portal" };
 
 export default async function AdminDashboardPage() {
   await auth();
 
-  const allPatients = await db.query.users.findMany({
-    where: eq(users.type, 'patient'),
-  });
+  const allPatients = await getPatientUsers();
 
   const assignments = await db.query.patientAssignments.findMany();
   const assigneeIds = Array.from(new Set(assignments.map((a) => a.assignedToId)));

@@ -29,7 +29,7 @@ export const GET = contractRoute(contract.agent.patientReleases.getById, async (
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.user.type !== 'agent') {
+  if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -51,7 +51,7 @@ export const PUT = contractRoute(contract.agent.patientReleases.update, async ({
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.user.type !== 'agent') {
+  if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -105,7 +105,7 @@ export const PATCH = contractRoute(contract.agent.patientReleases.void, async ({
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (session.user.type !== 'agent') {
+  if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

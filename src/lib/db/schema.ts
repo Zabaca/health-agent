@@ -5,7 +5,13 @@ export const users = sqliteTable('User', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
-  type: text('type', { enum: ['patient', 'agent', 'admin'] }).notNull().default('patient'),
+  /**
+   * All non-admin users are 'user'. Role elevation is handled via relationship tables:
+   *   - Zabaca agent privilege → zabacaAgentRoles table
+   *   - PDA access to a patient → patientDesignatedAgents table
+   * This keeps user type simple and avoids RBAC being encoded in the users row.
+   */
+  type: text('type', { enum: ['admin', 'user'] }).notNull().default('user'),
   mustChangePassword: integer('mustChangePassword', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
   firstName: text('firstName'),
@@ -139,7 +145,20 @@ export const userProviders = sqliteTable('UserProvider', {
   membershipIdBack: text('membershipIdBack'),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
+/**
+ * zabacaAgentRoles — designates a user as a Zabaca agent (staff).
+ * Presence of a row = the user has agent privileges.
+ * Absence = regular user (patient / PDA / unspecified).
+ * This is separate from users.type so that agent privilege can be granted/revoked
+ * without changing the user record, and so a user can be both a patient and an agent.
+ */
+export const zabacaAgentRoles = sqliteTable('ZabacaAgentRole', {
+  id:        text('id').primaryKey(),
+  userId:    text('userId').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const usersRelations = relations(users, ({ one, many }) => ({
   releases: many(releases),
   userProviders: many(userProviders),
   patientAssignment: many(patientAssignments, { relationName: 'patientAssignment' }),
@@ -147,6 +166,13 @@ export const usersRelations = relations(users, ({ many }) => ({
   scheduledCallsAsPatient: many(scheduledCalls, { relationName: 'scheduledCallPatient' }),
   scheduledCallsAsAgent: many(scheduledCalls, { relationName: 'scheduledCallAgent' }),
   incomingFiles: many(incomingFiles),
+  designatedAgentsAsPatient: many(patientDesignatedAgents, { relationName: 'pdaPatient' }),
+  designatedAgentsAsAgent: many(patientDesignatedAgents, { relationName: 'pdaAgent' }),
+  agentRole: one(zabacaAgentRoles, { fields: [users.id], references: [zabacaAgentRoles.userId] }),
+}));
+
+export const zabacaAgentRolesRelations = relations(zabacaAgentRoles, ({ one }) => ({
+  user: one(users, { fields: [zabacaAgentRoles.userId], references: [users.id] }),
 }));
 
 export const releasesRelations = relations(releases, ({ one, many }) => ({
@@ -269,4 +295,59 @@ export const incomingFilesRelations = relations(incomingFiles, ({ one }) => ({
 export const fileUploadLogRelations = relations(fileUploadLog, ({ one }) => ({
   incomingFile: one(incomingFiles, { fields: [fileUploadLog.incomingFileId], references: [incomingFiles.id] }),
   uploadedBy:   one(users, { fields: [fileUploadLog.uploadedById], references: [users.id] }),
+}));
+
+/**
+ * patientDesignatedAgents — relationship table for Patient Designated Agents (PDAs).
+ *
+ * A PDA is a user INVITED BY A PATIENT to act on their behalf (e.g. a family member
+ * or caregiver). This is NOT an organizational agent (admin/agent type users).
+ * Access is fully patient-controlled and can be revoked at any time.
+ *
+ * Permissions are per-relationship:
+ *   - healthRecordsPermission: null=no access, 'viewer'=read-only, 'editor'=view+upload
+ *   - healthRecordsScope: null=no access, 'all'=all docs including future, 'specific'=see grants table
+ *   - manageProvidersPermission: null=no access, 'viewer'=read-only, 'editor'=add/edit/delete
+ *   - releasePermission: null=no access, 'viewer'=see releases where PDA is auth agent, 'editor'=create+view
+ *
+ * Note: a PDA may eventually transition to a 'patient' type user. The relationship
+ * record will remain valid regardless of the agent user's type.
+ */
+export const patientDesignatedAgents = sqliteTable('PatientDesignatedAgent', {
+  id:                 text('id').primaryKey(),
+  patientId:          text('patientId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  agentUserId:        text('agentUserId').references(() => users.id, { onDelete: 'set null' }),
+  inviteeEmail:       text('inviteeEmail').notNull(),
+  relationship:       text('relationship'), // e.g. "Spouse", "Son", "Daughter", free text
+  token:              text('token'),        // invite token, cleared after acceptance
+  tokenExpiresAt:     text('tokenExpiresAt'),
+  status:                   text('status', { enum: ['pending', 'accepted', 'revoked'] }).notNull().default('pending'),
+  healthRecordsPermission:  text('healthRecordsPermission', { enum: ['viewer', 'editor'] }),
+  healthRecordsScope:       text('healthRecordsScope', { enum: ['all', 'specific'] }),
+  manageProvidersPermission: text('manageProvidersPermission', { enum: ['viewer', 'editor'] }),
+  releasePermission:        text('releasePermission', { enum: ['viewer', 'editor'] }),
+  createdAt:          text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt:          text('updatedAt').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+/**
+ * patientDesignatedAgentDocumentGrants — per-document access grants for PDAs.
+ * Only used when patientDesignatedAgents.documentScope = 'specific'.
+ * Each row grants a PDA access to one specific document.
+ */
+export const patientDesignatedAgentDocumentGrants = sqliteTable('PatientDesignatedAgentDocumentGrant', {
+  id:                              text('id').primaryKey(),
+  patientDesignatedAgentRelationId: text('patientDesignatedAgentRelationId').notNull().references(() => patientDesignatedAgents.id, { onDelete: 'cascade' }),
+  incomingFileId:                  text('incomingFileId').notNull().references(() => incomingFiles.id, { onDelete: 'cascade' }),
+});
+
+export const patientDesignatedAgentsRelations = relations(patientDesignatedAgents, ({ one, many }) => ({
+  patient:   one(users, { fields: [patientDesignatedAgents.patientId], references: [users.id], relationName: 'pdaPatient' }),
+  agentUser: one(users, { fields: [patientDesignatedAgents.agentUserId], references: [users.id], relationName: 'pdaAgent' }),
+  documentGrants: many(patientDesignatedAgentDocumentGrants),
+}));
+
+export const patientDesignatedAgentDocumentGrantsRelations = relations(patientDesignatedAgentDocumentGrants, ({ one }) => ({
+  relation:     one(patientDesignatedAgents, { fields: [patientDesignatedAgentDocumentGrants.patientDesignatedAgentRelationId], references: [patientDesignatedAgents.id] }),
+  incomingFile: one(incomingFiles, { fields: [patientDesignatedAgentDocumentGrants.incomingFileId], references: [incomingFiles.id] }),
 }));
