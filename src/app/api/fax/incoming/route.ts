@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getConfiguration } from "@/lib/config";
 import { incomingFaxLog, incomingFiles } from "@/lib/db/schema";
 import { uploadToR2 } from "@/lib/r2";
 import { eq } from "drizzle-orm";
@@ -8,8 +9,9 @@ const FAXAGE_URL = "https://api.faxage.com/httpsfax.php";
 const FAX_FORMAT = "pdf";
 
 export async function POST(req: NextRequest) {
+  const { FAXAGE_WEBHOOK_SECRET, FAXAGE_USERNAME, FAXAGE_COMPANY, FAXAGE_PASSWORD } = getConfiguration();
   const secret = req.nextUrl.searchParams.get("secret");
-  if (!secret || secret !== process.env.FAXAGE_WEBHOOK_SECRET) {
+  if (!secret || secret !== FAXAGE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -72,9 +74,9 @@ export async function POST(req: NextRequest) {
       method:  "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        username:  process.env.FAXAGE_USERNAME!,
-        company:   process.env.FAXAGE_COMPANY!,
-        password:  process.env.FAXAGE_PASSWORD!,
+        username:  FAXAGE_USERNAME!,
+        company:   FAXAGE_COMPANY!,
+        password:  FAXAGE_PASSWORD!,
         operation: "getfax",
         faxid:     recvid,
         informat:  FAX_FORMAT,

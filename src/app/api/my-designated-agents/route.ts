@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { patientDesignatedAgents, patientAssignments, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { sendInviteEmail } from "@/lib/email";
+import { sendInviteEmail, getSiteBaseUrl } from "@/lib/email";
 
 // GET /api/my-designated-agents — list patient's PDAs + assigned agent
 export async function GET() {
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     releasePermission: body.releasePermission ?? null,
   });
 
-  const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+  const baseUrl = getSiteBaseUrl();
   const inviteUrl = `${baseUrl}/invite/${token}`;
 
   await sendInviteEmail({

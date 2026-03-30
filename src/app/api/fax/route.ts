@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { getConfiguration } from "@/lib/config";
 import { releaseRequestLog } from "@/lib/db/schema";
 
 const FAXAGE_URL = "https://api.faxage.com/httpsfax.php";
@@ -10,11 +11,12 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { faxNumber, fileData, fileName, releaseId, recipientName } = await req.json();
+  const { FAXAGE_USERNAME, FAXAGE_COMPANY, FAXAGE_PASSWORD, FAXAGE_NOTIFY_URL } = getConfiguration();
 
   const params = new URLSearchParams({
-    username:          process.env.FAXAGE_USERNAME!,
-    company:           process.env.FAXAGE_COMPANY!,
-    password:          process.env.FAXAGE_PASSWORD!,
+    username:          FAXAGE_USERNAME!,
+    company:           FAXAGE_COMPANY!,
+    password:          FAXAGE_PASSWORD!,
     operation:         "sendfax",
     faxno:             faxNumber,
     recipname:         recipientName ?? "Medical Records",
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
     tagname:           " ",
     tagnumber:         " ",
     callerid:          " ",
-    url_notify:        process.env.FAXAGE_NOTIFY_URL!,
+    url_notify:        FAXAGE_NOTIFY_URL!,
   });
 
   let status: "success" | "failed" | "awaiting_confirmation" = "failed";

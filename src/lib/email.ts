@@ -1,16 +1,15 @@
-/**
- * Email service — implemented via Resend.
- * Required env vars:
- *   RESEND_API_KEY — Resend API key
- *   EMAIL_FROM     — sender address (e.g. "noreply@yourdomain.com")
- */
-
 import { Resend } from 'resend';
+import { getConfiguration } from './config';
+
+export function getSiteBaseUrl(): string {
+  const { SITE_DOMAIN } = getConfiguration();
+  return SITE_DOMAIN ? `https://${SITE_DOMAIN}` : 'http://localhost:3000';
+}
 
 function getClient(): Resend | null {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-  return new Resend(apiKey);
+  const { RESEND_API_KEY } = getConfiguration();
+  if (!RESEND_API_KEY) return null;
+  return new Resend(RESEND_API_KEY);
 }
 
 interface SendEmailOptions {
@@ -21,7 +20,7 @@ interface SendEmailOptions {
 }
 
 async function sendEmail({ to, subject, html, text }: SendEmailOptions): Promise<void> {
-  const from = process.env.EMAIL_FROM;
+  const { EMAIL_FROM: from } = getConfiguration();
   const client = getClient();
 
   if (!client || !from) {
