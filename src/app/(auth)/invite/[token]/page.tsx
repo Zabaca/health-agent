@@ -1,19 +1,31 @@
 import { notFound } from "next/navigation";
 import InviteAcceptForm from "@/components/auth/InviteAcceptForm";
-import { getConfiguration } from "@/lib/config";
+import { db } from "@/lib/db";
+import { patientDesignatedAgents } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export const metadata = { title: "Accept Invitation" };
 
 async function getInvite(token: string) {
-  const { NEXTAUTH_URL: baseUrl } = getConfiguration();
-  const res = await fetch(`${baseUrl}/api/invites/${token}`, { cache: 'no-store' });
-  if (!res.ok) return null;
-  return res.json() as Promise<{
-    inviteId: string;
-    inviteeEmail: string;
-    patientName: string;
-    relationship: string | null;
-  }>;
+  const invite = await db.query.patientDesignatedAgents.findFirst({
+    where: and(
+      eq(patientDesignatedAgents.token, token),
+      eq(patientDesignatedAgents.status, 'pending')
+    ),
+    with: { patient: true },
+  });
+
+  if (!invite) return null;
+  if (invite.tokenExpiresAt && new Date(invite.tokenExpiresAt) < new Date()) return null;
+
+  const patientName = [invite.patient?.firstName, invite.patient?.lastName].filter(Boolean).join(' ') || invite.patient?.email || 'Patient';
+
+  return {
+    inviteId: invite.id,
+    inviteeEmail: invite.inviteeEmail,
+    patientName,
+    relationship: invite.relationship,
+  };
 }
 
 export default async function InvitePage({
