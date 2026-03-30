@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import { incomingFiles, fileUploadLog } from '@/lib/db/schema';
+import { incomingFiles, fileUploadLog, users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { sendNewRecordUploadEmail, getSiteBaseUrl } from '@/lib/email';
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -40,6 +42,35 @@ export async function POST(req: Request) {
     uploadedById: session.user.id,
     originalName,
   });
+
+  // Notify patient when an agent or admin uploads a record on their behalf
+  try {
+    const isUploadForPatient = (session.user.isAgent || session.user.type === 'admin') &&
+      assignedPatientId && assignedPatientId !== session.user.id;
+    if (isUploadForPatient) {
+      const patient = await db.query.users.findFirst({
+        where: eq(users.id, assignedPatientId!),
+        columns: { email: true, firstName: true, lastName: true },
+      });
+      const uploader = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+        columns: { firstName: true, lastName: true },
+      });
+      if (patient) {
+        const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
+        const uploaderName = [uploader?.firstName, uploader?.lastName].filter(Boolean).join(' ') || 'Your care team';
+        await sendNewRecordUploadEmail({
+          to: patient.email,
+          patientName,
+          uploadedByName: uploaderName,
+          fileName: originalName,
+          recordsUrl: `${getSiteBaseUrl()}/my-records`,
+        });
+      }
+    }
+  } catch {
+    // swallow — do not block the response
+  }
 
   return NextResponse.json({ id });
 }

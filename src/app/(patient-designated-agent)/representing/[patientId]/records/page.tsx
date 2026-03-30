@@ -112,7 +112,7 @@ export default async function RepresentingRecordsPage({
           : undefined}
         mb="lg"
       />
-      <MyRecordsTable rows={rows} releases={releaseOptions} />
+      <MyRecordsTable rows={rows} releases={releaseOptions} readOnly={relation.healthRecordsPermission !== 'editor'} />
     </>
   );
 }

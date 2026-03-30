@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { releases as releasesTable, providers as providersTable, patientAssignments } from "@/lib/db/schema";
+import { releases as releasesTable, providers as providersTable, patientAssignments, users } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { encryptPii, decryptPii } from "@/lib/crypto";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
+import { sendReleaseSignatureRequiredEmail, getSiteBaseUrl } from "@/lib/email";
 
 async function verifyAssignment(agentId: string, patientId: string) {
   return db.query.patientAssignments.findFirst({
@@ -91,6 +92,30 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
       }
       return results;
     });
+
+    // Notify patient that a release was created and requires their signature
+    try {
+      const patient = await db.query.users.findFirst({
+        where: eq(users.id, params.id),
+        columns: { email: true, firstName: true, lastName: true },
+      });
+      const agent = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+        columns: { firstName: true, lastName: true },
+      });
+      if (patient) {
+        const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
+        const agentName = [agent?.firstName, agent?.lastName].filter(Boolean).join(' ') || 'Your agent';
+        await sendReleaseSignatureRequiredEmail({
+          to: patient.email,
+          patientName,
+          createdByName: agentName,
+          releasesUrl: `${getSiteBaseUrl()}/releases`,
+        });
+      }
+    } catch {
+      // swallow — do not block the release response
+    }
 
     return NextResponse.json(created.map(decryptPii), { status: 201 });
   } catch (error) {

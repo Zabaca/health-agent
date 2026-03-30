@@ -8,6 +8,7 @@ import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { encrypt, encryptPii, decryptPii } from "@/lib/crypto";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
+import { sendNewReleaseNotificationEmail } from "@/lib/email";
 
 export const GET = contractRoute(contract.releases.list, async () => {
   const session = await auth();
@@ -108,6 +109,26 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
           );
         }
       });
+    } catch {
+      // swallow — do not block the release response
+    }
+
+    // Notify authorized agent if listed on any release
+    try {
+      const firstRelease = created[0];
+      if (firstRelease?.releaseAuthAgent && firstRelease?.authAgentEmail) {
+        const patient = await db.query.users.findFirst({
+          where: eq(users.id, session.user.id),
+          columns: { firstName: true, lastName: true },
+        });
+        const patientName = [patient?.firstName, patient?.lastName].filter(Boolean).join(' ') || releaseData.firstName;
+        const recipientName = [firstRelease.authAgentFirstName, firstRelease.authAgentLastName].filter(Boolean).join(' ') || 'Representative';
+        await sendNewReleaseNotificationEmail({
+          to: firstRelease.authAgentEmail,
+          recipientName,
+          patientName,
+        });
+      }
     } catch {
       // swallow — do not block the release response
     }

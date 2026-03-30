@@ -87,6 +87,144 @@ If you have any questions, please reach out to your care team.
   await sendEmail({ to, subject, html, text });
 }
 
+export interface NewReleaseNotificationEmailOptions {
+  to: string;
+  recipientName: string;
+  patientName: string;
+}
+
+export async function sendNewReleaseNotificationEmail({
+  to,
+  recipientName,
+  patientName,
+}: NewReleaseNotificationEmailOptions): Promise<void> {
+  const subject = `${patientName} has created a new health release`;
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>New Release Created</h2>
+      <p>Hi ${recipientName},</p>
+      <p>
+        <strong>${patientName}</strong> has created a new health record release
+        and has listed you as their authorized representative.
+      </p>
+      <p style="color: #666; font-size: 13px;">
+        If you have any questions, please reach out to your care team.
+      </p>
+    </div>
+  `;
+
+  const text = `
+Hi ${recipientName},
+
+${patientName} has created a new health record release and listed you as their authorized representative.
+
+If you have any questions, please reach out to your care team.
+  `.trim();
+
+  await sendEmail({ to, subject, html, text });
+}
+
+export interface ReleaseSignatureRequiredEmailOptions {
+  to: string;
+  patientName: string;
+  createdByName: string;
+  releasesUrl: string;
+}
+
+export async function sendReleaseSignatureRequiredEmail({
+  to,
+  patientName,
+  createdByName,
+  releasesUrl,
+}: ReleaseSignatureRequiredEmailOptions): Promise<void> {
+  const subject = 'A release has been created on your behalf and requires your signature';
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>Signature Required</h2>
+      <p>Hi ${patientName},</p>
+      <p>
+        <strong>${createdByName}</strong> has created a health record release on your behalf
+        that requires your signature before it can be processed.
+      </p>
+      <div style="margin: 32px 0;">
+        <a href="${releasesUrl}"
+           style="background: #228be6; color: white; padding: 12px 24px; border-radius: 6px;
+                  text-decoration: none; font-weight: 600;">
+          Review &amp; Sign
+        </a>
+      </div>
+      <p style="color: #666; font-size: 13px;">
+        If you did not expect this, please contact your care team.
+      </p>
+    </div>
+  `;
+
+  const text = `
+Hi ${patientName},
+
+${createdByName} has created a health record release on your behalf that requires your signature.
+
+Review and sign here: ${releasesUrl}
+
+If you did not expect this, please contact your care team.
+  `.trim();
+
+  await sendEmail({ to, subject, html, text });
+}
+
+export interface NewRecordUploadEmailOptions {
+  to: string;
+  patientName: string;
+  uploadedByName: string;
+  fileName: string;
+  recordsUrl: string;
+}
+
+export async function sendNewRecordUploadEmail({
+  to,
+  patientName,
+  uploadedByName,
+  fileName,
+  recordsUrl,
+}: NewRecordUploadEmailOptions): Promise<void> {
+  const subject = 'A new medical record has been uploaded to your account';
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2>New Medical Record Uploaded</h2>
+      <p>Hi ${patientName},</p>
+      <p>
+        <strong>${uploadedByName}</strong> has uploaded a new medical record to your account:
+      </p>
+      <p style="font-size: 16px;"><strong>${fileName}</strong></p>
+      <div style="margin: 32px 0;">
+        <a href="${recordsUrl}"
+           style="background: #228be6; color: white; padding: 12px 24px; border-radius: 6px;
+                  text-decoration: none; font-weight: 600;">
+          View My Records
+        </a>
+      </div>
+      <p style="color: #666; font-size: 13px;">
+        If you have any questions, please reach out to your care team.
+      </p>
+    </div>
+  `;
+
+  const text = `
+Hi ${patientName},
+
+${uploadedByName} has uploaded a new medical record to your account: ${fileName}
+
+View your records here: ${recordsUrl}
+
+If you have any questions, please reach out to your care team.
+  `.trim();
+
+  await sendEmail({ to, subject, html, text });
+}
+
 export interface InviteEmailOptions {
   to: string;
   inviteUrl: string;

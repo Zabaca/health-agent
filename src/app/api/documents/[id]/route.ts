@@ -1,37 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import { incomingFiles, fileUploadLog, patientAssignments } from '@/lib/db/schema';
+import { incomingFiles, fileUploadLog, patientAssignments, patientDesignatedAgents } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { deleteFromR2 } from '@/lib/r2';
 
 type Params = { params: Promise<{ id: string }> };
 
-async function resolveAccess(userId: string, role: string, fileId: string) {
+interface UserContext {
+  id: string;
+  type: 'admin' | 'user';
+  isAgent: boolean;
+  isPda: boolean;
+}
+
+async function resolveAccess(user: UserContext, fileId: string) {
   const file = await db.query.incomingFiles.findFirst({
     where: eq(incomingFiles.id, fileId),
     with: { uploadLog: true },
   });
   if (!file) return { file: null, allowed: false };
 
-  if (role === 'admin') return { file, allowed: true };
+  if (user.type === 'admin') return { file, allowed: true };
 
-  if (role === 'agent') {
+  if (user.isAgent) {
     if (!file.patientId) return { file, allowed: false };
     const assignment = await db.query.patientAssignments.findFirst({
       where: and(
         eq(patientAssignments.patientId, file.patientId),
-        eq(patientAssignments.assignedToId, userId)
+        eq(patientAssignments.assignedToId, user.id)
       ),
     });
     return { file, allowed: !!assignment };
   }
 
-  if (role === 'patient') {
-    return { file, allowed: file.patientId === userId };
+  if (user.isPda) {
+    if (!file.patientId) return { file, allowed: false };
+    // Only PDAs with editor permission may rename/delete
+    const relation = await db.query.patientDesignatedAgents.findFirst({
+      where: and(
+        eq(patientDesignatedAgents.agentUserId, user.id),
+        eq(patientDesignatedAgents.patientId, file.patientId),
+        eq(patientDesignatedAgents.status, 'accepted'),
+      ),
+    });
+    return { file, allowed: relation?.healthRecordsPermission === 'editor' };
   }
 
-  return { file, allowed: false };
+  // Regular patient
+  return { file, allowed: file.patientId === user.id };
 }
 
 export async function PATCH(req: NextRequest, { params }: Params) {
@@ -41,7 +58,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const { originalName, releaseCode } = await req.json();
 
-  const { file, allowed } = await resolveAccess(session.user.id, session.user.type, id);
+  const { file, allowed } = await resolveAccess(session.user, id);
   if (!file) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -67,7 +84,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
 
   const { id } = await params;
 
-  const { file, allowed } = await resolveAccess(session.user.id, session.user.type, id);
+  const { file, allowed } = await resolveAccess(session.user, id);
   if (!file) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
