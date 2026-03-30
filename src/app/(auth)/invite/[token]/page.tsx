@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import InviteAcceptForm from "@/components/auth/InviteAcceptForm";
+import { getConfiguration } from "@/lib/config";
 
 export const metadata = { title: "Accept Invitation" };
 
 async function getInvite(token: string) {
-  const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+  const { NEXTAUTH_URL: baseUrl } = getConfiguration();
   const res = await fetch(`${baseUrl}/api/invites/${token}`, { cache: 'no-store' });
   if (!res.ok) return null;
   return res.json() as Promise<{

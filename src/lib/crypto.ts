@@ -1,12 +1,12 @@
 import crypto from 'crypto';
+import { getConfiguration } from './config';
 
 const ALGORITHM = 'aes-256-gcm';
 const ENC_PREFIX = 'enc:';
 
 function getKey(): Buffer {
-  const hex = process.env.ENCRYPTION_KEY;
-  if (!hex) throw new Error('ENCRYPTION_KEY environment variable is not set');
-  return Buffer.from(hex, 'hex');
+  const { ENCRYPTION_KEY } = getConfiguration();
+  return Buffer.from(ENCRYPTION_KEY, 'hex');
 }
 
 /**

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getConfiguration } from "@/lib/config";
 import { faxConfirm, releaseRequestLog } from "@/lib/db/schema";
 import { like } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
+  const { FAXAGE_WEBHOOK_SECRET } = getConfiguration();
   const secret = req.nextUrl.searchParams.get("secret");
-  if (!secret || secret !== process.env.FAXAGE_WEBHOOK_SECRET) {
+  if (!secret || secret !== FAXAGE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
