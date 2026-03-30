@@ -111,21 +111,7 @@
       "idx": 15,
       "version": "6",
       "when": 1773100000000,
-      "tag": "0016_patient_designated_agents",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "6",
-      "when": 1773200000000,
-      "tag": "0017_user_role_refactor",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "6",
-      "when": 1773300000000,
-      "tag": "0018_pda_permission_refactor",
+      "tag": "0016_pda_and_role_refactor",
       "breakpoints": true
     }
   ]
