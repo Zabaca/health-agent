@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { incomingFiles, fileUploadLog, patientAssignments } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { deleteFromR2 } from '@/lib/r2';
+import { eq, and, isNull } from 'drizzle-orm';
 
 type Params = { params: Promise<{ id: string }> };
 
 async function resolveAccess(userId: string, role: string, fileId: string) {
   const file = await db.query.incomingFiles.findFirst({
-    where: eq(incomingFiles.id, fileId),
+    where: and(eq(incomingFiles.id, fileId), isNull(incomingFiles.deletedAt)),
     with: { uploadLog: true },
   });
   if (!file) return { file: null, allowed: false };
@@ -71,13 +70,9 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   if (!file) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  try {
-    await deleteFromR2(file.fileURL);
-  } catch {
-    // best-effort R2 delete — proceed regardless
-  }
-
-  await db.delete(incomingFiles).where(eq(incomingFiles.id, id));
+  await db.update(incomingFiles)
+    .set({ deletedAt: new Date().toISOString(), deletedById: session.user.id })
+    .where(eq(incomingFiles.id, id));
 
   return NextResponse.json({ ok: true });
 }

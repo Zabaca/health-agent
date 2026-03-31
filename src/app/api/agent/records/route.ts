@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const dateTo = searchParams.get("dateTo");
 
   // Agents always see unassigned only
-  const conditions = [isNull(incomingFiles.patientId)];
+  const conditions = [isNull(incomingFiles.patientId), isNull(incomingFiles.deletedAt)];
   if (dateFrom) conditions.push(gte(incomingFiles.createdAt, dateFrom));
   if (dateTo) conditions.push(lte(incomingFiles.createdAt, dateTo));
 

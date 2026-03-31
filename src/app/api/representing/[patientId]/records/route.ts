@@ -5,7 +5,7 @@ import {
   patientDesignatedAgents,
   incomingFiles,
 } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, isNull } from "drizzle-orm";
 
 type FileWithRelations = Awaited<ReturnType<typeof db.query.incomingFiles.findMany<{
   with: { faxLog: true; uploadLog: { with: { uploadedBy: true } } };
@@ -15,13 +15,13 @@ async function fetchFiles(scope: 'all' | 'specific' | null, patientId: string, g
   if (scope === 'specific') {
     if (grantedIds.length === 0) return [];
     return db.query.incomingFiles.findMany({
-      where: inArray(incomingFiles.id, grantedIds),
+      where: and(inArray(incomingFiles.id, grantedIds), isNull(incomingFiles.deletedAt)),
       with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
       orderBy: (f, { desc }) => [desc(f.createdAt)],
     });
   }
   return db.query.incomingFiles.findMany({
-    where: eq(incomingFiles.patientId, patientId),
+    where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt)),
     with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
     orderBy: (f, { desc }) => [desc(f.createdAt)],
   });

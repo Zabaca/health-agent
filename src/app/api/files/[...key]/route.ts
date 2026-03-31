@@ -3,7 +3,7 @@ import { getFromR2 } from "@/lib/r2";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { incomingFiles, patientAssignments, patientDesignatedAgents, patientDesignatedAgentDocumentGrants } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { isZabacaAgent } from "@/lib/db/agent-role";
 
 export async function GET(
@@ -20,7 +20,7 @@ export async function GET(
 
   // Look up the file record by matching fileURL suffix
   const file = await db.query.incomingFiles.findFirst({
-    where: (f, { like }) => like(f.fileURL, `%${key}`),
+    where: (f, { like }) => and(like(f.fileURL, `%${key}`), isNull(f.deletedAt)),
   });
 
   // File not tracked in DB (avatars, signatures, insurance cards, etc.) —

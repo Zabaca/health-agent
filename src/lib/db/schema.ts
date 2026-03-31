@@ -166,6 +166,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   scheduledCallsAsPatient: many(scheduledCalls, { relationName: 'scheduledCallPatient' }),
   scheduledCallsAsAgent: many(scheduledCalls, { relationName: 'scheduledCallAgent' }),
   incomingFiles: many(incomingFiles),
+  deletedFiles: many(incomingFiles, { relationName: 'deletedFiles' }),
   designatedAgentsAsPatient: many(patientDesignatedAgents, { relationName: 'pdaPatient' }),
   designatedAgentsAsAgent: many(patientDesignatedAgents, { relationName: 'pdaAgent' }),
   agentRole: one(zabacaAgentRoles, { fields: [users.id], references: [zabacaAgentRoles.userId] }),
@@ -258,6 +259,8 @@ export const incomingFiles = sqliteTable('IncomingFile', {
   patientId:        text('patientId').references(() => users.id),
   releaseCode:      text('releaseCode'),
   createdAt:        text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+  deletedAt:        text('deletedAt'),
+  deletedById:      text('deletedById').references(() => users.id),
 });
 
 export const incomingFaxLogRelations = relations(incomingFaxLog, ({ many }) => ({
@@ -290,6 +293,7 @@ export const incomingFilesRelations = relations(incomingFiles, ({ one }) => ({
   faxLog:    one(incomingFaxLog, { fields: [incomingFiles.incomingFaxLogId], references: [incomingFaxLog.id] }),
   patient:   one(users, { fields: [incomingFiles.patientId], references: [users.id] }),
   uploadLog: one(fileUploadLog, { fields: [incomingFiles.id], references: [fileUploadLog.incomingFileId] }),
+  deletedBy: one(users, { fields: [incomingFiles.deletedById], references: [users.id], relationName: 'deletedFiles' }),
 }));
 
 export const fileUploadLogRelations = relations(fileUploadLog, ({ one }) => ({

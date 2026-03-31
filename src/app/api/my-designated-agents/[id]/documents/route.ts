@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, patientDesignatedAgentDocumentGrants, incomingFiles } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 // PATCH /api/my-designated-agents/[id]/documents — set specific document grants
@@ -29,9 +29,9 @@ export async function PATCH(
     return NextResponse.json({ error: "fileIds must be an array" }, { status: 400 });
   }
 
-  // Verify all files belong to this patient
+  // Verify all files belong to this patient and are not deleted
   const patientFiles = await db.query.incomingFiles.findMany({
-    where: eq(incomingFiles.patientId, session.user.id),
+    where: and(eq(incomingFiles.patientId, session.user.id), isNull(incomingFiles.deletedAt)),
   });
   const patientFileIds = new Set(patientFiles.map(f => f.id));
   const invalid = body.fileIds.filter(fid => !patientFileIds.has(fid));
