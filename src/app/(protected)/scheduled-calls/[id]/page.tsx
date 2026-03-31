@@ -68,6 +68,7 @@ export default async function ScheduledCallPage({ params }: Props) {
 
           <PatientCallActions
             callId={call.id}
+            scheduledAt={call.scheduledAt}
             canReschedule={call.status === 'scheduled'}
           />
         </Stack>
