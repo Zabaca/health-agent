@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import { incomingFiles, fileUploadLog, users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { incomingFiles, fileUploadLog, patientDesignatedAgents, users } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { sendNewRecordUploadEmail, getSiteBaseUrl } from '@/lib/email';
 
@@ -20,8 +20,17 @@ export async function POST(req: Request) {
 
   if (session.user.type === 'admin' || session.user.isAgent) {
     assignedPatientId = patientId ?? null;
+  } else if (session.user.isPda && patientId) {
+    // Verify PDA has editor permission for this patient before assigning file to them
+    const relation = await db.query.patientDesignatedAgents.findFirst({
+      where: and(
+        eq(patientDesignatedAgents.agentUserId, session.user.id),
+        eq(patientDesignatedAgents.patientId, patientId),
+        eq(patientDesignatedAgents.status, 'accepted'),
+      ),
+    });
+    assignedPatientId = relation?.healthRecordsPermission === 'editor' ? patientId : session.user.id;
   } else {
-    // Regular users (patients/PDAs) always upload to themselves
     assignedPatientId = session.user.id;
   }
 
@@ -43,9 +52,9 @@ export async function POST(req: Request) {
     originalName,
   });
 
-  // Notify patient when an agent or admin uploads a record on their behalf
+  // Notify patient when an agent, admin, or PDA uploads a record on their behalf
   try {
-    const isUploadForPatient = (session.user.isAgent || session.user.type === 'admin') &&
+    const isUploadForPatient = (session.user.isAgent || session.user.type === 'admin' || session.user.isPda) &&
       assignedPatientId && assignedPatientId !== session.user.id;
     if (isUploadForPatient) {
       const patient = await db.query.users.findFirst({
@@ -54,7 +63,7 @@ export async function POST(req: Request) {
       });
       const uploader = await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
-        columns: { firstName: true, lastName: true },
+        columns: { firstName: true, lastName: true, email: true },
       });
       if (patient) {
         const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
@@ -63,8 +72,8 @@ export async function POST(req: Request) {
           to: patient.email,
           patientName,
           uploadedByName: uploaderName,
-          fileName: originalName,
           recordsUrl: `${getSiteBaseUrl()}/my-records`,
+          contact: { name: uploaderName, email: uploader?.email },
         });
       }
     }

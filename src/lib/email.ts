@@ -32,11 +32,89 @@ async function sendEmail({ to, subject, html, text }: SendEmailOptions): Promise
   if (error) throw new Error(`Resend error: ${error.message}`);
 }
 
+/** Wraps content in a full-width email shell with consistent typography. */
+function emailShell(content: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);">
+        <tr><td style="padding:40px 48px;font-size:16px;line-height:1.6;color:#1a1a2e;">
+          ${content}
+        </td></tr>
+        <tr><td style="padding:24px 48px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:13px;color:#6b7280;line-height:1.5;">
+          This is an automated message. Please do not reply directly to this email.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+// ── Contact footer helpers ────────────────────────────────────────────────────
+
+/**
+ * contact = undefined  → "please reach out to your care team."
+ * contact = null       → line is omitted entirely
+ * contact = { name }   → "please reach out to [name]." (patient-originated)
+ * contact = { name, email } → "please reach out to [name] at [email]." (agent/PDA-originated)
+ */
+export interface ContactInfo {
+  name: string;
+  email?: string;
+}
+
+function contactFooterHtml(contact?: ContactInfo | null): string {
+  if (contact === null) return '';
+  if (contact === undefined) {
+    return '<p style="margin:24px 0 0;color:#6b7280;font-size:14px;">If you have any questions, please reach out to your care team.</p>';
+  }
+  const ref = contact.email
+    ? `<a href="mailto:${contact.email}" style="color:#228be6;text-decoration:none;">${contact.name}</a>`
+    : `<strong>${contact.name}</strong>`;
+  return `<p style="margin:24px 0 0;color:#6b7280;font-size:14px;">If you have any questions, please reach out to ${ref}.</p>`;
+}
+
+function contactFooterText(contact?: ContactInfo | null): string {
+  if (contact === null) return '';
+  if (contact === undefined) return '\n\nIf you have any questions, please reach out to your care team.';
+  const ref = contact.email ? `${contact.name} at ${contact.email}` : contact.name;
+  return `\n\nIf you have any questions, please reach out to ${ref}.`;
+}
+
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+
+function toIcsDate(date: Date): string {
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+function buildCalendarUrls(callId: string, scheduledAt: string, baseUrl: string) {
+  const start = new Date(scheduledAt);
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const title = encodeURIComponent('Scheduled Call');
+  const desc = encodeURIComponent('A health call has been scheduled.');
+  return {
+    google: `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${toIcsDate(start)}/${toIcsDate(end)}&details=${desc}`,
+    outlook: `https://outlook.live.com/calendar/0/deeplink/compose?subject=${title}&startdt=${encodeURIComponent(start.toISOString())}&enddt=${encodeURIComponent(end.toISOString())}&body=${desc}`,
+    yahoo: `https://calendar.yahoo.com/?v=60&title=${title}&st=${toIcsDate(start)}&et=${toIcsDate(end)}&desc=${desc}`,
+    ics: `${baseUrl}/api/scheduled-calls/${callId}/ics`,
+  };
+}
+
+const calBtnStyle = 'display:inline-block;margin:4px 6px 4px 0;padding:10px 18px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;';
+
+// ── Email functions ───────────────────────────────────────────────────────────
+
 export interface ScheduledCallEmailOptions {
   to: string;
   recipientName: string;
   schedulerName: string;
   scheduledAt: string;
+  callId?: string;
+  contact?: ContactInfo | null;
 }
 
 export async function sendScheduledCallEmail({
@@ -44,6 +122,8 @@ export async function sendScheduledCallEmail({
   recipientName,
   schedulerName,
   scheduledAt,
+  callId,
+  contact,
 }: ScheduledCallEmailOptions): Promise<void> {
   const date = new Date(scheduledAt);
   const formattedDate = date.toLocaleString('en-US', {
@@ -57,32 +137,33 @@ export async function sendScheduledCallEmail({
   });
 
   const subject = `A call has been scheduled with you on ${formattedDate}`;
+  const baseUrl = getSiteBaseUrl();
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Call Scheduled</h2>
-      <p>Hi ${recipientName},</p>
-      <p>
-        <strong>${schedulerName}</strong> has scheduled a call with you.
-      </p>
-      <p style="font-size: 16px;">
-        <strong>Date &amp; Time:</strong> ${formattedDate}
-      </p>
-      <p style="color: #666; font-size: 13px;">
-        If you have any questions, please reach out to your care team.
-      </p>
-    </div>
-  `;
+  let calendarSection = '';
+  let calendarText = '';
+  if (callId) {
+    const urls = buildCalendarUrls(callId, scheduledAt, baseUrl);
+    calendarSection = `
+      <div style="margin:32px 0 8px;">
+        <p style="margin:0 0 12px;font-weight:600;color:#374151;">Add to Calendar</p>
+        <a href="${urls.google}"  style="${calBtnStyle}background:#4285F4;color:#fff;">Google</a>
+        <a href="${urls.outlook}" style="${calBtnStyle}background:#0078D4;color:#fff;">Outlook</a>
+        <a href="${urls.yahoo}"   style="${calBtnStyle}background:#6001D2;color:#fff;">Yahoo</a>
+        <a href="${urls.ics}"     style="${calBtnStyle}background:#1c1c1e;color:#fff;">Apple / ICS</a>
+      </div>`;
+    calendarText = `\n\nAdd to Calendar:\n  Google:  ${urls.google}\n  Outlook: ${urls.outlook}\n  Yahoo:   ${urls.yahoo}\n  ICS:     ${urls.ics}`;
+  }
 
-  const text = `
-Hi ${recipientName},
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">Call Scheduled</h2>
+    <p style="margin:0 0 16px;">Hi ${recipientName},</p>
+    <p style="margin:0 0 16px;"><strong>${schedulerName}</strong> has scheduled a call with you.</p>
+    <p style="margin:0 0 16px;font-size:18px;"><strong>Date &amp; Time:</strong> ${formattedDate}</p>
+    ${calendarSection}
+    ${contactFooterHtml(contact)}
+  `);
 
-${schedulerName} has scheduled a call with you.
-
-Date & Time: ${formattedDate}
-
-If you have any questions, please reach out to your care team.
-  `.trim();
+  const text = `Hi ${recipientName},\n\n${schedulerName} has scheduled a call with you.\n\nDate & Time: ${formattedDate}${calendarText}${contactFooterText(contact)}`;
 
   await sendEmail({ to, subject, html, text });
 }
@@ -91,36 +172,25 @@ export interface NewReleaseNotificationEmailOptions {
   to: string;
   recipientName: string;
   patientName: string;
+  contact?: ContactInfo | null;
 }
 
 export async function sendNewReleaseNotificationEmail({
   to,
   recipientName,
   patientName,
+  contact,
 }: NewReleaseNotificationEmailOptions): Promise<void> {
   const subject = `${patientName} has created a new health release`;
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>New Release Created</h2>
-      <p>Hi ${recipientName},</p>
-      <p>
-        <strong>${patientName}</strong> has created a new health record release
-        and has listed you as their authorized representative.
-      </p>
-      <p style="color: #666; font-size: 13px;">
-        If you have any questions, please reach out to your care team.
-      </p>
-    </div>
-  `;
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">New Release Created</h2>
+    <p style="margin:0 0 16px;">Hi ${recipientName},</p>
+    <p style="margin:0 0 16px;"><strong>${patientName}</strong> has created a new health record release and has listed you as their authorized representative.</p>
+    ${contactFooterHtml(contact)}
+  `);
 
-  const text = `
-Hi ${recipientName},
-
-${patientName} has created a new health record release and listed you as their authorized representative.
-
-If you have any questions, please reach out to your care team.
-  `.trim();
+  const text = `Hi ${recipientName},\n\n${patientName} has created a new health record release and listed you as their authorized representative.${contactFooterText(contact)}`;
 
   await sendEmail({ to, subject, html, text });
 }
@@ -130,6 +200,7 @@ export interface ReleaseSignatureRequiredEmailOptions {
   patientName: string;
   createdByName: string;
   releasesUrl: string;
+  contact?: ContactInfo | null;
 }
 
 export async function sendReleaseSignatureRequiredEmail({
@@ -137,39 +208,21 @@ export async function sendReleaseSignatureRequiredEmail({
   patientName,
   createdByName,
   releasesUrl,
+  contact,
 }: ReleaseSignatureRequiredEmailOptions): Promise<void> {
   const subject = 'A release has been created on your behalf and requires your signature';
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Signature Required</h2>
-      <p>Hi ${patientName},</p>
-      <p>
-        <strong>${createdByName}</strong> has created a health record release on your behalf
-        that requires your signature before it can be processed.
-      </p>
-      <div style="margin: 32px 0;">
-        <a href="${releasesUrl}"
-           style="background: #228be6; color: white; padding: 12px 24px; border-radius: 6px;
-                  text-decoration: none; font-weight: 600;">
-          Review &amp; Sign
-        </a>
-      </div>
-      <p style="color: #666; font-size: 13px;">
-        If you did not expect this, please contact your care team.
-      </p>
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">Signature Required</h2>
+    <p style="margin:0 0 16px;">Hi ${patientName},</p>
+    <p style="margin:0 0 16px;"><strong>${createdByName}</strong> has created a health record release on your behalf that requires your signature before it can be processed.</p>
+    <div style="margin:32px 0;">
+      <a href="${releasesUrl}" style="display:inline-block;background:#228be6;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">Review &amp; Sign</a>
     </div>
-  `;
+    ${contactFooterHtml(contact)}
+  `);
 
-  const text = `
-Hi ${patientName},
-
-${createdByName} has created a health record release on your behalf that requires your signature.
-
-Review and sign here: ${releasesUrl}
-
-If you did not expect this, please contact your care team.
-  `.trim();
+  const text = `Hi ${patientName},\n\n${createdByName} has created a health record release on your behalf that requires your signature.\n\nReview and sign here: ${releasesUrl}${contactFooterText(contact)}`;
 
   await sendEmail({ to, subject, html, text });
 }
@@ -178,49 +231,54 @@ export interface NewRecordUploadEmailOptions {
   to: string;
   patientName: string;
   uploadedByName: string;
-  fileName: string;
   recordsUrl: string;
+  contact?: ContactInfo | null;
 }
 
 export async function sendNewRecordUploadEmail({
   to,
   patientName,
   uploadedByName,
-  fileName,
   recordsUrl,
+  contact,
 }: NewRecordUploadEmailOptions): Promise<void> {
-  const subject = 'A new medical record has been uploaded to your account';
+  const subject = 'A new document has been uploaded to your account';
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>New Medical Record Uploaded</h2>
-      <p>Hi ${patientName},</p>
-      <p>
-        <strong>${uploadedByName}</strong> has uploaded a new medical record to your account:
-      </p>
-      <p style="font-size: 16px;"><strong>${fileName}</strong></p>
-      <div style="margin: 32px 0;">
-        <a href="${recordsUrl}"
-           style="background: #228be6; color: white; padding: 12px 24px; border-radius: 6px;
-                  text-decoration: none; font-weight: 600;">
-          View My Records
-        </a>
-      </div>
-      <p style="color: #666; font-size: 13px;">
-        If you have any questions, please reach out to your care team.
-      </p>
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">New Document Uploaded</h2>
+    <p style="margin:0 0 16px;">Hi ${patientName},</p>
+    <p style="margin:0 0 24px;"><strong>${uploadedByName}</strong> has uploaded a new document to your account.</p>
+    <div style="margin:32px 0;">
+      <a href="${recordsUrl}" style="display:inline-block;background:#228be6;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">View My Records</a>
     </div>
-  `;
+    ${contactFooterHtml(contact)}
+  `);
 
-  const text = `
-Hi ${patientName},
+  const text = `Hi ${patientName},\n\n${uploadedByName} has uploaded a new document to your account.\n\nView your records here: ${recordsUrl}${contactFooterText(contact)}`;
 
-${uploadedByName} has uploaded a new medical record to your account: ${fileName}
+  await sendEmail({ to, subject, html, text });
+}
 
-View your records here: ${recordsUrl}
+export interface PasswordResetEmailOptions {
+  to: string;
+  resetUrl: string;
+}
 
-If you have any questions, please reach out to your care team.
-  `.trim();
+export async function sendPasswordResetEmail({ to, resetUrl }: PasswordResetEmailOptions): Promise<void> {
+  const subject = 'Reset your password';
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">Reset Your Password</h2>
+    <p style="margin:0 0 16px;">We received a request to reset the password for your account.</p>
+    <p style="margin:0 0 24px;">Click the button below to choose a new password. This link expires in <strong>1 hour</strong>.</p>
+    <div style="margin:32px 0;">
+      <a href="${resetUrl}" style="display:inline-block;background:#228be6;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">Reset Password</a>
+    </div>
+    ${contactFooterHtml(null)}
+    <p style="margin:16px 0 0;color:#6b7280;font-size:14px;">If you did not request a password reset, you can safely ignore this email. Your password will not change.</p>
+  `);
+
+  const text = `We received a request to reset the password for your account.\n\nClick the link below to choose a new password (expires in 1 hour):\n${resetUrl}\n\nIf you did not request a password reset, you can safely ignore this email.`;
 
   await sendEmail({ to, subject, html, text });
 }
@@ -230,43 +288,25 @@ export interface InviteEmailOptions {
   inviteUrl: string;
   patientName: string;
   relationship?: string | null;
+  contact?: ContactInfo | null;
 }
 
-export async function sendInviteEmail({ to, inviteUrl, patientName, relationship }: InviteEmailOptions): Promise<void> {
+export async function sendInviteEmail({ to, inviteUrl, patientName, relationship, contact }: InviteEmailOptions): Promise<void> {
   const relationshipLabel = relationship ? ` (${relationship})` : '';
   const subject = `You've been invited to access ${patientName}'s health records`;
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>You've been invited</h2>
-      <p>
-        <strong>${patientName}</strong> has invited you${relationshipLabel} to be their
-        Patient Designated Agent on the health records platform.
-      </p>
-      <p>As a Patient Designated Agent, you may be granted access to view documents,
-      upload files, and manage provider information on their behalf — based on the
-      permissions ${patientName} has configured.</p>
-      <p>This invite link expires in <strong>48 hours</strong>.</p>
-      <div style="margin: 32px 0;">
-        <a href="${inviteUrl}"
-           style="background: #228be6; color: white; padding: 12px 24px; border-radius: 6px;
-                  text-decoration: none; font-weight: 600;">
-          Accept Invitation
-        </a>
-      </div>
-      <p style="color: #666; font-size: 13px;">
-        If you did not expect this invitation, you can safely ignore this email.
-      </p>
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">You've been invited</h2>
+    <p style="margin:0 0 16px;"><strong>${patientName}</strong> has invited you${relationshipLabel} to be their Patient Designated Agent on the health records platform.</p>
+    <p style="margin:0 0 16px;">As a Patient Designated Agent, you may be granted access to view documents, upload files, and manage provider information on their behalf — based on the permissions ${patientName} has configured.</p>
+    <p style="margin:0 0 24px;">This invite link expires in <strong>48 hours</strong>.</p>
+    <div style="margin:32px 0;">
+      <a href="${inviteUrl}" style="display:inline-block;background:#228be6;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">Accept Invitation</a>
     </div>
-  `;
+    ${contactFooterHtml(contact)}
+  `);
 
-  const text = `
-You've been invited by ${patientName}${relationshipLabel} to be their Patient Designated Agent.
-
-Accept the invitation here: ${inviteUrl}
-
-This link expires in 48 hours. If you did not expect this, ignore this email.
-  `.trim();
+  const text = `You've been invited by ${patientName}${relationshipLabel} to be their Patient Designated Agent.\n\nAccept the invitation here: ${inviteUrl}\n\nThis link expires in 48 hours.${contactFooterText(contact)}`;
 
   await sendEmail({ to, subject, html, text });
 }

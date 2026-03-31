@@ -24,7 +24,9 @@ export default auth((req) => {
 
   const isAuthPage =
     nextUrl.pathname.startsWith("/login") ||
-    nextUrl.pathname.startsWith("/register");
+    nextUrl.pathname.startsWith("/register") ||
+    nextUrl.pathname.startsWith("/forgot-password") ||
+    nextUrl.pathname.startsWith("/reset-password");
 
   if (isAuthPage) {
     if (!isLoggedIn) return NextResponse.next();
@@ -85,5 +87,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|api/register|api/fax/incoming|api/fax/confirm|api/invites|_next/static|_next/image|uploads|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|_next/static|_next/image|uploads|favicon.ico).*)"],
 };

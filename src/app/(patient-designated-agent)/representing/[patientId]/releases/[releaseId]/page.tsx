@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { releases as releasesTable, providers as providersTable, patientDesignatedAgents } from "@/lib/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { releases as releasesTable, providers as providersTable, patientDesignatedAgents, releaseRequestLog as releaseRequestLogTable, users } from "@/lib/db/schema";
+import { and, asc, desc, eq } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Divider,
   Badge, Checkbox, Button, Alert, Anchor, Breadcrumbs,
@@ -10,7 +10,8 @@ import {
 import Link from "next/link";
 import { IconArrowLeft, IconBan } from "@tabler/icons-react";
 import PrintButton from "@/components/release-view/PrintButton";
-import ExportTiffButton from "@/components/release-view/ExportTiffButton";
+import FaxButton from "@/components/release-view/FaxButton";
+import ReleaseRequestLogTable from "@/components/release-view/ReleaseRequestLogTable";
 import MembershipCardImage from "@/components/release-view/MembershipCardImage";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
@@ -64,6 +65,17 @@ export default async function PdaReleaseViewPage({
 
   const { ssn, dateOfBirth } = decryptPii(release);
 
+  const [pdaUser, faxLogs] = await Promise.all([
+    db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+      columns: { firstName: true, lastName: true, email: true, phoneNumber: true },
+    }),
+    db.query.releaseRequestLog.findMany({
+      where: eq(releaseRequestLogTable.releaseId, releaseId),
+      orderBy: (t, { desc: d }) => [d(t.createdAt)],
+    }),
+  ]);
+
   return (
     <Stack gap="xl" className="release-content">
       <Title order={2} ta="center" className="print-only">Authorization for the Release of Protected Health Information</Title>
@@ -83,7 +95,16 @@ export default async function PdaReleaseViewPage({
         </Group>
         {!release.voided && (
           <Group gap="xs">
-            <ExportTiffButton releaseCode={release.releaseCode} />
+            <FaxButton
+              releaseCode={release.releaseCode}
+              defaultFaxNumber={release.providers[0]?.fax ?? null}
+              providerName={release.providers[0]?.providerName ?? null}
+              releaseId={releaseId}
+              agentName={[pdaUser?.firstName, pdaUser?.lastName].filter(Boolean).join(' ') || null}
+              agentEmail={pdaUser?.email ?? null}
+              agentPhone={pdaUser?.phoneNumber ?? null}
+              patientName={patientName}
+            />
             <PrintButton releaseCode={release.releaseCode} />
           </Group>
         )}
@@ -274,6 +295,8 @@ export default async function PdaReleaseViewPage({
           )}
         </Stack>
       </Paper>
+
+      <ReleaseRequestLogTable logs={faxLogs} />
 
       <Group justify="flex-end" className="section-footer">
         <Text size="xs" c="dimmed">

@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { Button, Group, Modal, Stack, Text, Textarea, TextInput, ThemeIcon } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconSend } from "@tabler/icons-react";
+import { IconDownload, IconSend } from "@tabler/icons-react";
 
 // 8.5" at 96 CSS DPI
 const PRINT_WIDTH_PX = 816;
-// Target 600 DPI → scale = 600 / 96
-const DPI = 600;
+// 200 DPI — standard fax fine resolution
+const DPI = 200;
 const SCALE = DPI / 96;
+// Bottom margin matching @page { margin-bottom: 1.5cm } used by PrintButton
+const PAGE_MARGIN_BOTTOM_IN = 1.5 / 2.54; // ~0.591"
 
 const PRINT_CSS = `
   body { background: white !important; line-height: 1.3 !important; }
@@ -151,10 +153,16 @@ function buildCoverLetterHtml({
   `;
 }
 
-function splitCanvasIntoPageCanvases(canvas: HTMLCanvasElement, forcedBreakAtCanvasPx: number | null = null): HTMLCanvasElement[] {
+function splitCanvasIntoPageCanvases(
+  canvas: HTMLCanvasElement,
+  forcedBreakAtCanvasPx: number | null = null,
+): { canvases: HTMLCanvasElement[]; sliceStarts: number[] } {
   const { width, height } = canvas;
   const ctx = canvas.getContext("2d")!;
-  const pageHeightPx = Math.round(11 * DPI);
+  // Full page canvas height (11")
+  const pageCanvasHeightPx = Math.round(11 * DPI);
+  // Content area height — reserves bottom margin to match @page { margin-bottom: 1.5cm }
+  const contentHeightPx = Math.round((11 - PAGE_MARGIN_BOTTOM_IN) * DPI);
   const searchWindow = Math.round(1 * DPI);
   const topMarginPx  = Math.round(48 * SCALE);
 
@@ -162,8 +170,8 @@ function splitCanvasIntoPageCanvases(canvas: HTMLCanvasElement, forcedBreakAtCan
   let scanPos = 0;
   let pageIdx = 0;
   let pendingForced = forcedBreakAtCanvasPx;
-  while (scanPos + pageHeightPx < height) {
-    const usable = pageIdx === 0 ? pageHeightPx : pageHeightPx - topMarginPx;
+  while (scanPos + contentHeightPx < height) {
+    const usable = pageIdx === 0 ? contentHeightPx : contentHeightPx - topMarginPx;
     const ideal  = scanPos + usable;
 
     if (pendingForced !== null && pendingForced > scanPos && pendingForced < ideal) {
@@ -183,19 +191,21 @@ function splitCanvasIntoPageCanvases(canvas: HTMLCanvasElement, forcedBreakAtCan
   const sliceStarts = [0, ...cuts];
   const sliceEnds   = [...cuts, height];
 
-  return sliceStarts.map((yStart, i) => {
+  const canvases = sliceStarts.map((yStart, i) => {
     const sliceHeight = sliceEnds[i] - yStart;
     const topOffset   = i === 0 ? 0 : topMarginPx;
 
     const pageCanvas = document.createElement("canvas");
     pageCanvas.width  = width;
-    pageCanvas.height = pageHeightPx;
+    pageCanvas.height = pageCanvasHeightPx;
     const pageCtx = pageCanvas.getContext("2d")!;
     pageCtx.fillStyle = "#ffffff";
-    pageCtx.fillRect(0, 0, width, pageHeightPx);
+    pageCtx.fillRect(0, 0, width, pageCanvasHeightPx);
     pageCtx.drawImage(canvas, 0, yStart, width, sliceHeight, 0, topOffset, width, sliceHeight);
     return pageCanvas;
   });
+
+  return { canvases, sliceStarts };
 }
 
 function findBestCut(
@@ -225,89 +235,6 @@ function findBestCut(
   return idealCut;
 }
 
-function buildMultiPageTiff(pageBuffers: ArrayBuffer[]): ArrayBuffer {
-  if (pageBuffers.length === 0) throw new Error("No pages");
-  if (pageBuffers.length === 1) return pageBuffers[0];
-
-  const firstByte = new Uint8Array(pageBuffers[0])[0];
-  const le = firstByte === 0x49;
-
-  const r16 = (b: Uint8Array, o: number) =>
-    le ? (b[o] | (b[o + 1] << 8)) >>> 0
-       : ((b[o] << 8) | b[o + 1]) >>> 0;
-
-  const r32 = (b: Uint8Array, o: number) =>
-    le
-      ? (b[o] | (b[o+1] << 8) | (b[o+2] << 16) | (b[o+3] << 24)) >>> 0
-      : ((b[o] << 24) | (b[o+1] << 16) | (b[o+2] << 8) | b[o+3]) >>> 0;
-
-  const w32 = (b: Uint8Array, o: number, v: number) => {
-    if (le) {
-      b[o]   =  v         & 0xff;
-      b[o+1] = (v >>>  8) & 0xff;
-      b[o+2] = (v >>> 16) & 0xff;
-      b[o+3] = (v >>> 24) & 0xff;
-    } else {
-      b[o]   = (v >>> 24) & 0xff;
-      b[o+1] = (v >>> 16) & 0xff;
-      b[o+2] = (v >>>  8) & 0xff;
-      b[o+3] =  v         & 0xff;
-    }
-  };
-
-  const TYPE_SIZE: Record<number, number> = {
-    1:1, 2:1, 3:2, 4:4, 5:8, 6:1, 7:1, 8:2, 9:4, 10:8, 11:4, 12:8,
-  };
-
-  const pages = pageBuffers.map(b => new Uint8Array(b.slice(0)));
-  const starts: number[] = [];
-  let cum = 0;
-  for (const p of pages) { starts.push(cum); cum += p.byteLength; }
-
-  for (let i = 0; i < pages.length; i++) {
-    const page = pages[i];
-    const base = starts[i];
-
-    const ifdOff   = r32(page, 4);
-    const nEntries = r16(page, ifdOff);
-
-    for (let e = 0; e < nEntries; e++) {
-      const eOff  = ifdOff + 2 + e * 12;
-      const tag   = r16(page, eOff);
-      const type  = r16(page, eOff + 2);
-      const count = r32(page, eOff + 4);
-      const bytes = (TYPE_SIZE[type] ?? 1) * count;
-
-      if (bytes > 4) {
-        const oldPtr = r32(page, eOff + 8);
-        w32(page, eOff + 8, oldPtr + base);
-
-        if (tag === 273 && type === 4) {
-          for (let s = 0; s < count; s++) {
-            const addr = r32(page, oldPtr + s * 4);
-            w32(page, oldPtr + s * 4, addr + base);
-          }
-        }
-      } else if (tag === 273) {
-        const addr = r32(page, eOff + 8);
-        w32(page, eOff + 8, addr + base);
-      }
-    }
-
-    const nextPtrOff = ifdOff + 2 + nEntries * 12;
-    if (i < pages.length - 1) {
-      const nextIfdOff = r32(pages[i + 1], 4);
-      w32(page, nextPtrOff, starts[i + 1] + nextIfdOff);
-    }
-  }
-
-  const total = pages.reduce((s, p) => s + p.byteLength, 0);
-  const out = new Uint8Array(total);
-  let pos = 0;
-  for (const p of pages) { out.set(p, pos); pos += p.byteLength; }
-  return out.buffer;
-}
-
 function drawPageFooter(
   ctx: CanvasRenderingContext2D,
   pageWidth: number,
@@ -318,7 +245,9 @@ function drawPageFooter(
 ) {
   const margin = Math.round(48 * SCALE);
   const fontSize = Math.round(8 * DPI / 72);
-  const baseline = pageHeightPx - Math.round(DPI * 0.5);
+  // Footer sits in the bottom margin zone, matching @page @bottom-right baseline
+  const contentEndPx = Math.round((11 - PAGE_MARGIN_BOTTOM_IN) * DPI);
+  const baseline = contentEndPx + Math.round((pageHeightPx - contentEndPx) * 0.6);
 
   ctx.save();
   ctx.font = `${fontSize}px monospace`;
@@ -331,107 +260,6 @@ function drawPageFooter(
     baseline,
   );
   ctx.restore();
-}
-
-async function encodeTiffDeflate(
-  rgbaData: Uint8Array,
-  w: number,
-  h: number,
-  dpi: number,
-): Promise<ArrayBuffer> {
-  // RGBA → RGB
-  const rgb = new Uint8Array(w * h * 3);
-  for (let i = 0; i < w * h; i++) {
-    rgb[i * 3]     = rgbaData[i * 4];
-    rgb[i * 3 + 1] = rgbaData[i * 4 + 1];
-    rgb[i * 3 + 2] = rgbaData[i * 4 + 2];
-  }
-
-  // Horizontal differencing predictor (right-to-left per row)
-  for (let row = 0; row < h; row++) {
-    for (let col = w - 1; col > 0; col--) {
-      const i = (row * w + col) * 3;
-      rgb[i]     = (rgb[i]     - rgb[i - 3]) & 0xFF;
-      rgb[i + 1] = (rgb[i + 1] - rgb[i - 2]) & 0xFF;
-      rgb[i + 2] = (rgb[i + 2] - rgb[i - 1]) & 0xFF;
-    }
-  }
-
-  // Compress with browser-native CompressionStream (zlib = TIFF type 8)
-  const cs = new CompressionStream("deflate");
-  const writer = cs.writable.getWriter();
-  writer.write(rgb);
-  writer.close();
-  const chunks: Uint8Array[] = [];
-  const reader = cs.readable.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-  }
-  const compLen = chunks.reduce((s, c) => s + c.length, 0);
-  const compressed = new Uint8Array(compLen);
-  let coff = 0;
-  for (const chunk of chunks) { compressed.set(chunk, coff); coff += chunk.length; }
-
-  // TIFF layout (little-endian, 14 IFD entries):
-  //   0  : header (8 bytes)
-  //   8  : IFD — 2 + 14×12 + 4 = 174 bytes → ends at 182
-  // 182  : t258 data [8,8,8] — 6 bytes
-  // 188  : t282 XResolution rational — 8 bytes
-  // 196  : t283 YResolution rational — 8 bytes
-  // 204  : compressed strip data
-  const T258 = 182, T282 = 188, T283 = 196, DATA = 204;
-  const buf = new ArrayBuffer(DATA + compLen);
-  const dv  = new DataView(buf);
-  const u8  = new Uint8Array(buf);
-
-  // Header
-  dv.setUint8(0, 0x49); dv.setUint8(1, 0x49); // 'II' (little-endian)
-  dv.setUint16(2, 42, true);
-  dv.setUint32(4, 8, true);
-
-  // IFD
-  let pos = 8;
-  dv.setUint16(pos, 14, true); pos += 2;
-  const e = (tag: number, type: number, count: number, val: number) => {
-    dv.setUint16(pos, tag, true);   pos += 2;
-    dv.setUint16(pos, type, true);  pos += 2;
-    dv.setUint32(pos, count, true); pos += 4;
-    dv.setUint32(pos, val, true);   pos += 4;
-  };
-  e(256, 4, 1, w);       // ImageWidth
-  e(257, 4, 1, h);       // ImageLength
-  e(258, 3, 3, T258);    // BitsPerSample → offset
-  e(259, 3, 1, 8);       // Compression = Deflate (zlib)
-  e(262, 3, 1, 2);       // PhotometricInterp = RGB
-  e(273, 4, 1, DATA);    // StripOffsets
-  e(277, 3, 1, 3);       // SamplesPerPixel
-  e(278, 4, 1, h);       // RowsPerStrip
-  e(279, 4, 1, compLen); // StripByteCounts
-  e(282, 5, 1, T282);    // XResolution → offset
-  e(283, 5, 1, T283);    // YResolution → offset
-  e(284, 3, 1, 1);       // PlanarConfig = chunky
-  e(296, 3, 1, 2);       // ResolutionUnit = inch
-  e(317, 3, 1, 2);       // Predictor = horizontal differencing
-  dv.setUint32(pos, 0, true); // next IFD = 0
-
-  // External data
-  dv.setUint16(T258, 8, true); dv.setUint16(T258 + 2, 8, true); dv.setUint16(T258 + 4, 8, true);
-  dv.setUint32(T282, dpi, true); dv.setUint32(T282 + 4, 1, true);
-  dv.setUint32(T283, dpi, true); dv.setUint32(T283 + 4, 1, true);
-
-  u8.set(compressed, DATA);
-  return buf;
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += 8192) {
-    binary += String.fromCharCode(...Array.from(bytes.subarray(i, i + 8192)));
-  }
-  return btoa(binary);
 }
 
 export default function FaxButton({
@@ -465,115 +293,168 @@ export default function FaxButton({
     ? "Must be 10 digits (3-digit area code + 7-digit number)"
     : null;
 
-  const handleSend = async () => {
-    if (!faxValid) return;
+  const buildFaxPdf = async () => {
+    const element = document.querySelector(".release-content") as HTMLElement | null;
+    if (!element) throw new Error("Release content element not found");
 
-    setLoading(true);
-    try {
-      const element = document.querySelector(".release-content") as HTMLElement | null;
-      if (!element) return;
+    const { default: html2canvas } = await import("html2canvas");
 
-      const { default: html2canvas } = await import("html2canvas");
+    const today = new Date().toLocaleString("en-US", {
+      year: "numeric", month: "long", day: "numeric",
+      hour: "numeric", minute: "2-digit", hour12: true,
+      timeZone: "UTC", timeZoneName: "short",
+    });
 
-      const today = new Date().toLocaleString("en-US", {
-        year: "numeric", month: "long", day: "numeric",
-        hour: "numeric", minute: "2-digit", hour12: true,
-        timeZone: "UTC", timeZoneName: "short",
-      });
+    const coverHtmlOptions = {
+      today,
+      recipient: recipient.trim(),
+      faxNumber: faxNumber.trim(),
+      agentName,
+      agentEmail,
+      agentPhone,
+      patientName,
+      comment,
+    };
 
-      const coverHtmlOptions = {
-        today,
-        recipient: recipient.trim(),
-        faxNumber: faxNumber.trim(),
-        agentName,
-        agentEmail,
-        agentPhone,
-        patientName,
-        comment,
-      };
-
-      const captureCover = async (pages: number) => {
-        const wrapper = document.createElement("div");
-        wrapper.style.cssText = "position:fixed;left:-9999px;top:0;";
-        wrapper.innerHTML = buildCoverLetterHtml({ ...coverHtmlOptions, totalPages: pages });
-        document.body.appendChild(wrapper);
-        const canvas = await html2canvas(wrapper.firstElementChild as HTMLElement, {
-          scale: SCALE,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          windowWidth: PRINT_WIDTH_PX,
-        });
-        document.body.removeChild(wrapper);
-        return canvas;
-      };
-
-      // Capture release content first so we know its page count
-      let forcedBreakAtCanvasPx: number | null = null;
-      const contentCanvas = await html2canvas(element, {
+    const captureCover = async (pages: number) => {
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText = "position:fixed;left:-9999px;top:0;";
+      wrapper.innerHTML = buildCoverLetterHtml({ ...coverHtmlOptions, totalPages: pages });
+      document.body.appendChild(wrapper);
+      const canvas = await html2canvas(wrapper.firstElementChild as HTMLElement, {
         scale: SCALE,
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
         windowWidth: PRINT_WIDTH_PX,
-        onclone: (clonedDoc) => {
-          const style = clonedDoc.createElement("style");
-          style.textContent = PRINT_CSS;
-          clonedDoc.head.appendChild(style);
-
-          const content = clonedDoc.querySelector(".release-content") as HTMLElement | null;
-          if (content) {
-            content.style.width = `${PRINT_WIDTH_PX}px`;
-            content.style.maxWidth = `${PRINT_WIDTH_PX}px`;
-            content.style.padding = "48px";
-            content.style.boxSizing = "border-box";
-            content.style.background = "white";
-          }
-
-          // Force a page break before .section-providers (same as ExportTiffButton)
-          const providers = clonedDoc.querySelector(".section-providers") as HTMLElement | null;
-          if (content && providers) {
-            const contentRect = content.getBoundingClientRect();
-            const providersRect = providers.getBoundingClientRect();
-            const cssPx = providersRect.top - contentRect.top;
-            if (cssPx > 0) {
-              forcedBreakAtCanvasPx = Math.round(cssPx * SCALE);
-            }
-          }
-        },
       });
-      const contentPageCanvases = splitCanvasIntoPageCanvases(contentCanvas, forcedBreakAtCanvasPx);
+      document.body.removeChild(wrapper);
+      return canvas;
+    };
 
-      // First cover pass: count how many pages the cover itself takes
-      const coverCountCanvas = await captureCover(0);
-      const coverPageCount = splitCanvasIntoPageCanvases(coverCountCanvas).length;
+    // Capture signature image src + its CSS position in the printed layout before capture,
+    // then replace it with a blank spacer so html2canvas doesn't JPEG-compress it.
+    const sigSrc = (element.querySelector("img.signature-img") as HTMLImageElement | null)?.src ?? null;
+    let sigCssPos: { x: number; y: number; w: number; h: number } | null = null;
 
-      // Now we know the real total — render cover again with the correct number
-      const totalPages = coverPageCount + contentPageCanvases.length;
-      const coverCanvas = await captureCover(totalPages);
-      const coverPageCanvases = splitCanvasIntoPageCanvases(coverCanvas);
+    // Capture release content first so we know its page count
+    let forcedBreakAtCanvasPx: number | null = null;
+    const contentCanvas = await html2canvas(element, {
+      scale: SCALE,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      logging: false,
+      windowWidth: PRINT_WIDTH_PX,
+      onclone: (clonedDoc) => {
+        const style = clonedDoc.createElement("style");
+        style.textContent = PRINT_CSS;
+        clonedDoc.head.appendChild(style);
 
-      // Draw footers and encode all pages
-      const allPageBuffers: ArrayBuffer[] = [];
+        const content = clonedDoc.querySelector(".release-content") as HTMLElement | null;
+        if (content) {
+          content.style.width = `${PRINT_WIDTH_PX}px`;
+          content.style.maxWidth = `${PRINT_WIDTH_PX}px`;
+          content.style.padding = "48px";
+          content.style.boxSizing = "border-box";
+          content.style.background = "white";
+        }
 
-      for (let i = 0; i < coverPageCanvases.length; i++) {
-        const pc = coverPageCanvases[i];
-        const ctx = pc.getContext("2d")!;
-        drawPageFooter(ctx, pc.width, pc.height, releaseCode, i + 1, totalPages);
-        const rgba = new Uint8Array(ctx.getImageData(0, 0, pc.width, pc.height).data.buffer);
-        allPageBuffers.push(await encodeTiffDeflate(rgba, pc.width, pc.height, DPI));
+        // Force a page break before .section-providers
+        const providers = clonedDoc.querySelector(".section-providers") as HTMLElement | null;
+        if (content && providers) {
+          const contentRect = content.getBoundingClientRect();
+          const providersRect = providers.getBoundingClientRect();
+          const cssPx = providersRect.top - contentRect.top;
+          if (cssPx > 0) {
+            forcedBreakAtCanvasPx = Math.round(cssPx * SCALE);
+          }
+        }
+
+        // Replace the signature img with a blank spacer and record its CSS position.
+        // This keeps it out of the JPEG canvas so we can overlay it as lossless PNG later.
+        const sig = clonedDoc.querySelector("img.signature-img") as HTMLImageElement | null;
+        if (sig && content && sigSrc) {
+          const sigRect = sig.getBoundingClientRect();
+          const contentRect = content.getBoundingClientRect();
+          sigCssPos = {
+            x: sigRect.left - contentRect.left,
+            y: sigRect.top - contentRect.top,
+            w: sigRect.width,
+            h: sigRect.height,
+          };
+          const spacer = clonedDoc.createElement("div");
+          spacer.style.cssText = `display:block;width:${sigRect.width}px;height:${sigRect.height}px;`;
+          sig.parentNode?.replaceChild(spacer, sig);
+        }
+      },
+    });
+    const { canvases: contentPageCanvases, sliceStarts: contentSliceStarts } =
+      splitCanvasIntoPageCanvases(contentCanvas, forcedBreakAtCanvasPx);
+
+    // First cover pass: count how many pages the cover itself takes
+    const coverCountCanvas = await captureCover(0);
+    const { canvases: coverCountPageCanvases } = splitCanvasIntoPageCanvases(coverCountCanvas);
+    const coverPageCount = coverCountPageCanvases.length;
+
+    // Now we know the real total — render cover again with the correct number
+    const totalPages = coverPageCount + contentPageCanvases.length;
+    const coverCanvas = await captureCover(totalPages);
+    const { canvases: coverPageCanvases } = splitCanvasIntoPageCanvases(coverCanvas);
+
+    // Draw footers on all pages
+    const allPageCanvases = [...coverPageCanvases, ...contentPageCanvases];
+    for (let i = 0; i < allPageCanvases.length; i++) {
+      const pc = allPageCanvases[i];
+      const ctx = pc.getContext("2d")!;
+      drawPageFooter(ctx, pc.width, pc.height, releaseCode, i + 1, totalPages);
+    }
+
+    // Build PDF from canvas pages
+    const { jsPDF } = await import("jspdf");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "in", format: "letter" });
+    for (let i = 0; i < allPageCanvases.length; i++) {
+      if (i > 0) pdf.addPage();
+      const imgData = allPageCanvases[i].toDataURL("image/jpeg", 0.92);
+      pdf.addImage(imgData, "JPEG", 0, 0, 8.5, 11);
+    }
+
+    // Overlay the signature as lossless PNG at its exact position on the correct page.
+    if (sigSrc && sigCssPos) {
+      const { x: cssX, y: cssY, w: cssW, h: cssH } = sigCssPos as { x: number; y: number; w: number; h: number };
+      const sigCanvasY = cssY * SCALE;
+      const pageCanvasHeightPx = Math.round(11 * DPI);
+      const topMarginPx = Math.round(48 * SCALE);
+
+      for (let pi = 0; pi < contentSliceStarts.length; pi++) {
+        const sliceEnd = pi < contentSliceStarts.length - 1
+          ? contentSliceStarts[pi + 1]
+          : contentCanvas.height;
+        if (sigCanvasY >= contentSliceStarts[pi] && sigCanvasY < sliceEnd) {
+          const topOffset = pi === 0 ? 0 : topMarginPx;
+          const yOnPage = sigCanvasY - contentSliceStarts[pi] + topOffset;
+
+          const xIn = (cssX * SCALE / contentCanvas.width) * 8.5;
+          const yIn = (yOnPage / pageCanvasHeightPx) * 11;
+          const wIn = (cssW * SCALE / contentCanvas.width) * 8.5;
+          const hIn = (cssH * SCALE / pageCanvasHeightPx) * 11;
+
+          pdf.setPage(coverPageCanvases.length + pi + 1);
+          pdf.addImage(sigSrc, "PNG", xIn, yIn, wIn, hIn);
+          break;
+        }
       }
+    }
 
-      for (let i = 0; i < contentPageCanvases.length; i++) {
-        const pc = contentPageCanvases[i];
-        const ctx = pc.getContext("2d")!;
-        drawPageFooter(ctx, pc.width, pc.height, releaseCode, coverPageCanvases.length + i + 1, totalPages);
-        const rgba = new Uint8Array(ctx.getImageData(0, 0, pc.width, pc.height).data.buffer);
-        allPageBuffers.push(await encodeTiffDeflate(rgba, pc.width, pc.height, DPI));
-      }
+    return pdf;
+  };
 
-      const tiffBuffer = allPageBuffers.length === 1 ? allPageBuffers[0] : buildMultiPageTiff(allPageBuffers);
-      const fileData = arrayBufferToBase64(tiffBuffer);
+  const handleSend = async () => {
+    if (!faxValid) return;
+
+    setLoading(true);
+    try {
+      const pdf = await buildFaxPdf();
+      const fileData = pdf.output("datauristring").split(",")[1];
 
       const res = await fetch("/api/fax", {
         method: "POST",
@@ -582,7 +463,7 @@ export default function FaxButton({
           faxNumber:     faxNumber.trim(),
           recipientName: recipient.trim(),
           fileData,
-          fileName:  `release-${releaseCode ?? "document"}.tiff`,
+          fileName:  `release-${releaseCode ?? "document"}.pdf`,
           releaseId,
         }),
       });
@@ -597,6 +478,19 @@ export default function FaxButton({
     } catch (err) {
       console.error("Fax failed:", err);
       notifications.show({ title: "Fax failed", message: "Unexpected error. Please try again.", color: "red" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    setLoading(true);
+    try {
+      const pdf = await buildFaxPdf();
+      pdf.save(`testfax.pdf`);
+    } catch (err) {
+      console.error("Download failed:", err);
+      notifications.show({ title: "Download failed", message: "Unexpected error. Please try again.", color: "red" });
     } finally {
       setLoading(false);
     }
@@ -672,16 +566,26 @@ export default function FaxButton({
           minRows={3}
           mb="lg"
         />
-        <Group justify="flex-end">
-          <Button variant="default" onClick={() => setOpened(false)} disabled={loading}>Cancel</Button>
+        <Group justify="space-between">
           <Button
-            leftSection={<IconSend size={16} />}
+            variant="subtle"
+            leftSection={<IconDownload size={16} />}
             loading={loading}
-            disabled={!faxValid}
-            onClick={handleSend}
+            onClick={handleDownload}
           >
-            Send
+            Download PDF
           </Button>
+          <Group gap="xs">
+            <Button variant="default" onClick={() => setOpened(false)} disabled={loading}>Cancel</Button>
+            <Button
+              leftSection={<IconSend size={16} />}
+              loading={loading}
+              disabled={!faxValid}
+              onClick={handleSend}
+            >
+              Send
+            </Button>
+          </Group>
         </Group>
         </Stack>
       </Modal>

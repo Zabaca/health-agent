@@ -96,6 +96,9 @@ export default function LoginForm() {
             <Button type="submit" fullWidth loading={loading} mt="sm">
               Sign In
             </Button>
+            <Anchor component={Link} href="/forgot-password" size="sm" ta="center">
+              Forgot your password?
+            </Anchor>
           </Stack>
         </form>
       </Paper>

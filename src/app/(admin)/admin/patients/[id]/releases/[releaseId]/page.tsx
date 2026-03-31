@@ -11,7 +11,6 @@ import Link from "next/link";
 import { IconArrowLeft, IconBan } from "@tabler/icons-react";
 import StaffVoidReleaseButton from "@/components/staff/StaffVoidReleaseButton";
 import PrintButton from "@/components/release-view/PrintButton";
-import ExportTiffButton from "@/components/release-view/ExportTiffButton";
 import FaxButton from "@/components/release-view/FaxButton";
 import ReleaseRequestLogTable from "@/components/release-view/ReleaseRequestLogTable";
 import MembershipCardImage from "@/components/release-view/MembershipCardImage";
@@ -79,7 +78,6 @@ export default async function AdminReleaseViewPage({
               agentEmail={adminUser?.email ?? null}
               agentPhone={adminUser?.phoneNumber ?? null}
             />
-            <ExportTiffButton releaseCode={release.releaseCode} />
             <PrintButton releaseCode={release.releaseCode} />
             <StaffVoidReleaseButton mode="admin" patientId={patientId} releaseId={releaseId} />
           </Group>

@@ -127,6 +127,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
           to: firstRelease.authAgentEmail,
           recipientName,
           patientName,
+          contact: { name: patientName }, // patient-originated → show patient name, no email
         });
       }
     } catch {

@@ -158,6 +158,14 @@ export const zabacaAgentRoles = sqliteTable('ZabacaAgentRole', {
   createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+export const passwordResetTokens = sqliteTable('PasswordResetToken', {
+  id:        text('id').primaryKey(),
+  userId:    text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token:     text('token').notNull().unique(),
+  expiresAt: text('expiresAt').notNull(),
+  usedAt:    text('usedAt'),
+});
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   releases: many(releases),
   userProviders: many(userProviders),

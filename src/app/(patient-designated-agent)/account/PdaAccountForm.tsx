@@ -9,6 +9,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import AvatarUpload from "@/components/shared/AvatarUpload";
+import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
 
 const schema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -30,7 +31,7 @@ export default function PdaAccountForm({ defaultValues }: Props) {
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
 
-  const { register, control, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
+  const { register, control, handleSubmit, watch, reset, formState: { errors, isDirty } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues,
   });
@@ -54,6 +55,7 @@ export default function PdaAccountForm({ defaultValues }: Props) {
       }
       await update();
       router.refresh();
+      reset(data);
       notifications.show({ title: "Saved", message: "Your account has been updated.", color: "green" });
     } catch {
       setServerError("Unexpected error. Please try again.");
@@ -63,10 +65,11 @@ export default function PdaAccountForm({ defaultValues }: Props) {
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit(onSubmit)}>
       <Group justify="space-between" align="center" mb="lg">
         <Title order={2}>My Account</Title>
-        <Button type="submit" loading={loading}>Save changes</Button>
+        <Button type="submit" loading={loading} disabled={!isDirty}>Save changes</Button>
       </Group>
 
       {serverError && <Alert color="red" mb="md">{serverError}</Alert>}
@@ -118,5 +121,7 @@ export default function PdaAccountForm({ defaultValues }: Props) {
         </Stack>
       </Paper>
     </form>
+    <ChangePasswordSection />
+    </>
   );
 }

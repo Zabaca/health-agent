@@ -101,6 +101,8 @@ export const POST = contractRoute(contract.scheduledCalls.create, async ({ body 
       recipientName: agentName,
       schedulerName: patientName,
       scheduledAt: body.scheduledAt,
+      callId: id,
+      contact: null, // patient-originated → no footer for agent recipient
     });
   } catch {
     // swallow — do not block the response

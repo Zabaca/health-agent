@@ -202,6 +202,7 @@ export async function POST(
         patientName,
         createdByName: pdaName,
         releasesUrl: `${getSiteBaseUrl()}/releases`,
+        contact: { name: pdaName, email: pda.email },
       });
     }
   } catch {

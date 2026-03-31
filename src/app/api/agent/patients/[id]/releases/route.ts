@@ -101,7 +101,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
       });
       const agent = await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
-        columns: { firstName: true, lastName: true },
+        columns: { firstName: true, lastName: true, email: true },
       });
       if (patient) {
         const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
@@ -111,6 +111,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
           patientName,
           createdByName: agentName,
           releasesUrl: `${getSiteBaseUrl()}/releases`,
+          contact: { name: agentName, email: agent?.email },
         });
       }
     } catch {
