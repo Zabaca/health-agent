@@ -24,6 +24,7 @@ export const users = sqliteTable('User', {
   profileComplete: integer('profileComplete', { mode: 'boolean' }).notNull().default(false),
   onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
   avatarUrl: text('avatarUrl'),
+  disabled: integer('disabled', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const releases = sqliteTable('Release', {

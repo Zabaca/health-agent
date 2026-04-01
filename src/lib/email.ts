@@ -283,6 +283,42 @@ export async function sendPasswordResetEmail({ to, resetUrl }: PasswordResetEmai
   await sendEmail({ to, subject, html, text });
 }
 
+export interface AccountStatusEmailOptions {
+  to: string;
+  firstName: string;
+}
+
+export async function sendAccountSuspendedEmail({ to, firstName }: AccountStatusEmailOptions): Promise<void> {
+  const subject = 'Your Zabaca account access has been paused';
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">Account Access Paused</h2>
+    <p style="margin:0 0 16px;">Hi ${firstName},</p>
+    <p style="margin:0 0 16px;">Your Zabaca account has been temporarily paused by an administrator. You will not be able to log in while your account is paused.</p>
+    <p style="margin:0 0 16px;">If you believe this is a mistake or have questions, please reach out to your care team or administrator.</p>
+    ${contactFooterHtml(undefined)}
+  `);
+
+  const text = `Hi ${firstName},\n\nYour Zabaca account has been temporarily paused by an administrator. You will not be able to log in while your account is paused.\n\nIf you believe this is a mistake, please contact your care team or administrator.`;
+
+  await sendEmail({ to, subject, html, text });
+}
+
+export async function sendAccountReinstatedEmail({ to, firstName }: AccountStatusEmailOptions): Promise<void> {
+  const subject = 'Your Zabaca account has been restored';
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">Account Access Restored</h2>
+    <p style="margin:0 0 16px;">Hi ${firstName},</p>
+    <p style="margin:0 0 16px;">Great news — your Zabaca account has been restored by an administrator. You can now log in and access your account as usual.</p>
+    ${contactFooterHtml(undefined)}
+  `);
+
+  const text = `Hi ${firstName},\n\nGreat news — your Zabaca account has been restored by an administrator. You can now log in and access your account as usual.`;
+
+  await sendEmail({ to, subject, html, text });
+}
+
 export interface InviteEmailOptions {
   to: string;
   inviteUrl: string;

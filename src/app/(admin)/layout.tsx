@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import AppShell from "@/components/layout/AppShell";
 import { IconUsers, IconUser, IconCalendar, IconUserCog, IconSearch } from "@tabler/icons-react";
 
@@ -14,6 +17,11 @@ export default async function AdminLayout({
   }
   if (session.user.type !== 'admin') {
     redirect("/dashboard");
+  }
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, session.user.id), columns: { disabled: true } });
+  if (user?.disabled) {
+    redirect("/suspended");
   }
 
   const navItems = [
