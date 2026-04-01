@@ -8,6 +8,8 @@ import PatientDetailTabs from "@/components/staff/PatientDetailTabs";
 import { decryptPii } from "@/lib/crypto";
 import DisableUserButton from "@/components/admin/DisableUserButton";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminPatientPage({
   params,
   searchParams,
@@ -107,7 +109,7 @@ export default async function AdminPatientPage({
         <div>
           <Group gap="sm" align="center" mb={4}>
             <Title order={2}>{patientName}</Title>
-            {patient.disabled && (
+            {!!patient.disabled && (
               <Badge color="red" variant="light">Account Suspended</Badge>
             )}
           </Group>

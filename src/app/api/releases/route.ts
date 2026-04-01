@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable, users, userProviders } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
@@ -11,10 +11,8 @@ import { generateReleaseCode } from "@/lib/utils/releaseCode";
 import { sendNewReleaseNotificationEmail } from "@/lib/email";
 
 export const GET = contractRoute(contract.releases.list, async () => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const releases = await db
     .select({
@@ -33,10 +31,8 @@ export const GET = contractRoute(contract.releases.list, async () => {
 });
 
 export const POST = contractRoute(contract.releases.create, async ({ body }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   try {
     const { providers, ...releaseData } = body;

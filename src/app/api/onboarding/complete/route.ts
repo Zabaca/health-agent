@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -8,10 +8,8 @@ import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 
 export const PATCH = contractRoute(contract.onboarding.complete, async () => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   await db
     .update(users)

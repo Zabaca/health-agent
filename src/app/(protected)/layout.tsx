@@ -16,7 +16,7 @@ export default async function ProtectedLayout({
     redirect("/login");
   }
 
-  const user = await db.query.users.findFirst({ where: eq(users.id, session.user.id), columns: { disabled: true } });
+  const user = await db.select({ disabled: users.disabled }).from(users).where(eq(users.id, session.user.id)).get();
   if (user?.disabled) {
     redirect("/suspended");
   }

@@ -60,7 +60,7 @@ export default async function AgentProfilePage({
             Agents
           </Button>
           <Title order={2}>{name}</Title>
-          {agent.disabled && (
+          {!!agent.disabled && (
             <Badge color="red" variant="light">Account Suspended</Badge>
           )}
         </Group>
@@ -68,6 +68,16 @@ export default async function AgentProfilePage({
           <Badge color="orange" variant="light">Password reset required</Badge>
         )}
       </Group>
+
+      <Paper withBorder p="md" radius="md">
+        <Title order={4} mb="md">Account Actions</Title>
+        <Divider mb="md" />
+        <DisableUserButton
+          userId={agent.id}
+          userName={displayName}
+          disabled={agent.disabled}
+        />
+      </Paper>
 
       <Paper withBorder p="md" radius="md">
         <Title order={4} mb="md">Profile</Title>
@@ -81,16 +91,6 @@ export default async function AgentProfilePage({
           <Field label="Address" value={agent.address} />
           <Field label="Phone Number" value={agent.phoneNumber} />
         </Stack>
-      </Paper>
-
-      <Paper withBorder p="md" radius="md">
-        <Title order={4} mb="md">Account Actions</Title>
-        <Divider mb="md" />
-        <DisableUserButton
-          userId={agent.id}
-          userName={displayName}
-          disabled={agent.disabled}
-        />
       </Paper>
 
       <Group justify="flex-end">
