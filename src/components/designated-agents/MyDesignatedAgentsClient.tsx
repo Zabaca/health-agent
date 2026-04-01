@@ -22,7 +22,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconPlus, IconTrash, IconEdit, IconUser, IconFiles } from "@tabler/icons-react";
+import { IconPlus, IconTrash, IconEdit, IconUser, IconFiles, IconSend } from "@tabler/icons-react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -239,6 +239,22 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
     await reload();
   };
 
+  const onResend = async (id: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/my-designated-agents/${id}/resend`, { method: 'POST' });
+      if (!res.ok) {
+        const d = await res.json();
+        notifications.show({ title: 'Error', message: d.error ?? 'Failed to resend invite', color: 'red' });
+        return;
+      }
+      await reload();
+      notifications.show({ title: 'Invite sent', message: 'A new invite link has been sent.', color: 'green' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openEdit = (agent: DesignatedAgent) => {
     setEditTarget(agent);
     editForm.reset({
@@ -363,6 +379,11 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
                 </Group>
                 {agent.status !== 'revoked' && (
                   <Group gap="xs">
+                    {agent.status === 'pending' && agent.tokenExpiresAt && new Date(agent.tokenExpiresAt) < new Date() && (
+                      <ActionIcon variant="subtle" color="orange" loading={loading} onClick={() => onResend(agent.id)} title="Resend invite">
+                        <IconSend size={16} />
+                      </ActionIcon>
+                    )}
                     {agent.healthRecordsScope === 'specific' && (
                       <ActionIcon variant="subtle" color="blue" onClick={() => openDocs(agent)} title="Configure document access">
                         <IconFiles size={16} />

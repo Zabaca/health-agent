@@ -72,7 +72,7 @@ export const POST = contractRoute(contract.staffScheduledCalls.create, async ({ 
   // Notify patient of the scheduled call
   const agent = await db.query.users.findFirst({
     where: eq(users.id, session.user.id),
-    columns: { firstName: true, lastName: true },
+    columns: { firstName: true, lastName: true, email: true },
   });
   const decryptedPatient = decryptPii(patient);
   const patientName = [decryptedPatient.firstName, decryptedPatient.lastName].filter(Boolean).join(' ') || 'Patient';
@@ -82,6 +82,8 @@ export const POST = contractRoute(contract.staffScheduledCalls.create, async ({ 
     recipientName: patientName,
     schedulerName: agentName,
     scheduledAt: body.scheduledAt,
+    callId: id,
+    contact: { name: agentName, email: agent?.email },
   });
 
   return NextResponse.json(

@@ -81,12 +81,16 @@ export const POST = contractRoute(contract.admin.patientScheduledCalls.create, a
       recipientName: patientName,
       schedulerName: adminName,
       scheduledAt: body.scheduledAt,
+      callId: id,
+      contact: null, // admin has no personal contact to show
     }),
     sendScheduledCallEmail({
       to: assignment.assignedTo.email,
       recipientName: agentName,
       schedulerName: adminName,
       scheduledAt: body.scheduledAt,
+      callId: id,
+      contact: null,
     }),
   ]);
 

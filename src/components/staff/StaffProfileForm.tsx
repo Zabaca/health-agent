@@ -6,6 +6,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { staffProfileSchema, type StaffProfileFormData } from "@/lib/schemas/profile";
 import AvatarUpload from "@/components/shared/AvatarUpload";
+import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
 
 interface Props {
   defaultValues?: Partial<StaffProfileFormData>;
@@ -51,7 +52,8 @@ export default function StaffProfileForm({ defaultValues, onSave }: Props) {
   };
 
   return (
-    <Paper withBorder p="md" radius="md" maw={640}>
+    <div style={{ maxWidth: 640 }}>
+    <Paper withBorder p="md" radius="md">
       <Title order={4} mb="md">My Profile</Title>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="md">
@@ -105,5 +107,7 @@ export default function StaffProfileForm({ defaultValues, onSave }: Props) {
         </Stack>
       </form>
     </Paper>
+    <ChangePasswordSection />
+    </div>
   );
 }

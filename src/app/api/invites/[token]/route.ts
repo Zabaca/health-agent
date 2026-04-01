@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, users } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { auth } from "@/auth";
 import { hashPassword } from "@/lib/auth-helpers";
 import { randomUUID } from "crypto";
@@ -111,6 +111,16 @@ export async function POST(
       updatedAt: new Date().toISOString(),
     })
     .where(eq(patientDesignatedAgents.id, invite.id));
+
+  // Delete other pending invites for the same patient + invitee
+  await db
+    .delete(patientDesignatedAgents)
+    .where(and(
+      eq(patientDesignatedAgents.patientId, invite.patientId),
+      eq(patientDesignatedAgents.inviteeEmail, invite.inviteeEmail),
+      eq(patientDesignatedAgents.status, 'pending'),
+      ne(patientDesignatedAgents.id, invite.id),
+    ));
 
   return NextResponse.json({ success: true });
 }
