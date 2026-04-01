@@ -111,12 +111,17 @@ export async function POST(req: NextRequest) {
   const baseUrl = getSiteBaseUrl();
   const inviteUrl = `${baseUrl}/invite/${token}`;
 
-  await sendInviteEmail({
-    to: body.inviteeEmail,
-    inviteUrl,
-    patientName,
-    relationship: body.relationship,
-  });
+  try {
+    await sendInviteEmail({
+      to: body.inviteeEmail,
+      inviteUrl,
+      patientName,
+      relationship: body.relationship,
+      contact: { name: patientName }, // patient-originated → show patient name, no email
+    });
+  } catch (err) {
+    console.error('[invite] email failed:', err);
+  }
 
   return NextResponse.json({ id }, { status: 201 });
 }

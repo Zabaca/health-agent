@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/lib/db';
-import { incomingFiles, fileUploadLog } from '@/lib/db/schema';
+import { incomingFiles, fileUploadLog, patientDesignatedAgents, users } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { sendNewRecordUploadEmail, getSiteBaseUrl } from '@/lib/email';
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -16,12 +18,27 @@ export async function POST(req: Request) {
 
   let assignedPatientId: string;
 
-  const isPatient = !session.user.isAgent && !session.user.isPda && session.user.type !== 'admin';
-  if (isPatient) {
+  const uploadingForSelf = !patientId || patientId === session.user.id;
+
+  if (uploadingForSelf) {
     assignedPatientId = session.user.id;
-  } else {
-    if (!patientId) return NextResponse.json({ error: 'patientId is required' }, { status: 400 });
+  } else if (session.user.type === 'admin' || session.user.isAgent) {
     assignedPatientId = patientId;
+  } else if (session.user.isPda) {
+    // Verify PDA has editor permission for this patient
+    const relation = await db.query.patientDesignatedAgents.findFirst({
+      where: and(
+        eq(patientDesignatedAgents.agentUserId, session.user.id),
+        eq(patientDesignatedAgents.patientId, patientId),
+        eq(patientDesignatedAgents.status, 'accepted'),
+      ),
+    });
+    if (relation?.healthRecordsPermission !== 'editor') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    assignedPatientId = patientId;
+  } else {
+    return NextResponse.json({ error: 'patientId is required' }, { status: 400 });
   }
 
   const id = nanoid();
@@ -41,6 +58,35 @@ export async function POST(req: Request) {
     uploadedById: session.user.id,
     originalName,
   });
+
+  // Notify patient when an agent, admin, or PDA uploads a record on their behalf
+  try {
+    const isUploadForPatient = (session.user.isAgent || session.user.type === 'admin' || session.user.isPda) &&
+      assignedPatientId && assignedPatientId !== session.user.id;
+    if (isUploadForPatient) {
+      const patient = await db.query.users.findFirst({
+        where: eq(users.id, assignedPatientId!),
+        columns: { email: true, firstName: true, lastName: true },
+      });
+      const uploader = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+        columns: { firstName: true, lastName: true, email: true },
+      });
+      if (patient) {
+        const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
+        const uploaderName = [uploader?.firstName, uploader?.lastName].filter(Boolean).join(' ') || 'Your care team';
+        await sendNewRecordUploadEmail({
+          to: patient.email,
+          patientName,
+          uploadedByName: uploaderName,
+          recordsUrl: `${getSiteBaseUrl()}/my-records`,
+          contact: { name: uploaderName, email: uploader?.email },
+        });
+      }
+    }
+  } catch {
+    // swallow — do not block the response
+  }
 
   return NextResponse.json({ id });
 }

@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiClient } from "@/lib/api/client";
 import { errorSchema } from "@/lib/api/response-schemas";
+import AddToCalendarMenu from "./AddToCalendarMenu";
 
 interface Patient {
   id: string;
@@ -178,9 +179,12 @@ export default function StaffScheduledCallsTable({ calls, basePath }: Props) {
                             View
                           </Button>
                           {call.status === 'scheduled' && (
-                            <Button size="xs" color="red" variant="outline" onClick={() => openCancel(call.id)}>
-                              Cancel
-                            </Button>
+                            <>
+                              <Button size="xs" color="red" variant="outline" onClick={() => openCancel(call.id)}>
+                                Cancel
+                              </Button>
+                              <AddToCalendarMenu callId={call.id} scheduledAt={call.scheduledAt} size="xs" />
+                            </>
                           )}
                         </Group>
                       </Table.Td>

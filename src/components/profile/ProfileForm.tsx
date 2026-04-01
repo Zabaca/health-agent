@@ -17,6 +17,7 @@ import { profileSchema, type ProfileFormData } from "@/lib/schemas/profile";
 import { apiClient } from "@/lib/api/client";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import PageHeader from "@/components/shared/PageHeader";
+import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
 
 interface ProfileFormProps {
   defaultValues: ProfileFormData;
@@ -69,7 +70,8 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} style={{ maxWidth: maw, width: "100%" }}>
+    <div style={{ maxWidth: maw, width: "100%" }}>
+    <form onSubmit={handleSubmit(onSubmit)}>
       <PageHeader
         title="My Profile"
         action={<Button type="submit" loading={loading} disabled={!isDirty}>Save Profile</Button>}
@@ -166,5 +168,7 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
         />
       </Stack>
     </form>
+    {!onComplete && <ChangePasswordSection />}
+    </div>
   );
 }

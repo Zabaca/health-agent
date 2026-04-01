@@ -30,6 +30,7 @@ interface ReleaseOption {
 interface Props {
   rows: MyRecordRow[];
   releases?: ReleaseOption[];
+  readOnly?: boolean;
 }
 
 function fuzzyMatch(query: string, ...fields: (string | null | undefined)[]): boolean {
@@ -113,7 +114,7 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
   );
 }
 
-export default function MyRecordsTable({ rows, releases = [] }: Props) {
+export default function MyRecordsTable({ rows, releases = [], readOnly = false }: Props) {
   const router = useRouter();
 
   const [search, setSearch] = useState('');
@@ -285,14 +286,16 @@ export default function MyRecordsTable({ rows, releases = [] }: Props) {
               </Table.Td>
               <Table.Td className={classes.hideOnMobile}>{r.pagecount ?? '—'}</Table.Td>
               <Table.Td>
-                <Group gap="xs" justify="flex-end">
-                  <ActionIcon variant="subtle" size="sm" onClick={() => handleEditClick(r)}>
-                    <IconEdit size={16} />
-                  </ActionIcon>
-                  <ActionIcon variant="subtle" color="red" size="sm" onClick={() => handleDeleteClick(r)}>
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
+                {!readOnly && (
+                  <Group gap="xs" justify="flex-end">
+                    <ActionIcon variant="subtle" size="sm" onClick={() => handleEditClick(r)}>
+                      <IconEdit size={16} />
+                    </ActionIcon>
+                    <ActionIcon variant="subtle" color="red" size="sm" onClick={() => handleDeleteClick(r)}>
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
+                )}
               </Table.Td>
             </Table.Tr>
           ))}

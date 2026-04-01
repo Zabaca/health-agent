@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { scheduledCalls, patientAssignments } from "@/lib/db/schema";
+import { scheduledCalls, patientAssignments, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
+import { sendScheduledCallEmail } from "@/lib/email";
 
 export const GET = contractRoute(contract.scheduledCalls.list, async () => {
   const session = await auth();
@@ -86,6 +87,26 @@ export const POST = contractRoute(contract.scheduledCalls.create, async ({ body 
     createdAt: now,
     updatedAt: now,
   });
+
+  // Notify agent of the scheduled call
+  try {
+    const patient = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+      columns: { firstName: true, lastName: true },
+    });
+    const patientName = [patient?.firstName, patient?.lastName].filter(Boolean).join(' ') || 'Your patient';
+    const agentName = [assignment.assignedTo.firstName, assignment.assignedTo.lastName].filter(Boolean).join(' ') || 'Agent';
+    await sendScheduledCallEmail({
+      to: assignment.assignedTo.email,
+      recipientName: agentName,
+      schedulerName: patientName,
+      scheduledAt: body.scheduledAt,
+      callId: id,
+      contact: null, // patient-originated → no footer for agent recipient
+    });
+  } catch {
+    // swallow — do not block the response
+  }
 
   return NextResponse.json(
     {

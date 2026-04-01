@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import AppShell from "@/components/layout/AppShell";
 import { IconUser, IconUsers, IconFileText, IconBuildingHospital, IconFolder, IconArrowsLeftRight } from "@tabler/icons-react";
 import PdaOnboardingModal from "@/components/designated-agents/PdaOnboardingModal";
+import RevokedAccessModal from "@/components/designated-agents/RevokedAccessModal";
 
 export default async function PatientDesignatedAgentLayout({
   children,
@@ -72,6 +73,9 @@ export default async function PatientDesignatedAgentLayout({
       primaryColor="teal"
       title="Representing"
     >
+      {session.user.isPda && relations.length === 0 && (
+        <RevokedAccessModal isPatient={!!session.user.isPatient} />
+      )}
       {!isOnboarded && (
         <PdaOnboardingModal
           firstName={currentUser?.firstName ?? null}

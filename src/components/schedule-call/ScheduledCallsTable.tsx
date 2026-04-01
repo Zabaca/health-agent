@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Table, Badge, Anchor, Text, Paper, Button, Group, MultiSelect, Select, Pagination } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import Link from "next/link";
+import AddToCalendarMenu from "./AddToCalendarMenu";
 
 interface Agent {
   id: string;
@@ -121,14 +122,17 @@ export default function ScheduledCallsTable({ calls }: Props) {
                             View
                           </Anchor>
                           {call.status === 'scheduled' && (
-                            <Button
-                              component={Link}
-                              href={`/scheduled-calls/${call.id}/reschedule`}
-                              size="xs"
-                              variant="light"
-                            >
-                              Reschedule
-                            </Button>
+                            <>
+                              <Button
+                                component={Link}
+                                href={`/scheduled-calls/${call.id}/reschedule`}
+                                size="xs"
+                                variant="light"
+                              >
+                                Reschedule
+                              </Button>
+                              <AddToCalendarMenu callId={call.id} scheduledAt={call.scheduledAt} size="xs" />
+                            </>
                           )}
                         </Group>
                       </Table.Td>

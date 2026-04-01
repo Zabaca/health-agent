@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiClient } from "@/lib/api/client";
 import { errorSchema } from "@/lib/api/response-schemas";
+import AddToCalendarMenu from "./AddToCalendarMenu";
 
 interface Patient {
   id: string;
@@ -121,16 +122,21 @@ export default function StaffCallDetail({ callId, patient, scheduledAt, status, 
           </Stack>
         </Paper>
 
-        <Group>
-          <Button component={Link} href={backHref} variant="default" size="sm">
-            Back to List
-          </Button>
+        <Stack gap="sm">
           {status === 'scheduled' && (
-            <Button color="red" variant="outline" size="sm" onClick={open}>
-              Cancel Call
-            </Button>
+            <AddToCalendarMenu callId={callId} scheduledAt={scheduledAt} />
           )}
-        </Group>
+          <Group>
+            <Button component={Link} href={backHref} variant="default" size="sm">
+              Back to List
+            </Button>
+            {status === 'scheduled' && (
+              <Button color="red" variant="outline" size="sm" onClick={open}>
+                Cancel Call
+              </Button>
+            )}
+          </Group>
+        </Stack>
       </Stack>
     </>
   );

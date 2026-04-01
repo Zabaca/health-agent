@@ -6,6 +6,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { staffReleaseSchema } from "@/lib/schemas/release";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
+import { sendReleaseSignatureRequiredEmail, getSiteBaseUrl } from "@/lib/email";
 
 // GET /api/representing/[patientId]/releases — list releases where PDA is authorized agent
 export async function GET(
@@ -186,6 +187,27 @@ export async function POST(
     }
     return ids[0];
   });
+
+  // Notify patient that a release was created and requires their signature
+  try {
+    const patient = await db.query.users.findFirst({
+      where: eq(users.id, patientId),
+      columns: { email: true, firstName: true, lastName: true },
+    });
+    if (patient) {
+      const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
+      const pdaName = [pda.firstName, pda.lastName].filter(Boolean).join(' ') || pda.email;
+      await sendReleaseSignatureRequiredEmail({
+        to: patient.email,
+        patientName,
+        createdByName: pdaName,
+        releasesUrl: `${getSiteBaseUrl()}/releases`,
+        contact: { name: pdaName, email: pda.email },
+      });
+    }
+  } catch {
+    // swallow — do not block the response
+  }
 
   return NextResponse.json({ id: firstId }, { status: 201 });
 }

@@ -11,7 +11,6 @@ import Link from "next/link";
 import { IconArrowLeft, IconBan } from "@tabler/icons-react";
 import VoidReleaseButton from "@/components/release-view/VoidReleaseButton";
 import PrintButton from "@/components/release-view/PrintButton";
-import ExportTiffButton from "@/components/release-view/ExportTiffButton";
 import SignReleaseSection from "@/components/release-view/SignReleaseSection";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
@@ -61,7 +60,6 @@ export default async function ViewReleasePage({
         </Group>
         {!release.voided && (
           <Group gap="xs">
-            <ExportTiffButton releaseCode={release.releaseCode} />
             <PrintButton releaseCode={release.releaseCode} />
             <VoidReleaseButton releaseId={id} />
           </Group>
