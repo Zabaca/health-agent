@@ -283,6 +283,40 @@ export async function sendPasswordResetEmail({ to, resetUrl }: PasswordResetEmai
   await sendEmail({ to, subject, html, text });
 }
 
+export interface StaffInviteEmailOptions {
+  to: string;
+  firstName: string;
+  role: 'admin' | 'agent';
+  inviteUrl: string;
+  inviterName: string;
+}
+
+export async function sendStaffInviteEmail({
+  to,
+  firstName,
+  role,
+  inviteUrl,
+  inviterName,
+}: StaffInviteEmailOptions): Promise<void> {
+  const roleLabel = role === 'admin' ? 'Admin' : 'Agent';
+  const subject = `You've been invited to join Zabaca as a ${roleLabel}`;
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">You've been invited to Zabaca</h2>
+    <p style="margin:0 0 16px;">Hi ${firstName},</p>
+    <p style="margin:0 0 16px;"><strong>${inviterName}</strong> has invited you to join the Zabaca platform as an <strong>${roleLabel}</strong>.</p>
+    <p style="margin:0 0 24px;">Click the button below to set up your account. This invite link expires in <strong>48 hours</strong>.</p>
+    <div style="margin:32px 0;">
+      <a href="${inviteUrl}" style="display:inline-block;background:#228be6;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">Accept Invitation</a>
+    </div>
+    ${contactFooterHtml(null)}
+  `);
+
+  const text = `Hi ${firstName},\n\n${inviterName} has invited you to join the Zabaca platform as an ${roleLabel}.\n\nAccept your invitation here: ${inviteUrl}\n\nThis link expires in 48 hours.`;
+
+  await sendEmail({ to, subject, html, text });
+}
+
 export interface InviteEmailOptions {
   to: string;
   inviteUrl: string;

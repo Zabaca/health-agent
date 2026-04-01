@@ -166,6 +166,29 @@ export const passwordResetTokens = sqliteTable('PasswordResetToken', {
   usedAt:    text('usedAt'),
 });
 
+/**
+ * staffInvites — token-based invites sent by admins to onboard new admin or agent staff.
+ * The invitee clicks the link, sets their own password and profile details, and the
+ * account is created with the designated role at acceptance time.
+ */
+export const staffInvites = sqliteTable('StaffInvite', {
+  id:             text('id').primaryKey(),
+  firstName:      text('firstName').notNull(),
+  lastName:       text('lastName').notNull(),
+  email:          text('email').notNull(),
+  role:           text('role', { enum: ['admin', 'agent'] }).notNull(),
+  token:          text('token').notNull().unique(),
+  tokenExpiresAt: text('tokenExpiresAt').notNull(),
+  status:         text('status', { enum: ['pending', 'accepted', 'canceled'] }).notNull().default('pending'),
+  invitedById:    text('invitedById').notNull().references(() => users.id),
+  createdAt:      text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt:      text('updatedAt').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const staffInvitesRelations = relations(staffInvites, ({ one }) => ({
+  invitedBy: one(users, { fields: [staffInvites.invitedById], references: [users.id] }),
+}));
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   releases: many(releases),
   userProviders: many(userProviders),
@@ -177,6 +200,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   designatedAgentsAsPatient: many(patientDesignatedAgents, { relationName: 'pdaPatient' }),
   designatedAgentsAsAgent: many(patientDesignatedAgents, { relationName: 'pdaAgent' }),
   agentRole: one(zabacaAgentRoles, { fields: [users.id], references: [zabacaAgentRoles.userId] }),
+  sentStaffInvites: many(staffInvites),
 }));
 
 export const zabacaAgentRolesRelations = relations(zabacaAgentRoles, ({ one }) => ({
