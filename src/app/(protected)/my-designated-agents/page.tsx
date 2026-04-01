@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { patientDesignatedAgents, patientAssignments, incomingFiles, patientDesignatedAgentDocumentGrants } from "@/lib/db/schema";
+import { patientDesignatedAgents, patientAssignments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import MyDesignatedAgentsClient from "@/components/designated-agents/MyDesignatedAgentsClient";
 
@@ -14,21 +14,15 @@ export default async function MyDesignatedAgentsPage() {
 
   const patientId = session.user.id;
 
-  const [pdas, assignment, patientDocs] = await Promise.all([
+  const [pdas, assignment] = await Promise.all([
     db.query.patientDesignatedAgents.findMany({
       where: eq(patientDesignatedAgents.patientId, patientId),
-      with: { agentUser: true, documentGrants: true },
+      with: { agentUser: true },
       orderBy: (t, { desc }) => [desc(t.createdAt)],
     }),
     db.query.patientAssignments.findFirst({
       where: eq(patientAssignments.patientId, patientId),
       with: { assignedTo: true },
-    }),
-    db.query.incomingFiles.findMany({
-      where: eq(incomingFiles.patientId, patientId),
-      columns: { id: true, createdAt: true, fileType: true },
-      with: { uploadLog: { columns: { originalName: true } } },
-      orderBy: (f, { desc }) => [desc(f.createdAt)],
     }),
   ]);
 
@@ -38,12 +32,10 @@ export default async function MyDesignatedAgentsPage() {
     relationship: p.relationship,
     status: p.status as 'pending' | 'accepted' | 'revoked',
     healthRecordsPermission: p.healthRecordsPermission as 'viewer' | 'editor' | null,
-    healthRecordsScope: p.healthRecordsScope as 'all' | 'specific' | null,
     manageProvidersPermission: p.manageProvidersPermission as 'viewer' | 'editor' | null,
     releasePermission: p.releasePermission as 'viewer' | 'editor' | null,
     createdAt: p.createdAt,
     tokenExpiresAt: p.tokenExpiresAt,
-    grantedFileIds: p.documentGrants.map(g => g.incomingFileId),
     agentUser: p.agentUser
       ? {
           id: p.agentUser.id,
@@ -53,13 +45,6 @@ export default async function MyDesignatedAgentsPage() {
           avatarUrl: p.agentUser.avatarUrl ?? null,
         }
       : null,
-  }));
-
-  const documents = patientDocs.map(f => ({
-    id: f.id,
-    createdAt: f.createdAt,
-    fileType: f.fileType,
-    originalName: f.uploadLog?.originalName ?? null,
   }));
 
   const assignedAgent = assignment
@@ -76,7 +61,6 @@ export default async function MyDesignatedAgentsPage() {
       <MyDesignatedAgentsClient
         assignedAgent={assignedAgent}
         designatedAgents={designatedAgents}
-        documents={documents}
       />
     </>
   );

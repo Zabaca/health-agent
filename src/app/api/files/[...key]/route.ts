@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFromR2 } from "@/lib/r2";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { incomingFiles, patientAssignments, patientDesignatedAgents, patientDesignatedAgentDocumentGrants } from "@/lib/db/schema";
+import { incomingFiles, patientAssignments, patientDesignatedAgents } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { isZabacaAgent } from "@/lib/db/agent-role";
 
@@ -71,18 +71,7 @@ export async function GET(
   });
 
   if (relation && relation.healthRecordsPermission) {
-    if (relation.healthRecordsScope === 'all') {
-      return streamFile(key, file.fileType);
-    }
-    if (relation.healthRecordsScope === 'specific') {
-      const grant = await db.query.patientDesignatedAgentDocumentGrants.findFirst({
-        where: and(
-          eq(patientDesignatedAgentDocumentGrants.patientDesignatedAgentRelationId, relation.id),
-          eq(patientDesignatedAgentDocumentGrants.incomingFileId, file.id),
-        ),
-      });
-      if (grant) return streamFile(key, file.fileType);
-    }
+    return streamFile(key, file.fileType);
   }
 
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });

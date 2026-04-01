@@ -40,19 +40,16 @@ interface DesignatedAgent {
   relationship: string | null;
   status: 'pending' | 'accepted' | 'revoked';
   healthRecordsPermission: 'viewer' | 'editor' | null;
-  healthRecordsScope: 'all' | 'specific' | null;
   manageProvidersPermission: 'viewer' | 'editor' | null;
   releasePermission: 'viewer' | 'editor' | null;
   createdAt: string;
   tokenExpiresAt: string | null;
-  grantedFileIds: string[];
   agentUser: { id: string; email: string; firstName: string | null; lastName: string | null; avatarUrl: string | null } | null;
 }
 
 interface Props {
   assignedAgent: AssignedAgent | null;
   designatedAgents: DesignatedAgent[];
-  documents: { id: string; createdAt: string; fileType: string; originalName: string | null }[];
 }
 
 const permissionsFields = {
@@ -80,8 +77,8 @@ const permissionTooltips = {
   healthRecords: (
     <Stack gap={4}>
       <Text size="xs"><Text span fw={600}>None</Text> – No access</Text>
-      <Text size="xs"><Text span fw={600}>Viewer</Text> – Read only to shared documents.</Text>
-      <Text size="xs"><Text span fw={600}>Editor</Text> – Upload new documents. View, edit, and delete shared documents.</Text>
+      <Text size="xs"><Text span fw={600}>Viewer</Text> – Read only access to all documents.</Text>
+      <Text size="xs"><Text span fw={600}>Editor</Text> – Upload new documents. View, edit, and delete all documents.</Text>
     </Stack>
   ),
   manageProviders: (
@@ -160,7 +157,7 @@ function PermissionsForm({ control }: { control: any }) {
   );
 }
 
-export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgents: initial, documents }: Props) {
+export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgents: initial }: Props) {
   const [agents, setAgents] = useState(initial);
   const [inviteOpen, { open: openInvite, close: closeInvite }] = useDisclosure();
   const [editTarget, setEditTarget] = useState<DesignatedAgent | null>(null);

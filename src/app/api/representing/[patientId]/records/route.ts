@@ -5,27 +5,7 @@ import {
   patientDesignatedAgents,
   incomingFiles,
 } from "@/lib/db/schema";
-import { eq, and, inArray, isNull } from "drizzle-orm";
-
-type FileWithRelations = Awaited<ReturnType<typeof db.query.incomingFiles.findMany<{
-  with: { faxLog: true; uploadLog: { with: { uploadedBy: true } } };
-}>>>[number];
-
-async function fetchFiles(scope: 'all' | 'specific' | null, patientId: string, grantedIds: string[]): Promise<FileWithRelations[]> {
-  if (scope === 'specific') {
-    if (grantedIds.length === 0) return [];
-    return db.query.incomingFiles.findMany({
-      where: and(inArray(incomingFiles.id, grantedIds), isNull(incomingFiles.deletedAt)),
-      with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
-      orderBy: (f, { desc }) => [desc(f.createdAt)],
-    });
-  }
-  return db.query.incomingFiles.findMany({
-    where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt)),
-    with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
-    orderBy: (f, { desc }) => [desc(f.createdAt)],
-  });
-}
+import { eq, and, isNull } from "drizzle-orm";
 
 // GET /api/representing/[patientId]/records — fetch patient's files scoped by PDA grants
 export async function GET(
@@ -43,14 +23,16 @@ export async function GET(
       eq(patientDesignatedAgents.patientId, patientId),
       eq(patientDesignatedAgents.status, 'accepted'),
     ),
-    with: { documentGrants: true },
   });
 
   if (!relation) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!relation.healthRecordsPermission) return NextResponse.json({ error: "No document access" }, { status: 403 });
 
-  const grantedIds = relation.documentGrants.map(g => g.incomingFileId);
-  const files = await fetchFiles(relation.healthRecordsScope, patientId, grantedIds);
+  const files = await db.query.incomingFiles.findMany({
+    where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt)),
+    with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
+    orderBy: (f, { desc }) => [desc(f.createdAt)],
+  });
 
   return NextResponse.json({
     files: files.map(f => ({

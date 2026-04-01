@@ -14,13 +14,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  let assignedPatientId: string | null = null;
+  let assignedPatientId: string;
 
-  if (session.user.type === 'admin' || session.user.isAgent) {
-    assignedPatientId = patientId ?? null;
-  } else {
-    // Regular users (patients/PDAs) always upload to themselves
+  const isPatient = !session.user.isAgent && !session.user.isPda && session.user.type !== 'admin';
+  if (isPatient) {
     assignedPatientId = session.user.id;
+  } else {
+    if (!patientId) return NextResponse.json({ error: 'patientId is required' }, { status: 400 });
+    assignedPatientId = patientId;
   }
 
   const id = nanoid();
