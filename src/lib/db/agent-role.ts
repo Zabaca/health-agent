@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { zabacaAgentRoles, users } from '@/lib/db/schema';
-import { eq, notInArray } from 'drizzle-orm';
+import { and, eq, notInArray } from 'drizzle-orm';
 
 /** Returns true if the user has a ZabacaAgentRole row (DB-level check, source of truth). */
 export async function isZabacaAgent(userId: string): Promise<boolean> {
@@ -26,6 +26,6 @@ export async function getPatientUsers() {
     return db.query.users.findMany({ where: eq(users.type, 'user') });
   }
   return db.query.users.findMany({
-    where: notInArray(users.id, agentIds),
+    where: and(eq(users.type, 'user'), notInArray(users.id, agentIds)),
   });
 }
