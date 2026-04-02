@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users, patientAssignments } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Button, Badge,
 } from "@mantine/core";
@@ -50,16 +50,16 @@ export default async function AgentProfilePage({
 
   const name = [agent.firstName, agent.middleName, agent.lastName].filter(Boolean).join(" ") || "—";
 
-  const assignments = await db
-    .select({ patientId: patientAssignments.patientId })
+  const assignedPatients = await db
+    .select({
+      id: users.id,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+    })
     .from(patientAssignments)
+    .innerJoin(users, eq(users.id, patientAssignments.patientId))
     .where(eq(patientAssignments.assignedToId, id));
-
-  const assignedPatients = assignments.length
-    ? await db.query.users.findMany({
-        where: inArray(users.id, assignments.map((a) => a.patientId)),
-      })
-    : [];
 
   return (
     <Stack gap="xl">
@@ -101,7 +101,7 @@ export default async function AgentProfilePage({
           <Text size="sm" c="dimmed">No patients assigned.</Text>
         ) : (
           <AssignedPatientsTable
-            patients={assignedPatients.map(p => ({ id: p.id, firstName: p.firstName, lastName: p.lastName, email: p.email }))}
+            patients={assignedPatients}
             basePath="/admin/patients"
           />
         )}

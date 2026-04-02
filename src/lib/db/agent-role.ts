@@ -31,7 +31,9 @@ export async function getPatientUsers() {
   ]);
 
   const assignedPatientIds = new Set(patientAssignmentRows.map(r => r.patientId));
-  // PDA-only: accepted PDA agent who is NOT also an assigned patient
+  // PDA-only: accepted PDA agent who is NOT also an assigned patient.
+  // The isNotNull() filter in the query above guarantees agentUserId is non-null here;
+  // the ! assertion is required because Drizzle doesn't narrow types from WHERE clauses.
   const pdaOnlyIds = pdaAgentRows
     .map(r => r.agentUserId!)
     .filter(id => !assignedPatientIds.has(id));
