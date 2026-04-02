@@ -18,7 +18,7 @@ export default auth((req) => {
   const isPdaOnly = isPda && !isPatient;
 
   // Invite pages are publicly accessible (no auth required to view the invite)
-  if (nextUrl.pathname.startsWith("/invite/")) {
+  if (nextUrl.pathname.startsWith("/invite/") || nextUrl.pathname.startsWith("/staff-invite/")) {
     return NextResponse.next();
   }
 
@@ -87,5 +87,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|_next/static|_next/image|uploads|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|_next/static|_next/image|uploads|favicon.ico).*)"],
 };

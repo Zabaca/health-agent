@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { uploadToR2 } from "@/lib/r2";
 
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg", "image/png", "image/gif", "image/webp",
+  "image/tiff",
+  "application/pdf",
+  "application/zip",
+];
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -38,9 +43,9 @@ export async function POST(req: NextRequest) {
       mimeType = match?.[1] ?? "application/octet-stream";
     }
 
-    if (!ALLOWED_IMAGE_TYPES.includes(mimeType)) {
+    if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
       return NextResponse.json(
-        { error: "File must be a JPEG, PNG, GIF, or WebP image" },
+        { error: "File type not allowed. Supported: images, PDF, TIFF, ZIP" },
         { status: 400 }
       );
     }
