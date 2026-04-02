@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { users, patientAssignments } from "@/lib/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Button, Badge,
 } from "@mantine/core";
 import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
+import AssignedPatientsTable from "@/components/admin/AssignedPatientsTable";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,17 @@ export default async function AgentProfilePage({
 
   const name = [agent.firstName, agent.middleName, agent.lastName].filter(Boolean).join(" ") || "—";
 
+  const assignments = await db
+    .select({ patientId: patientAssignments.patientId })
+    .from(patientAssignments)
+    .where(eq(patientAssignments.assignedToId, id));
+
+  const assignedPatients = assignments.length
+    ? await db.query.users.findMany({
+        where: inArray(users.id, assignments.map((a) => a.patientId)),
+      })
+    : [];
+
   return (
     <Stack gap="xl">
       <Group justify="space-between" align="center">
@@ -81,6 +93,18 @@ export default async function AgentProfilePage({
           <Field label="Address" value={agent.address} />
           <Field label="Phone Number" value={agent.phoneNumber} />
         </Stack>
+      </Paper>
+
+      <Paper withBorder p="md" radius="md">
+        <Title order={4} mb="md">Assigned Patients</Title>
+        {assignedPatients.length === 0 ? (
+          <Text size="sm" c="dimmed">No patients assigned.</Text>
+        ) : (
+          <AssignedPatientsTable
+            patients={assignedPatients.map(p => ({ id: p.id, firstName: p.firstName, lastName: p.lastName, email: p.email }))}
+            basePath="/admin/patients"
+          />
+        )}
       </Paper>
 
       <Group justify="flex-end">

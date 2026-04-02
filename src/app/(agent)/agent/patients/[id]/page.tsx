@@ -44,7 +44,7 @@ export default async function AgentPatientPage({
     }),
     db.query.patientDesignatedAgents.findMany({
       where: eq(patientDesignatedAgents.patientId, patientId),
-      with: { agentUser: { columns: { firstName: true, lastName: true, email: true } } },
+      with: { agentUser: true },
       orderBy: (t, { asc }) => [asc(t.createdAt)],
     }),
   ]);

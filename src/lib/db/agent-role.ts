@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
-import { zabacaAgentRoles, users } from '@/lib/db/schema';
-import { and, eq, notInArray } from 'drizzle-orm';
+import { zabacaAgentRoles, users, patientDesignatedAgents, patientAssignments } from '@/lib/db/schema';
+import { and, eq, isNotNull, notInArray } from 'drizzle-orm';
 
 /** Returns true if the user has a ZabacaAgentRole row (DB-level check, source of truth). */
 export async function isZabacaAgent(userId: string): Promise<boolean> {
@@ -17,15 +17,31 @@ export async function getAgentUserIds(): Promise<string[]> {
 }
 
 /**
- * Returns all users who are "patients" — type='user' and NOT a Zabaca agent.
- * Agents are staff; patients are regular users without an agent role.
+ * Returns all users who are "patients" — type='user', NOT a Zabaca agent, and NOT a PDA-only user.
+ * A PDA-only user is someone who appears as an accepted PDA agent but has no patient assignment.
+ * If a user is both a PDA and a patient (has a patient assignment), they are included.
  */
 export async function getPatientUsers() {
-  const agentIds = await getAgentUserIds();
-  if (agentIds.length === 0) {
+  const [agentIds, pdaAgentRows, patientAssignmentRows] = await Promise.all([
+    getAgentUserIds(),
+    db.select({ agentUserId: patientDesignatedAgents.agentUserId })
+      .from(patientDesignatedAgents)
+      .where(and(eq(patientDesignatedAgents.status, 'accepted'), isNotNull(patientDesignatedAgents.agentUserId))),
+    db.select({ patientId: patientAssignments.patientId }).from(patientAssignments),
+  ]);
+
+  const assignedPatientIds = new Set(patientAssignmentRows.map(r => r.patientId));
+  // PDA-only: accepted PDA agent who is NOT also an assigned patient
+  const pdaOnlyIds = pdaAgentRows
+    .map(r => r.agentUserId!)
+    .filter(id => !assignedPatientIds.has(id));
+
+  const excludeIds = Array.from(new Set([...agentIds, ...pdaOnlyIds]));
+
+  if (excludeIds.length === 0) {
     return db.query.users.findMany({ where: eq(users.type, 'user') });
   }
   return db.query.users.findMany({
-    where: and(eq(users.type, 'user'), notInArray(users.id, agentIds)),
+    where: and(eq(users.type, 'user'), notInArray(users.id, excludeIds)),
   });
 }
