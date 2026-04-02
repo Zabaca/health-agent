@@ -12,7 +12,7 @@ export async function PATCH(
   const { session, error } = await requireActiveSession();
   if (error) return error;
   if (session.user.type !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { id } = await params;

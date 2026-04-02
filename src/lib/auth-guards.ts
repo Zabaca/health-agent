@@ -16,6 +16,12 @@ type ActiveSessionResult =
  * Usage:
  *   const { session, error } = await requireActiveSession();
  *   if (error) return error;
+ *
+ * Note: we intentionally query the DB here rather than reading session.user.disabled
+ * from the JWT. The JWT value reflects the state at login time and would remain stale
+ * until the token is refreshed, meaning a suspended user could continue making API
+ * calls for the duration of their current session. The DB query ensures suspension
+ * takes effect immediately on every request.
  */
 export async function requireActiveSession(): Promise<ActiveSessionResult> {
   const session = await auth();

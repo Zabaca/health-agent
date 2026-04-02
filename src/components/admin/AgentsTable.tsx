@@ -16,7 +16,7 @@ interface Agent {
   email: string;
   type: string;
   mustChangePassword: boolean;
-  disabled: boolean | number;
+  disabled: boolean;
   createdAt: string;
 }
 
@@ -29,7 +29,7 @@ interface ResetState {
 }
 
 export default function AgentsTable({ agents }: { agents: Agent[] }) {
-const [reset, setReset] = useState<ResetState | null>(null);
+  const [reset, setReset] = useState<ResetState | null>(null);
   const router = useRouter();
 
   function openReset(agent: Agent) {

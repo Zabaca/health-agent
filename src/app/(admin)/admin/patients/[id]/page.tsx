@@ -123,7 +123,7 @@ export default async function AdminPatientPage({
         <DisableUserButton
           userId={patient.id}
           userName={patientName}
-          disabled={patient.disabled}
+          disabled={!!patient.disabled}
         />
       </Paper>
 

@@ -75,7 +75,7 @@ export default async function AgentProfilePage({
         <DisableUserButton
           userId={agent.id}
           userName={displayName}
-          disabled={agent.disabled}
+          disabled={!!agent.disabled}
         />
       </Paper>
 
