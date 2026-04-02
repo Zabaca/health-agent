@@ -2,46 +2,33 @@
 
 import { useState } from "react";
 import {
-  Modal, Button, TextInput, Stack, Group, Text,
-  CopyButton, Tooltip, ActionIcon, Alert, Divider,
+  Modal, Button, TextInput, Stack, Group, Text, Alert, Select,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { IconCheck, IconCopy, IconUserPlus, IconShieldCheck } from "@tabler/icons-react";
+import { IconUserPlus, IconMailCheck } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-
-interface CreatedAgent {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  plainPassword: string;
-}
 
 export default function CreateAgentModal() {
   const [opened, { open, close }] = useDisclosure(false);
   const [firstName, setFirstName] = useState("");
-  const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [address, setAddress] = useState("");
+  const [role, setRole] = useState<"agent" | "admin">("agent");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<CreatedAgent | null>(null);
+  const [sentEmail, setSentEmail] = useState<string | null>(null);
   const router = useRouter();
 
   function handleClose() {
-    if (created) router.refresh();
+    if (sentEmail) router.refresh();
     close();
     setTimeout(() => {
       setFirstName("");
-      setMiddleName("");
       setLastName("");
       setEmail("");
-      setPhoneNumber("");
-      setAddress("");
+      setRole("agent");
       setError(null);
-      setCreated(null);
+      setSentEmail(null);
     }, 300);
   }
 
@@ -50,10 +37,10 @@ export default function CreateAgentModal() {
     setLoading(true);
     setError(null);
 
-    const res = await fetch("/api/admin/agents", {
+    const res = await fetch("/api/admin/staff-invites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firstName, middleName, lastName, email, phoneNumber, address }),
+      body: JSON.stringify({ firstName, lastName, email, role }),
     });
 
     const data = await res.json();
@@ -64,22 +51,22 @@ export default function CreateAgentModal() {
       return;
     }
 
-    setCreated(data);
+    setSentEmail(email);
   }
 
   return (
     <>
       <Button leftSection={<IconUserPlus size={16} />} onClick={open}>
-        Create Agent
+        Invite Staff
       </Button>
 
       <Modal
         opened={opened}
         onClose={handleClose}
-        title={created ? "Agent Created" : "Create Agent"}
+        title={sentEmail ? "Invitation Sent" : "Invite Staff Member"}
         centered
       >
-        {!created ? (
+        {!sentEmail ? (
           <form onSubmit={handleSubmit}>
             <Stack>
               {error && <Alert color="red" variant="light">{error}</Alert>}
@@ -90,12 +77,6 @@ export default function CreateAgentModal() {
                   required
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                />
-                <TextInput
-                  label="Middle Name"
-                  placeholder="Marie"
-                  value={middleName}
-                  onChange={(e) => setMiddleName(e.target.value)}
                 />
                 <TextInput
                   label="Last Name"
@@ -113,79 +94,30 @@ export default function CreateAgentModal() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <TextInput
-                label="Address"
-                placeholder="123 Main St"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-              <TextInput
-                label="Phone Number"
-                placeholder="(555) 000-0000"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+              <Select
+                label="Role"
+                required
+                value={role}
+                onChange={(v) => setRole((v as "agent" | "admin") ?? "agent")}
+                data={[
+                  { value: "agent", label: "Agent" },
+                  { value: "admin", label: "Admin" },
+                ]}
               />
               <Group justify="flex-end" mt="xs">
                 <Button variant="subtle" onClick={close}>Cancel</Button>
-                <Button type="submit" loading={loading}>Create Agent</Button>
+                <Button type="submit" loading={loading}>Send Invite</Button>
               </Group>
             </Stack>
           </form>
         ) : (
           <Stack>
-            <Alert color="teal" variant="light" icon={<IconShieldCheck size={16} />}>
-              Agent account created. Share the temporary password below — the agent must change it on first login.
+            <Alert color="teal" variant="light" icon={<IconMailCheck size={16} />}>
+              Invitation sent to <strong>{sentEmail}</strong>. They will receive an email with a link to set up their account.
             </Alert>
-
-            <Group grow>
-              <Stack gap={2}>
-                <Text size="xs" c="dimmed" fw={500}>Name</Text>
-                <Text size="sm">{created.firstName} {created.lastName}</Text>
-              </Stack>
-              <Stack gap={2}>
-                <Text size="xs" c="dimmed" fw={500}>Email</Text>
-                <Text size="sm">{created.email}</Text>
-              </Stack>
-            </Group>
-
-            <Divider />
-
-            <Stack gap="xs">
-              <Text size="xs" c="dimmed" fw={500}>Temporary Password</Text>
-              <Group gap="xs" align="center">
-                <Text
-                  size="sm"
-                  ff="monospace"
-                  fw={600}
-                  style={{
-                    flex: 1,
-                    background: "var(--mantine-color-default)",
-                    border: "1px solid var(--mantine-color-default-border)",
-                    borderRadius: "var(--mantine-radius-sm)",
-                    padding: "8px 12px",
-                    letterSpacing: "0.04em",
-                  }}
-                >
-                  {created.plainPassword}
-                </Text>
-                <CopyButton value={created.plainPassword} timeout={2000}>
-                  {({ copied, copy }) => (
-                    <Tooltip label={copied ? "Copied!" : "Copy to clipboard"} withArrow>
-                      <ActionIcon
-                        color={copied ? "teal" : "gray"}
-                        variant="subtle"
-                        size="lg"
-                        onClick={copy}
-                        aria-label="Copy password"
-                      >
-                        {copied ? <IconCheck size={18} /> : <IconCopy size={18} />}
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                </CopyButton>
-              </Group>
-            </Stack>
-
+            <Text size="sm" c="dimmed">
+              The invite link expires in 48 hours. You can resend it from the Pending Invites section if needed.
+            </Text>
             <Group justify="flex-end" mt="xs">
               <Button onClick={handleClose}>Done</Button>
             </Group>
