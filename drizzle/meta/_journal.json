@@ -127,6 +127,13 @@
       "when": 1743541200000,
       "tag": "0018_staff_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1743544800000,
+      "tag": "0019_user_disabled",
+      "breakpoints": true
     }
   ]
 }

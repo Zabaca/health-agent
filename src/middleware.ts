@@ -17,8 +17,12 @@ export default auth((req) => {
   // isPdaOnly: has PDA relationships but is NOT a patient (no patientAssignment row)
   const isPdaOnly = isPda && !isPatient;
 
-  // Invite pages are publicly accessible (no auth required to view the invite)
-  if (nextUrl.pathname.startsWith("/invite/") || nextUrl.pathname.startsWith("/staff-invite/")) {
+  // These pages are publicly accessible or must not be gated by role redirects
+  if (
+    nextUrl.pathname.startsWith("/invite/") ||
+    nextUrl.pathname.startsWith("/staff-invite/") ||
+    nextUrl.pathname === "/suspended"
+  ) {
     return NextResponse.next();
   }
 

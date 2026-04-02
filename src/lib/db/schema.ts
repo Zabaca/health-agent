@@ -24,6 +24,7 @@ export const users = sqliteTable('User', {
   profileComplete: integer('profileComplete', { mode: 'boolean' }).notNull().default(false),
   onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
   avatarUrl: text('avatarUrl'),
+  disabled: integer('disabled', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const releases = sqliteTable('Release', {
@@ -197,6 +198,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   scheduledCallsAsPatient: many(scheduledCalls, { relationName: 'scheduledCallPatient' }),
   scheduledCallsAsAgent: many(scheduledCalls, { relationName: 'scheduledCallAgent' }),
   incomingFiles: many(incomingFiles),
+  deletedFiles: many(incomingFiles, { relationName: 'deletedFiles' }),
   designatedAgentsAsPatient: many(patientDesignatedAgents, { relationName: 'pdaPatient' }),
   designatedAgentsAsAgent: many(patientDesignatedAgents, { relationName: 'pdaAgent' }),
   agentRole: one(zabacaAgentRoles, { fields: [users.id], references: [zabacaAgentRoles.userId] }),
@@ -290,6 +292,8 @@ export const incomingFiles = sqliteTable('IncomingFile', {
   patientId:        text('patientId').references(() => users.id),
   releaseCode:      text('releaseCode'),
   createdAt:        text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+  deletedAt:        text('deletedAt'),
+  deletedById:      text('deletedById').references(() => users.id),
 });
 
 export const incomingFaxLogRelations = relations(incomingFaxLog, ({ many }) => ({
@@ -322,6 +326,7 @@ export const incomingFilesRelations = relations(incomingFiles, ({ one }) => ({
   faxLog:    one(incomingFaxLog, { fields: [incomingFiles.incomingFaxLogId], references: [incomingFaxLog.id] }),
   patient:   one(users, { fields: [incomingFiles.patientId], references: [users.id] }),
   uploadLog: one(fileUploadLog, { fields: [incomingFiles.id], references: [fileUploadLog.incomingFileId] }),
+  deletedBy: one(users, { fields: [incomingFiles.deletedById], references: [users.id], relationName: 'deletedFiles' }),
 }));
 
 export const fileUploadLogRelations = relations(fileUploadLog, ({ one }) => ({
@@ -337,8 +342,7 @@ export const fileUploadLogRelations = relations(fileUploadLog, ({ one }) => ({
  * Access is fully patient-controlled and can be revoked at any time.
  *
  * Permissions are per-relationship:
- *   - healthRecordsPermission: null=no access, 'viewer'=read-only, 'editor'=view+upload
- *   - healthRecordsScope: null=no access, 'all'=all docs including future, 'specific'=see grants table
+ *   - healthRecordsPermission: null=no access, 'viewer'=read-only to all docs, 'editor'=view+upload+edit+delete all docs
  *   - manageProvidersPermission: null=no access, 'viewer'=read-only, 'editor'=add/edit/delete
  *   - releasePermission: null=no access, 'viewer'=see releases where PDA is auth agent, 'editor'=create+view
  *
@@ -355,31 +359,13 @@ export const patientDesignatedAgents = sqliteTable('PatientDesignatedAgent', {
   tokenExpiresAt:     text('tokenExpiresAt'),
   status:                   text('status', { enum: ['pending', 'accepted', 'revoked'] }).notNull().default('pending'),
   healthRecordsPermission:  text('healthRecordsPermission', { enum: ['viewer', 'editor'] }),
-  healthRecordsScope:       text('healthRecordsScope', { enum: ['all', 'specific'] }),
   manageProvidersPermission: text('manageProvidersPermission', { enum: ['viewer', 'editor'] }),
   releasePermission:        text('releasePermission', { enum: ['viewer', 'editor'] }),
   createdAt:          text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt:          text('updatedAt').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
-/**
- * patientDesignatedAgentDocumentGrants — per-document access grants for PDAs.
- * Only used when patientDesignatedAgents.documentScope = 'specific'.
- * Each row grants a PDA access to one specific document.
- */
-export const patientDesignatedAgentDocumentGrants = sqliteTable('PatientDesignatedAgentDocumentGrant', {
-  id:                              text('id').primaryKey(),
-  patientDesignatedAgentRelationId: text('patientDesignatedAgentRelationId').notNull().references(() => patientDesignatedAgents.id, { onDelete: 'cascade' }),
-  incomingFileId:                  text('incomingFileId').notNull().references(() => incomingFiles.id, { onDelete: 'cascade' }),
-});
-
-export const patientDesignatedAgentsRelations = relations(patientDesignatedAgents, ({ one, many }) => ({
+export const patientDesignatedAgentsRelations = relations(patientDesignatedAgents, ({ one }) => ({
   patient:   one(users, { fields: [patientDesignatedAgents.patientId], references: [users.id], relationName: 'pdaPatient' }),
   agentUser: one(users, { fields: [patientDesignatedAgents.agentUserId], references: [users.id], relationName: 'pdaAgent' }),
-  documentGrants: many(patientDesignatedAgentDocumentGrants),
-}));
-
-export const patientDesignatedAgentDocumentGrantsRelations = relations(patientDesignatedAgentDocumentGrants, ({ one }) => ({
-  relation:     one(patientDesignatedAgents, { fields: [patientDesignatedAgentDocumentGrants.patientDesignatedAgentRelationId], references: [patientDesignatedAgents.id] }),
-  incomingFile: one(incomingFiles, { fields: [patientDesignatedAgentDocumentGrants.incomingFileId], references: [incomingFiles.id] }),
 }));

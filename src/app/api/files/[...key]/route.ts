@@ -1,26 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFromR2 } from "@/lib/r2";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
-import { incomingFiles, patientAssignments, patientDesignatedAgents, patientDesignatedAgentDocumentGrants } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { incomingFiles, patientAssignments, patientDesignatedAgents } from "@/lib/db/schema";
+import { eq, and, isNull } from "drizzle-orm";
 import { isZabacaAgent } from "@/lib/db/agent-role";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ key: string[] }> },
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const { key: keyParts } = await params;
   const key = keyParts.join("/");
 
   // Look up the file record by matching fileURL suffix
   const file = await db.query.incomingFiles.findFirst({
-    where: (f, { like }) => like(f.fileURL, `%${key}`),
+    where: (f, { like }) => and(like(f.fileURL, `%${key}`), isNull(f.deletedAt)),
   });
 
   // File not tracked in DB (avatars, signatures, insurance cards, etc.) —
@@ -71,18 +69,7 @@ export async function GET(
   });
 
   if (relation && relation.healthRecordsPermission) {
-    if (relation.healthRecordsScope === 'all') {
-      return streamFile(key, file.fileType);
-    }
-    if (relation.healthRecordsScope === 'specific') {
-      const grant = await db.query.patientDesignatedAgentDocumentGrants.findFirst({
-        where: and(
-          eq(patientDesignatedAgentDocumentGrants.patientDesignatedAgentRelationId, relation.id),
-          eq(patientDesignatedAgentDocumentGrants.incomingFileId, file.id),
-        ),
-      });
-      if (grant) return streamFile(key, file.fileType);
-    }
+    return streamFile(key, file.fileType);
   }
 
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });

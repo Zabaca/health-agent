@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -16,8 +16,9 @@ export async function PUT(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user || session.user.type !== "admin") {
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
+  if (session.user.type !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

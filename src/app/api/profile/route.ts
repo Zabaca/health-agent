@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -10,10 +10,8 @@ import { decrypt, encryptPii } from "@/lib/crypto";
 import { z } from "zod";
 
 export const GET = contractRoute(contract.profile.get, async () => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.user.id),
@@ -41,8 +39,8 @@ const partialProfileSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const body = partialProfileSchema.safeParse(await req.json());
   if (!body.success) return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
@@ -57,10 +55,8 @@ export async function PATCH(req: NextRequest) {
 }
 
 export const PUT = contractRoute(contract.profile.update, async ({ body }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const { avatarUrl, ...rest } = body;
   await db

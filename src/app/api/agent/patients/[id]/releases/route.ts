@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable, patientAssignments, users } from "@/lib/db/schema";
 import { and, desc, eq } from "drizzle-orm";
@@ -19,10 +19,8 @@ async function verifyAssignment(agentId: string, patientId: string) {
 }
 
 export const GET = contractRoute(contract.agent.patientReleases.list, async ({ params }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
   if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -49,10 +47,8 @@ export const GET = contractRoute(contract.agent.patientReleases.list, async ({ p
 });
 
 export const POST = contractRoute(contract.agent.patientReleases.create, async ({ params, body }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
   if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

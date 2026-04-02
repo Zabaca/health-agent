@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { incomingFiles } from "@/lib/db/schema";
 import { eq, isNull, gte, lte, and } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
   if (session.user.type !== 'admin') return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = req.nextUrl;
@@ -14,13 +14,13 @@ export async function GET(req: NextRequest) {
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
 
-  const conditions = [];
+  const conditions = [isNull(incomingFiles.deletedAt)];
   if (unassignedOnly) conditions.push(isNull(incomingFiles.patientId));
   if (dateFrom) conditions.push(gte(incomingFiles.createdAt, dateFrom));
   if (dateTo) conditions.push(lte(incomingFiles.createdAt, dateTo));
 
   const files = await db.query.incomingFiles.findMany({
-    where: conditions.length ? and(...conditions) : undefined,
+    where: and(...conditions),
     with: { faxLog: true },
     orderBy: (f, { desc }) => [desc(f.createdAt)],
   });
