@@ -17,7 +17,7 @@ export async function GET() {
   const [pdas, assignment] = await Promise.all([
     db.query.patientDesignatedAgents.findMany({
       where: eq(patientDesignatedAgents.patientId, patientId),
-      with: { agentUser: true, documentGrants: true },
+      with: { agentUser: true },
       orderBy: (t, { desc }) => [desc(t.createdAt)],
     }),
     db.query.patientAssignments.findFirst({
@@ -41,12 +41,10 @@ export async function GET() {
       relationship: p.relationship,
       status: p.status,
       healthRecordsPermission: p.healthRecordsPermission,
-      healthRecordsScope: p.healthRecordsScope,
       manageProvidersPermission: p.manageProvidersPermission,
       releasePermission: p.releasePermission,
       createdAt: p.createdAt,
       tokenExpiresAt: p.tokenExpiresAt ?? null,
-      grantedFileIds: p.documentGrants.map((g: { incomingFileId: string }) => g.incomingFileId),
       agentUser: p.agentUser
         ? {
             id: p.agentUser.id,
@@ -71,7 +69,6 @@ export async function POST(req: NextRequest) {
     inviteeEmail: string;
     relationship?: string;
     healthRecordsPermission?: 'viewer' | 'editor' | null;
-    healthRecordsScope?: 'all' | 'specific' | null;
     manageProvidersPermission?: 'viewer' | 'editor' | null;
     releasePermission?: 'viewer' | 'editor' | null;
   };
@@ -107,7 +104,6 @@ export async function POST(req: NextRequest) {
     tokenExpiresAt,
     status: 'pending',
     healthRecordsPermission: body.healthRecordsPermission ?? null,
-    healthRecordsScope: body.healthRecordsScope ?? null,
     manageProvidersPermission: body.manageProvidersPermission ?? null,
     releasePermission: body.releasePermission ?? null,
   });

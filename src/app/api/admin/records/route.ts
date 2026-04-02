@@ -14,13 +14,13 @@ export async function GET(req: NextRequest) {
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
 
-  const conditions = [];
+  const conditions = [isNull(incomingFiles.deletedAt)];
   if (unassignedOnly) conditions.push(isNull(incomingFiles.patientId));
   if (dateFrom) conditions.push(gte(incomingFiles.createdAt, dateFrom));
   if (dateTo) conditions.push(lte(incomingFiles.createdAt, dateTo));
 
   const files = await db.query.incomingFiles.findMany({
-    where: conditions.length ? and(...conditions) : undefined,
+    where: and(...conditions),
     with: { faxLog: true },
     orderBy: (f, { desc }) => [desc(f.createdAt)],
   });

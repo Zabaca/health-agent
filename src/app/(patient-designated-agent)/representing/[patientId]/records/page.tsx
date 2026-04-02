@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, incomingFiles, releases, users } from "@/lib/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { Breadcrumbs, Anchor, Text } from "@mantine/core";
 import Link from "next/link";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
@@ -27,31 +27,16 @@ export default async function RepresentingRecordsPage({
       eq(patientDesignatedAgents.patientId, patientId),
       eq(patientDesignatedAgents.status, 'accepted'),
     ),
-    with: {
-      patient: true,
-      documentGrants: true,
-    },
+    with: { patient: true },
   });
 
   if (!relation || !relation.healthRecordsPermission) notFound();
 
-  let files;
-  if (relation.healthRecordsScope === 'specific') {
-    const grantedIds = relation.documentGrants.map(g => g.incomingFileId);
-    files = grantedIds.length > 0
-      ? await db.query.incomingFiles.findMany({
-          where: inArray(incomingFiles.id, grantedIds),
-          with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
-          orderBy: (f, { desc }) => [desc(f.createdAt)],
-        })
-      : [];
-  } else {
-    files = await db.query.incomingFiles.findMany({
-      where: eq(incomingFiles.patientId, patientId),
-      with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
-      orderBy: (f, { desc }) => [desc(f.createdAt)],
-    });
-  }
+  const files = await db.query.incomingFiles.findMany({
+    where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt)),
+    with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
+    orderBy: (f, { desc }) => [desc(f.createdAt)],
+  });
 
   const patientName =
     [relation.patient?.firstName, relation.patient?.lastName].filter(Boolean).join(' ') ||
