@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, releases as releasesTable, patientAssignments, userProviders, incomingFiles, providers as releaseProvidersTable, zabacaAgentRoles } from "@/lib/db/schema";
+import { users, releases as releasesTable, patientAssignments, userProviders, incomingFiles, providers as releaseProvidersTable, zabacaAgentRoles, patientDesignatedAgents } from "@/lib/db/schema";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { Title, Text, Stack, Group, Badge, Paper, Divider } from "@mantine/core";
 import PatientDetailTabs from "@/components/staff/PatientDetailTabs";
@@ -26,7 +26,7 @@ export default async function AdminPatientPage({
 
   const decryptedPatient = decryptPii(patient);
 
-  const [agentRoles, adminUsers, currentAssignment, providers, documents] = await Promise.all([
+  const [agentRoles, adminUsers, currentAssignment, providers, documents, pdaRows] = await Promise.all([
     db.query.zabacaAgentRoles.findMany({ with: { user: true } }),
     db.query.users.findMany({ where: eq(users.type, 'admin') }),
     db.query.patientAssignments.findFirst({ where: eq(patientAssignments.patientId, patientId) }),
@@ -35,6 +35,11 @@ export default async function AdminPatientPage({
       where: eq(incomingFiles.patientId, patientId),
       with: { uploadLog: { with: { uploadedBy: true } } },
       orderBy: (f, { desc }) => [desc(f.createdAt)],
+    }),
+    db.query.patientDesignatedAgents.findMany({
+      where: eq(patientDesignatedAgents.patientId, patientId),
+      with: { agentUser: true },
+      orderBy: (t, { asc }) => [asc(t.createdAt)],
     }),
   ]);
   const staffMembers = [
@@ -146,6 +151,7 @@ export default async function AdminPatientPage({
         documents={documentRows}
         releases={releases.map(r => ({ id: r.id, releaseCode: r.releaseCode ?? null, providerNames: providersByRelease.get(r.id) ?? [] }))}
         recordsBasePath="/admin/records"
+        pdas={pdaRows.map(p => ({ id: p.id, inviteeEmail: p.inviteeEmail, relationship: p.relationship, status: p.status, agentUser: p.agentUser ?? null }))}
       />
     </Stack>
   );

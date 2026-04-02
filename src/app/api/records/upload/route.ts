@@ -16,12 +16,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  let assignedPatientId: string | null = null;
+  let assignedPatientId: string | null;
 
   if (session.user.type === 'admin' || session.user.isAgent) {
     assignedPatientId = patientId ?? null;
-  } else if (session.user.isPda && patientId) {
-    // Verify PDA has editor permission for this patient before assigning file to them
+  } else if (!patientId || patientId === session.user.id) {
+    assignedPatientId = session.user.id;
+  } else if (session.user.isPda) {
+    // Verify PDA has editor permission for this patient
     const relation = await db.query.patientDesignatedAgents.findFirst({
       where: and(
         eq(patientDesignatedAgents.agentUserId, session.user.id),
@@ -29,9 +31,12 @@ export async function POST(req: Request) {
         eq(patientDesignatedAgents.status, 'accepted'),
       ),
     });
-    assignedPatientId = relation?.healthRecordsPermission === 'editor' ? patientId : session.user.id;
+    if (relation?.healthRecordsPermission !== 'editor') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    assignedPatientId = patientId;
   } else {
-    assignedPatientId = session.user.id;
+    return NextResponse.json({ error: 'patientId is required' }, { status: 400 });
   }
 
   const id = nanoid();

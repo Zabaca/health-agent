@@ -17,12 +17,11 @@ import {
   Divider,
   Alert,
   Avatar,
-  Checkbox,
-  ScrollArea,
+  Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconPlus, IconTrash, IconEdit, IconUser, IconFiles, IconSend } from "@tabler/icons-react";
+import { IconPlus, IconTrash, IconEdit, IconUser, IconInfoCircle, IconSend } from "@tabler/icons-react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,32 +40,21 @@ interface DesignatedAgent {
   relationship: string | null;
   status: 'pending' | 'accepted' | 'revoked';
   healthRecordsPermission: 'viewer' | 'editor' | null;
-  healthRecordsScope: 'all' | 'specific' | null;
   manageProvidersPermission: 'viewer' | 'editor' | null;
   releasePermission: 'viewer' | 'editor' | null;
   createdAt: string;
   tokenExpiresAt: string | null;
-  grantedFileIds: string[];
   agentUser: { id: string; email: string; firstName: string | null; lastName: string | null; avatarUrl: string | null } | null;
-}
-
-interface PatientDocument {
-  id: string;
-  createdAt: string;
-  fileType: string;
-  originalName: string | null;
 }
 
 interface Props {
   assignedAgent: AssignedAgent | null;
   designatedAgents: DesignatedAgent[];
-  documents: PatientDocument[];
 }
 
 const permissionsFields = {
   relationship: z.string().optional(),
   healthRecordsPermission: z.enum(['', 'viewer', 'editor']).optional(),
-  healthRecordsScope: z.enum(['', 'all', 'specific']).optional(),
   manageProvidersPermission: z.enum(['', 'viewer', 'editor']).optional(),
   releasePermission: z.enum(['', 'viewer', 'editor']).optional(),
 };
@@ -85,8 +73,42 @@ const RELATIONSHIP_SUGGESTIONS = ['Spouse', 'Son', 'Daughter', 'Parent', 'Siblin
 
 const statusColor = { pending: 'yellow', accepted: 'green', revoked: 'red' } as const;
 
-function PermissionsForm({ control, watch }: { control: any; watch: any }) {
-  const healthRecordsPermission = watch('healthRecordsPermission');
+const permissionTooltips = {
+  healthRecords: (
+    <Stack gap={4}>
+      <Text size="xs"><Text span fw={600}>None</Text> – No access</Text>
+      <Text size="xs"><Text span fw={600}>Viewer</Text> – Read only access to all documents.</Text>
+      <Text size="xs"><Text span fw={600}>Editor</Text> – Upload new documents. View, edit, and delete all documents.</Text>
+    </Stack>
+  ),
+  manageProviders: (
+    <Stack gap={4}>
+      <Text size="xs"><Text span fw={600}>None</Text> – No access</Text>
+      <Text size="xs"><Text span fw={600}>Viewer</Text> – View health providers and their contact information.</Text>
+      <Text size="xs"><Text span fw={600}>Editor</Text> – Add, edit health providers information, delete health provider entries.</Text>
+    </Stack>
+  ),
+  hipaaRelease: (
+    <Stack gap={4}>
+      <Text size="xs"><Text span fw={600}>None</Text> – No access</Text>
+      <Text size="xs"><Text span fw={600}>Viewer</Text> – See HIPAA Release requests where this individual is designated as an authorized representative.</Text>
+      <Text size="xs"><Text span fw={600}>Editor</Text> – Create HIPAA Release request indicating that this individual is the authorized representative. Patient signature is still required to finalize form.</Text>
+    </Stack>
+  ),
+};
+
+function LabelWithTooltip({ label, tooltip }: { label: string; tooltip: React.ReactNode }) {
+  return (
+    <Group gap={4} align="center">
+      <span>{label}</span>
+      <Tooltip label={tooltip} multiline w={260} withArrow>
+        <IconInfoCircle size={14} style={{ cursor: 'help', color: 'var(--mantine-color-dimmed)' }} />
+      </Tooltip>
+    </Group>
+  );
+}
+
+function PermissionsForm({ control }: { control: any }) {
   return (
     <Stack gap="xs">
       <Text fw={500} size="sm">Permissions (optional)</Text>
@@ -95,7 +117,7 @@ function PermissionsForm({ control, watch }: { control: any; watch: any }) {
           name="healthRecordsPermission"
           control={control}
           render={({ field }) => (
-            <Radio.Group label="Health Records" {...field} value={field.value ?? ''}>
+            <Radio.Group label={<LabelWithTooltip label="Health Records" tooltip={permissionTooltips.healthRecords} />} {...field} value={field.value ?? ''}>
               <Stack gap={4} mt={4}>
                 <Radio value="" label="None" size="xs" />
                 <Radio value="viewer" label="Viewer" size="xs" />
@@ -108,7 +130,7 @@ function PermissionsForm({ control, watch }: { control: any; watch: any }) {
           name="manageProvidersPermission"
           control={control}
           render={({ field }) => (
-            <Radio.Group label="Manage Providers" {...field} value={field.value ?? ''}>
+            <Radio.Group label={<LabelWithTooltip label="Manage Providers" tooltip={permissionTooltips.manageProviders} />} {...field} value={field.value ?? ''}>
               <Stack gap={4} mt={4}>
                 <Radio value="" label="None" size="xs" />
                 <Radio value="viewer" label="Viewer" size="xs" />
@@ -121,7 +143,7 @@ function PermissionsForm({ control, watch }: { control: any; watch: any }) {
           name="releasePermission"
           control={control}
           render={({ field }) => (
-            <Radio.Group label="HIPAA Release Request" {...field} value={field.value ?? ''}>
+            <Radio.Group label={<LabelWithTooltip label="HIPAA Release Request" tooltip={permissionTooltips.hipaaRelease} />} {...field} value={field.value ?? ''}>
               <Stack gap={4} mt={4}>
                 <Radio value="" label="None" size="xs" />
                 <Radio value="viewer" label="Viewer" size="xs" />
@@ -131,36 +153,20 @@ function PermissionsForm({ control, watch }: { control: any; watch: any }) {
           )}
         />
       </SimpleGrid>
-      {(healthRecordsPermission === 'viewer' || healthRecordsPermission === 'editor') && (
-        <Controller
-          name="healthRecordsScope"
-          control={control}
-          render={({ field }) => (
-            <Radio.Group label="Health records scope" {...field} value={field.value ?? ''}>
-              <Group gap="md" mt={4}>
-                <Radio value="all" label="All documents" size="xs" />
-                <Radio value="specific" label="Specific documents" size="xs" />
-              </Group>
-            </Radio.Group>
-          )}
-        />
-      )}
     </Stack>
   );
 }
 
-export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgents: initial, documents }: Props) {
+export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgents: initial }: Props) {
   const [agents, setAgents] = useState(initial);
   const [inviteOpen, { open: openInvite, close: closeInvite }] = useDisclosure();
   const [editTarget, setEditTarget] = useState<DesignatedAgent | null>(null);
-  const [docsTarget, setDocsTarget] = useState<DesignatedAgent | null>(null);
-  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const inviteForm = useForm<InviteFormData>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { healthRecordsPermission: '', healthRecordsScope: '', manageProvidersPermission: '', releasePermission: '' },
+    defaultValues: { healthRecordsPermission: '', manageProvidersPermission: '', releasePermission: '' },
   });
 
   const editForm = useForm<EditFormData>({
@@ -186,7 +192,6 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
           inviteeEmail: data.inviteeEmail,
           relationship: data.relationship || undefined,
           healthRecordsPermission: data.healthRecordsPermission || null,
-          healthRecordsScope: data.healthRecordsScope || null,
           manageProvidersPermission: data.manageProvidersPermission || null,
           releasePermission: data.releasePermission || null,
         }),
@@ -198,7 +203,7 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
       }
       await reload();
       closeInvite();
-      inviteForm.reset({ healthRecordsPermission: '', healthRecordsScope: '', manageProvidersPermission: '', releasePermission: '' });
+      inviteForm.reset({ healthRecordsPermission: '', manageProvidersPermission: '', releasePermission: '' });
     } finally {
       setLoading(false);
     }
@@ -215,7 +220,6 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
         body: JSON.stringify({
           relationship: data.relationship || null,
           healthRecordsPermission: data.healthRecordsPermission || null,
-          healthRecordsScope: data.healthRecordsScope || null,
           manageProvidersPermission: data.manageProvidersPermission || null,
           releasePermission: data.releasePermission || null,
         }),
@@ -260,36 +264,9 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
     editForm.reset({
       relationship: agent.relationship ?? '',
       healthRecordsPermission: agent.healthRecordsPermission ?? '',
-      healthRecordsScope: agent.healthRecordsScope ?? '',
       manageProvidersPermission: agent.manageProvidersPermission ?? '',
       releasePermission: agent.releasePermission ?? '',
     });
-  };
-
-  const openDocs = (agent: DesignatedAgent) => {
-    setDocsTarget(agent);
-    setSelectedFileIds(agent.grantedFileIds ?? []);
-  };
-
-  const onSaveDocs = async () => {
-    if (!docsTarget) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/my-designated-agents/${docsTarget.id}/documents`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileIds: selectedFileIds }),
-      });
-      if (!res.ok) {
-        notifications.show({ title: 'Error', message: 'Failed to save document access.', color: 'red' });
-        return;
-      }
-      await reload();
-      setDocsTarget(null);
-      notifications.show({ title: 'Saved', message: 'Document access updated.', color: 'green' });
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -365,9 +342,6 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
                     {agent.healthRecordsPermission && (
                       <Badge size="xs" variant="outline">records: {agent.healthRecordsPermission}</Badge>
                     )}
-                    {agent.healthRecordsScope && (
-                      <Badge size="xs" variant="outline" color="gray">{agent.healthRecordsScope} docs</Badge>
-                    )}
                     {agent.manageProvidersPermission && (
                       <Badge size="xs" variant="outline" color="teal">providers: {agent.manageProvidersPermission}</Badge>
                     )}
@@ -382,11 +356,6 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
                     {agent.status === 'pending' && agent.tokenExpiresAt && new Date(agent.tokenExpiresAt) < new Date() && (
                       <ActionIcon variant="subtle" color="orange" loading={loading} onClick={() => onResend(agent.id)} title="Resend invite">
                         <IconSend size={16} />
-                      </ActionIcon>
-                    )}
-                    {agent.healthRecordsScope === 'specific' && (
-                      <ActionIcon variant="subtle" color="blue" onClick={() => openDocs(agent)} title="Configure document access">
-                        <IconFiles size={16} />
                       </ActionIcon>
                     )}
                     <ActionIcon variant="subtle" onClick={() => openEdit(agent)} title="Edit permissions">
@@ -430,60 +399,13 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
                 )}
               />
             </SimpleGrid>
-            <PermissionsForm control={inviteForm.control} watch={inviteForm.watch} />
+            <PermissionsForm control={inviteForm.control} />
             <Group justify="flex-end" mt="xs">
               <Button variant="default" onClick={closeInvite}>Cancel</Button>
               <Button type="submit" loading={loading}>Send Invite</Button>
             </Group>
           </Stack>
         </form>
-      </Modal>
-
-      {/* Document Grants Modal */}
-      <Modal
-        opened={!!docsTarget}
-        onClose={() => setDocsTarget(null)}
-        title="Configure Document Access"
-        size="md"
-      >
-        <Stack gap="md">
-          <Text size="sm" c="dimmed">
-            Select which documents{docsTarget?.agentUser
-              ? ` ${[docsTarget.agentUser.firstName, docsTarget.agentUser.lastName].filter(Boolean).join(' ') || docsTarget.inviteeEmail}`
-              : ` ${docsTarget?.inviteeEmail}`} can access.
-          </Text>
-          {documents.length === 0 ? (
-            <Text size="sm" c="dimmed">No documents found.</Text>
-          ) : (
-            <ScrollArea.Autosize mah={360}>
-              <Stack gap="xs">
-                {documents.map(doc => (
-                  <Checkbox
-                    key={doc.id}
-                    label={
-                      <Group gap="xs">
-                        <Text size="sm">{doc.originalName ?? `Unnamed (${doc.fileType.toUpperCase()})`}</Text>
-                        <Text size="xs" c="dimmed">{new Date(doc.createdAt).toLocaleDateString()}</Text>
-                      </Group>
-                    }
-                    checked={selectedFileIds.includes(doc.id)}
-                    onChange={(e) => {
-                      const checked = e.currentTarget.checked;
-                      setSelectedFileIds(prev =>
-                        checked ? [...prev, doc.id] : prev.filter(id => id !== doc.id)
-                      );
-                    }}
-                  />
-                ))}
-              </Stack>
-            </ScrollArea.Autosize>
-          )}
-          <Text size="xs" c="dimmed">{selectedFileIds.length} of {documents.length} selected</Text>
-          <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={() => setDocsTarget(null)}>Cancel</Button>
-            <Button onClick={onSaveDocs} loading={loading}>Save</Button>
-          </Group>
-        </Stack>
       </Modal>
 
       {/* Edit Modal */}
@@ -504,7 +426,7 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
                 />
               )}
             />
-            <PermissionsForm control={editForm.control} watch={editForm.watch} />
+            <PermissionsForm control={editForm.control} />
             <Group justify="flex-end" mt="xs">
               <Button variant="default" onClick={() => setEditTarget(null)}>Cancel</Button>
               <Button type="submit" loading={loading}>Save</Button>

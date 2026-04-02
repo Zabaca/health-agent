@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, patientAssignments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import {
   Stack, Group, Title, Paper, SimpleGrid, Text, Button, Badge, Divider,
@@ -9,6 +9,7 @@ import {
 import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
 import DisableUserButton from "@/components/admin/DisableUserButton";
+import AssignedPatientsTable from "@/components/admin/AssignedPatientsTable";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,17 @@ export default async function AgentProfilePage({
 
   const name = [agent.firstName, agent.middleName, agent.lastName].filter(Boolean).join(" ") || "—";
   const displayName = [agent.firstName, agent.lastName].filter(Boolean).join(" ") || agent.email;
+
+  const assignedPatients = await db
+    .select({
+      id: users.id,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+    })
+    .from(patientAssignments)
+    .innerJoin(users, eq(users.id, patientAssignments.patientId))
+    .where(eq(patientAssignments.assignedToId, id));
 
   return (
     <Stack gap="xl">
@@ -91,6 +103,18 @@ export default async function AgentProfilePage({
           <Field label="Address" value={agent.address} />
           <Field label="Phone Number" value={agent.phoneNumber} />
         </Stack>
+      </Paper>
+
+      <Paper withBorder p="md" radius="md">
+        <Title order={4} mb="md">Assigned Patients</Title>
+        {assignedPatients.length === 0 ? (
+          <Text size="sm" c="dimmed">No patients assigned.</Text>
+        ) : (
+          <AssignedPatientsTable
+            patients={assignedPatients}
+            basePath="/admin/patients"
+          />
+        )}
       </Paper>
 
       <Group justify="flex-end">

@@ -26,7 +26,6 @@ export async function PATCH(
   const body = await req.json() as {
     relationship?: string | null;
     healthRecordsPermission?: 'viewer' | 'editor' | null;
-    healthRecordsScope?: 'all' | 'specific' | null;
     manageProvidersPermission?: 'viewer' | 'editor' | null;
     releasePermission?: 'viewer' | 'editor' | null;
   };
@@ -36,7 +35,6 @@ export async function PATCH(
     .set({
       ...(body.relationship !== undefined && { relationship: body.relationship }),
       ...(body.healthRecordsPermission !== undefined && { healthRecordsPermission: body.healthRecordsPermission }),
-      ...(body.healthRecordsScope !== undefined && { healthRecordsScope: body.healthRecordsScope }),
       ...(body.manageProvidersPermission !== undefined && { manageProvidersPermission: body.manageProvidersPermission }),
       ...(body.releasePermission !== undefined && { releasePermission: body.releasePermission }),
       updatedAt: new Date().toISOString(),
