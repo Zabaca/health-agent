@@ -134,6 +134,13 @@
       "when": 1743544800000,
       "tag": "0019_user_disabled",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1743548400000,
+      "tag": "0020_apply_missing_migrations",
+      "breakpoints": true
     }
   ]
 }
