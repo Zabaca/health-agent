@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users, zabacaAgentRoles, staffInvites } from "@/lib/db/schema";
-import { eq, ne } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Title, Text, Group } from "@mantine/core";
 import CreateAgentModal from "@/components/admin/CreateAgentModal";
 import AgentsTable from "@/components/admin/AgentsTable";
@@ -16,7 +16,7 @@ export default async function AgentsPage() {
     db.query.zabacaAgentRoles.findMany({ with: { user: true } }),
     db.query.users.findMany({ where: eq(users.type, "admin") }),
     db.query.staffInvites.findMany({
-      where: ne(staffInvites.status, "canceled"),
+      where: eq(staffInvites.status, "pending"),
       orderBy: (t, { desc }) => [desc(t.createdAt)],
     }),
   ]);

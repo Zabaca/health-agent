@@ -55,6 +55,7 @@ export default function AgentsTable({
   const [reset, setReset] = useState<ResetState | null>(null);
   const [changeEmail, setChangeEmail] = useState<ChangeEmailState | null>(null);
   const [inviteLoading, setInviteLoading] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const router = useRouter();
 
   // ── Password reset ────────────────────────────────────────────────────────
@@ -86,6 +87,7 @@ export default function AgentsTable({
   // ── Invite actions ────────────────────────────────────────────────────────
 
   async function handleResend(invite: PendingInvite) {
+    setInviteError(null);
     setInviteLoading(invite.id);
     const res = await fetch(`/api/admin/staff-invites/${invite.id}`, {
       method: "PATCH",
@@ -93,14 +95,25 @@ export default function AgentsTable({
       body: JSON.stringify({ action: "resend" }),
     });
     setInviteLoading(null);
-    if (res.ok) router.refresh();
+    if (res.ok) {
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setInviteError(data.error ?? "Failed to resend invite. Please try again.");
+    }
   }
 
   async function handleCancel(invite: PendingInvite) {
+    setInviteError(null);
     setInviteLoading(invite.id);
     const res = await fetch(`/api/admin/staff-invites/${invite.id}`, { method: "DELETE" });
     setInviteLoading(null);
-    if (res.ok) router.refresh();
+    if (res.ok) {
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setInviteError(data.error ?? "Failed to cancel invite. Please try again.");
+    }
   }
 
   async function handleChangeEmailSubmit(e: React.FormEvent) {
@@ -186,6 +199,11 @@ export default function AgentsTable({
       {activePendingInvites.length > 0 && (
         <>
           <Title order={4} mt="xl" mb="sm">Pending Invites</Title>
+          {inviteError && (
+            <Alert color="red" variant="light" mb="sm" withCloseButton onClose={() => setInviteError(null)}>
+              {inviteError}
+            </Alert>
+          )}
           <Table striped highlightOnHover>
             <Table.Thead>
               <Table.Tr>

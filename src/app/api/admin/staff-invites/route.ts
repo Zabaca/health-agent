@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { staffInvites, users } from "@/lib/db/schema";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getSiteBaseUrl, sendStaffInviteEmail } from "@/lib/email";
 
 export async function GET() {
@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   const invites = await db.query.staffInvites.findMany({
-    where: ne(staffInvites.status, "canceled"),
+    where: eq(staffInvites.status, "pending"),
     orderBy: (t, { desc }) => [desc(t.createdAt)],
   });
 

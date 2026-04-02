@@ -50,17 +50,8 @@ export async function POST(
     return NextResponse.json({ error: "Invite has expired" }, { status: 410 });
   }
 
-  const existingUser = await db.query.users.findFirst({
-    where: eq(users.email, invite.email),
-  });
-  if (existingUser) {
-    return NextResponse.json(
-      { error: "An account with this email already exists" },
-      { status: 409 }
-    );
-  }
-
-  // Parse multipart form data
+  // Parse and validate form data before opening the transaction — keeps the
+  // critical section short and avoids holding a lock during I/O.
   const formData = await req.formData();
   const firstName = (formData.get("firstName") as string | null)?.trim();
   const lastName = (formData.get("lastName") as string | null)?.trim();
@@ -82,41 +73,67 @@ export async function POST(
 
   let avatarUrl: string | null = null;
   if (avatarFile && avatarFile.size > 0) {
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(avatarFile.type)) {
+      return NextResponse.json({ error: "Avatar must be a JPEG, PNG, GIF, or WebP image" }, { status: 400 });
+    }
     const buffer = Buffer.from(await avatarFile.arrayBuffer());
-    avatarUrl = await uploadToR2(buffer, avatarFile.name, avatarFile.type || "image/jpeg");
+    avatarUrl = await uploadToR2(buffer, avatarFile.name, avatarFile.type);
   }
 
   const hashedPassword = await hashPassword(password);
   const userId = crypto.randomUUID();
 
-  await db.insert(users).values({
-    id: userId,
-    email: invite.email,
-    password: hashedPassword,
-    type: invite.role === "admin" ? "admin" : "user",
-    mustChangePassword: false,
-    onboarded: false,
-    firstName,
-    lastName,
-    address: address || null,
-    phoneNumber: phoneNumber || null,
-    avatarUrl,
+  // Wrap all DB writes in a transaction so concurrent submissions of the same
+  // token cannot both create a user, and a crash mid-way leaves no partial state.
+  const result = await db.transaction(async (tx) => {
+    // Re-check inside the transaction — the status may have changed since the
+    // initial read above (e.g. a concurrent request already accepted this invite).
+    const current = await tx.query.staffInvites.findFirst({
+      where: and(eq(staffInvites.token, token), eq(staffInvites.status, "pending")),
+    });
+    if (!current) return "already_used" as const;
+
+    const existingUser = await tx.query.users.findFirst({
+      where: eq(users.email, invite.email),
+    });
+    if (existingUser) return "email_taken" as const;
+
+    await tx.insert(users).values({
+      id: userId,
+      email: invite.email,
+      password: hashedPassword,
+      type: invite.role === "admin" ? "admin" : "user",
+      mustChangePassword: false,
+      onboarded: false,
+      firstName,
+      lastName,
+      address: address || null,
+      phoneNumber: phoneNumber || null,
+      avatarUrl,
+    });
+
+    if (invite.role === "agent") {
+      await tx.insert(zabacaAgentRoles).values({
+        id: crypto.randomUUID(),
+        userId,
+      });
+    }
+
+    await tx
+      .update(staffInvites)
+      .set({ status: "accepted", updatedAt: new Date().toISOString() })
+      .where(eq(staffInvites.id, invite.id));
+
+    return "ok" as const;
   });
 
-  if (invite.role === "agent") {
-    await db.insert(zabacaAgentRoles).values({
-      id: crypto.randomUUID(),
-      userId,
-    });
+  if (result === "already_used") {
+    return NextResponse.json({ error: "Invite not found or already used" }, { status: 404 });
   }
-
-  await db
-    .update(staffInvites)
-    .set({
-      status: "accepted",
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(staffInvites.id, invite.id));
+  if (result === "email_taken") {
+    return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
+  }
 
   return NextResponse.json({ success: true });
 }
