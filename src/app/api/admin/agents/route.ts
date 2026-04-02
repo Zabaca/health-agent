@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { users, zabacaAgentRoles } from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth-helpers";
@@ -13,8 +13,9 @@ function generatePassword(length = 16): string {
 }
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user || session.user.type !== "admin") {
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
+  if (session.user.type !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

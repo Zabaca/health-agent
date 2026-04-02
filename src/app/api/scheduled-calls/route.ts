@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { scheduledCalls, patientAssignments, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -8,10 +8,8 @@ import { contract } from "@/lib/api/contract";
 import { sendScheduledCallEmail } from "@/lib/email";
 
 export const GET = contractRoute(contract.scheduledCalls.list, async () => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const calls = await db.query.scheduledCalls.findMany({
     where: eq(scheduledCalls.patientId, session.user.id),
@@ -43,10 +41,8 @@ export const GET = contractRoute(contract.scheduledCalls.list, async () => {
 });
 
 export const POST = contractRoute(contract.scheduledCalls.create, async ({ body }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   // Validate scheduledAt is in the future
   const scheduledDate = new Date(body.scheduledAt);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { userProviders } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
@@ -7,10 +7,8 @@ import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 
 export const GET = contractRoute(contract.myProviders.list, async () => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const providers = await db
     .select()
@@ -22,10 +20,8 @@ export const GET = contractRoute(contract.myProviders.list, async () => {
 });
 
 export const PUT = contractRoute(contract.myProviders.replace, async ({ body }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const { providers } = body;
   const userId = session.user.id;

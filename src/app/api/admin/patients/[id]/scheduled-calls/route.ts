@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { scheduledCalls, patientAssignments, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -9,10 +9,8 @@ import { sendScheduledCallEmail } from "@/lib/email";
 import { decryptPii } from "@/lib/crypto";
 
 export const POST = contractRoute(contract.admin.patientScheduledCalls.create, async ({ params, body }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
   if (session.user.type !== 'admin') {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

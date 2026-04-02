@@ -4,10 +4,11 @@ import { db } from "@/lib/db";
 import { users, patientAssignments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import {
-  Stack, Group, Title, Paper, SimpleGrid, Text, Button, Badge,
+  Stack, Group, Title, Paper, SimpleGrid, Text, Button, Badge, Divider,
 } from "@mantine/core";
 import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
+import DisableUserButton from "@/components/admin/DisableUserButton";
 import AssignedPatientsTable from "@/components/admin/AssignedPatientsTable";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +28,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const agent = await db.query.users.findFirst({
-    where: eq(users.id, id),
-  });
+  const agent = await db.query.users.findFirst({ where: eq(users.id, id) });
   const name = [agent?.firstName, agent?.lastName].filter(Boolean).join(" ") || "Agent";
   return { title: `${name} — Admin Portal` };
 }
@@ -42,13 +41,11 @@ export default async function AgentProfilePage({
   await auth();
   const { id } = await params;
 
-  const agent = await db.query.users.findFirst({
-    where: eq(users.id, id),
-  });
-
+  const agent = await db.query.users.findFirst({ where: eq(users.id, id) });
   if (!agent) notFound();
 
   const name = [agent.firstName, agent.middleName, agent.lastName].filter(Boolean).join(" ") || "—";
+  const displayName = [agent.firstName, agent.lastName].filter(Boolean).join(" ") || agent.email;
 
   const assignedPatients = await db
     .select({
@@ -64,7 +61,7 @@ export default async function AgentProfilePage({
   return (
     <Stack gap="xl">
       <Group justify="space-between" align="center">
-        <Group gap="sm">
+        <Group gap="sm" align="center">
           <Button
             component={Link}
             href="/admin/agents"
@@ -75,11 +72,24 @@ export default async function AgentProfilePage({
             Agents
           </Button>
           <Title order={2}>{name}</Title>
+          {!!agent.disabled && (
+            <Badge color="red" variant="light">Account Suspended</Badge>
+          )}
         </Group>
-        {agent.mustChangePassword && (
+        {agent.mustChangePassword && !agent.disabled && (
           <Badge color="orange" variant="light">Password reset required</Badge>
         )}
       </Group>
+
+      <Paper withBorder p="md" radius="md">
+        <Title order={4} mb="md">Account Actions</Title>
+        <Divider mb="md" />
+        <DisableUserButton
+          userId={agent.id}
+          userName={displayName}
+          disabled={!!agent.disabled}
+        />
+      </Paper>
 
       <Paper withBorder p="md" radius="md">
         <Title order={4} mb="md">Profile</Title>

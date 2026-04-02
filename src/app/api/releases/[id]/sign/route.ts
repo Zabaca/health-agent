@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { releases as releasesTable } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -7,10 +7,8 @@ import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 
 export const POST = contractRoute(contract.releases.sign, async ({ params, body }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const existing = await db.query.releases.findFirst({
     where: and(eq(releasesTable.id, params.id), eq(releasesTable.userId, session.user.id)),

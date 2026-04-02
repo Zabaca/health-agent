@@ -3,9 +3,12 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users, releases as releasesTable, patientAssignments, userProviders, incomingFiles, providers as releaseProvidersTable, zabacaAgentRoles, patientDesignatedAgents } from "@/lib/db/schema";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import { Title, Text, Stack, Group } from "@mantine/core";
+import { Title, Text, Stack, Group, Badge, Paper, Divider } from "@mantine/core";
 import PatientDetailTabs from "@/components/staff/PatientDetailTabs";
 import { decryptPii } from "@/lib/crypto";
+import DisableUserButton from "@/components/admin/DisableUserButton";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminPatientPage({
   params,
@@ -107,10 +110,27 @@ export default async function AdminPatientPage({
 
   return (
     <Stack gap="lg">
-      <div>
-        <Title order={2}>{patientName}</Title>
-        <Text c="dimmed" size="sm">{patient.email}</Text>
-      </div>
+      <Group justify="space-between" align="flex-start">
+        <div>
+          <Group gap="sm" align="center" mb={4}>
+            <Title order={2}>{patientName}</Title>
+            {!!patient.disabled && (
+              <Badge color="red" variant="light">Account Suspended</Badge>
+            )}
+          </Group>
+          <Text c="dimmed" size="sm">{patient.email}</Text>
+        </div>
+      </Group>
+
+      <Paper withBorder p="md" radius="md">
+        <Title order={4} mb="md">Account Actions</Title>
+        <Divider mb="md" />
+        <DisableUserButton
+          userId={patient.id}
+          userName={patientName}
+          disabled={!!patient.disabled}
+        />
+      </Paper>
 
       <PatientDetailTabs
         role="admin"

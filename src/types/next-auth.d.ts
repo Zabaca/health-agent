@@ -11,6 +11,7 @@ declare module "next-auth" {
       isPatient: boolean;
       mustChangePassword: boolean;
       onboarded?: boolean;
+      disabled: boolean;
     };
   }
 }

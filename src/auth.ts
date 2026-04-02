@@ -55,6 +55,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           isPatient: !!patientAssignment,
           mustChangePassword: user.mustChangePassword,
           onboarded: user.onboarded,
+          disabled: user.disabled,
         };
       },
     }),

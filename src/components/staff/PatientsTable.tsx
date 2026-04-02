@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Table, Anchor, Text, Paper, TextInput, Group, Select, Pagination } from "@mantine/core";
+import { Table, Anchor, Text, Paper, TextInput, Group, Select, Pagination, Badge } from "@mantine/core";
 import { IconSearch } from "@tabler/icons-react";
 import Link from "next/link";
 
@@ -12,6 +12,7 @@ interface Patient {
   email: string;
   phoneNumber: string | null;
   ssnLast4: string | null;
+  disabled: boolean | number;
   createdAt: string;
   assignedTo?: { firstName: string | null; lastName: string | null; email: string } | null;
 }
@@ -81,11 +82,14 @@ export default function PatientsTable({ patients, basePath, showAssignedTo }: Pr
               paginated.map((p) => (
                 <Table.Tr key={p.id}>
                   <Table.Td>
-                    <Anchor component={Link} href={`${basePath}/${p.id}`}>
-                      {p.firstName || p.lastName
-                        ? `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()
-                        : <Text size="sm" c="dimmed">(no name)</Text>}
-                    </Anchor>
+                    <Group gap="xs" align="center" wrap="nowrap">
+                      <Anchor component={Link} href={`${basePath}/${p.id}`}>
+                        {p.firstName || p.lastName
+                          ? `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim()
+                          : <Text size="sm" c="dimmed">(no name)</Text>}
+                      </Anchor>
+                      {!!p.disabled && <Badge color="red" variant="light" size="xs">Suspended</Badge>}
+                    </Group>
                   </Table.Td>
                   <Table.Td>{p.email}</Table.Td>
                   <Table.Td>

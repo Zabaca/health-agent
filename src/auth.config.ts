@@ -16,6 +16,7 @@ export const authConfig = {
         token.isPatient = (user as any).isPatient;
         token.mustChangePassword = (user as any).mustChangePassword;
         token.onboarded = (user as any).onboarded;
+        token.disabled = (user as any).disabled;
       }
       if (trigger === 'update' && session?.mustChangePassword !== undefined) {
         token.mustChangePassword = session.mustChangePassword;
@@ -33,6 +34,7 @@ export const authConfig = {
       session.user.isPatient = token.isPatient as boolean;
       session.user.mustChangePassword = token.mustChangePassword as boolean;
       session.user.onboarded = token.onboarded as boolean | undefined;
+      session.user.disabled = token.disabled as boolean;
       return session;
     },
   },

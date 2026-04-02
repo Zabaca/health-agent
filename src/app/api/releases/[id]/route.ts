@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
 import { and, asc, eq } from "drizzle-orm";
@@ -15,10 +15,8 @@ async function getRelease(id: string, userId: string) {
 }
 
 export const GET = contractRoute(contract.releases.getById, async ({ params }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const release = await getRelease(params.id, session.user.id);
   if (!release) {
@@ -29,10 +27,8 @@ export const GET = contractRoute(contract.releases.getById, async ({ params }) =
 });
 
 export const PUT = contractRoute(contract.releases.update, async ({ params, body }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const existing = await getRelease(params.id, session.user.id);
   if (!existing) {
@@ -78,10 +74,8 @@ export const PUT = contractRoute(contract.releases.update, async ({ params, body
 });
 
 export const PATCH = contractRoute(contract.releases.void, async ({ params }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const existing = await getRelease(params.id, session.user.id);
   if (!existing) {

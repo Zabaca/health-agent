@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import {
   patientDesignatedAgents,
@@ -12,8 +12,8 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ patientId: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const { patientId } = await params;
 
