@@ -16,14 +16,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  let assignedPatientId: string;
+  let assignedPatientId: string | null;
 
-  const uploadingForSelf = !patientId || patientId === session.user.id;
-
-  if (uploadingForSelf) {
+  if (session.user.type === 'admin' || session.user.isAgent) {
+    assignedPatientId = patientId ?? null;
+  } else if (!patientId || patientId === session.user.id) {
     assignedPatientId = session.user.id;
-  } else if (session.user.type === 'admin' || session.user.isAgent) {
-    assignedPatientId = patientId;
   } else if (session.user.isPda) {
     // Verify PDA has editor permission for this patient
     const relation = await db.query.patientDesignatedAgents.findFirst({

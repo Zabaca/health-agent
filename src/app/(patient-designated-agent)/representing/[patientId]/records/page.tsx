@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, incomingFiles, releases, users } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { Breadcrumbs, Anchor, Text } from "@mantine/core";
 import Link from "next/link";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
@@ -33,7 +33,7 @@ export default async function RepresentingRecordsPage({
   if (!relation || !relation.healthRecordsPermission) notFound();
 
   const files = await db.query.incomingFiles.findMany({
-    where: eq(incomingFiles.patientId, patientId),
+    where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt)),
     with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
     orderBy: (f, { desc }) => [desc(f.createdAt)],
   });
