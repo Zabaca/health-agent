@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { requireActiveSession } from '@/lib/auth-guards';
 import { db } from '@/lib/db';
 import { incomingFiles, fileUploadLog, patientDesignatedAgents, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -7,8 +7,8 @@ import { nanoid } from 'nanoid';
 import { sendNewRecordUploadEmail, getSiteBaseUrl } from '@/lib/email';
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
 
   const { fileURL, fileType, originalName, patientId, releaseCode } = await req.json();
 

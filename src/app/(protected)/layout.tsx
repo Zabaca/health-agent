@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import AppShell from "@/components/layout/AppShell";
 import { IconFiles, IconUser, IconBuildingHospital, IconPhone, IconFolder, IconUsers, IconArrowsLeftRight } from "@tabler/icons-react";
 
@@ -11,6 +14,11 @@ export default async function ProtectedLayout({
   const session = await auth();
   if (!session) {
     redirect("/login");
+  }
+
+  const user = await db.select({ disabled: users.disabled }).from(users).where(eq(users.id, session.user.id)).get();
+  if (user?.disabled) {
+    redirect("/suspended");
   }
 
   const navItems = [

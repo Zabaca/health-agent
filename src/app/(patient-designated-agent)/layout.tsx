@@ -16,8 +16,10 @@ export default async function PatientDesignatedAgentLayout({
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  // Allow any authenticated user — middleware handles type-based routing
   const userId = session.user.id;
+
+  const userRow = await db.select({ disabled: users.disabled }).from(users).where(eq(users.id, userId)).get();
+  if (userRow?.disabled) redirect("/suspended");
   const isOnboarded = session.user.onboarded;
 
   const currentUser = isOnboarded ? null : await db.query.users.findFirst({

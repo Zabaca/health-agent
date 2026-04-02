@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable, patientAssignments } from "@/lib/db/schema";
 import { and, asc, eq } from "drizzle-orm";
@@ -25,10 +25,8 @@ async function getRelease(releaseId: string, patientId: string) {
 }
 
 export const GET = contractRoute(contract.agent.patientReleases.getById, async ({ params }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
   if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -47,10 +45,8 @@ export const GET = contractRoute(contract.agent.patientReleases.getById, async (
 });
 
 export const PUT = contractRoute(contract.agent.patientReleases.update, async ({ params, body }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
   if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -101,10 +97,8 @@ export const PUT = contractRoute(contract.agent.patientReleases.update, async ({
 });
 
 export const PATCH = contractRoute(contract.agent.patientReleases.void, async ({ params }) => {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { session, error } = await requireActiveSession();
+  if (error) return error;
   if (!session.user.isAgent) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

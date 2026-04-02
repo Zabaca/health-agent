@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireActiveSession } from "@/lib/auth-guards";
 import { uploadToR2 } from "@/lib/r2";
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { error } = await requireActiveSession();
+  if (error) return error;
 
   const contentType = req.headers.get("content-type") ?? "";
 

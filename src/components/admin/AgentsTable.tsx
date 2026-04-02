@@ -16,6 +16,7 @@ interface Agent {
   email: string;
   type: string;
   mustChangePassword: boolean;
+  disabled: boolean;
   createdAt: string;
 }
 
@@ -87,7 +88,9 @@ export default function AgentsTable({ agents }: { agents: Agent[] }) {
                 <Badge variant="light" color={agent.type === "admin" ? "teal" : "violet"} tt="capitalize">{agent.type}</Badge>
               </Table.Td>
               <Table.Td>
-                {agent.mustChangePassword ? (
+                {!!agent.disabled ? (
+                  <Badge color="red" variant="light">Suspended</Badge>
+                ) : agent.mustChangePassword ? (
                   <Badge color="orange" variant="light">Password reset required</Badge>
                 ) : (
                   <Badge color="teal" variant="light">Active</Badge>
