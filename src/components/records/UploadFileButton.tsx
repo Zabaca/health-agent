@@ -118,8 +118,11 @@ export default function UploadFileButton({ patientId, releases }: Props) {
       error: '',
     }));
 
-    const startIndex = fileStates.length;
-    setFileStates(prev => [...prev, ...acceptedStates, ...rejectedStates]);
+    let startIndex = 0;
+    setFileStates(prev => {
+      startIndex = prev.length;
+      return [...prev, ...acceptedStates, ...rejectedStates];
+    });
 
     if (accepted.length === 0) return;
 
@@ -127,7 +130,7 @@ export default function UploadFileButton({ patientId, releases }: Props) {
     const releaseCode = selectedReleaseCode;
     const results = await Promise.all(accepted.map((file, i) => uploadFile(file, startIndex + i, releaseCode)));
     setUploading(false);
-    router.refresh();
+    if (results.some(Boolean)) router.refresh();
 
     const allSucceeded = results.every(Boolean) && rejected.length === 0;
     if (allSucceeded) {
