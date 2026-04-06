@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Button, Modal, Stack, Text, ThemeIcon, Box, Group, Progress, Combobox, useCombobox, InputBase, ScrollArea } from '@mantine/core';
+import { useState, useMemo, useCallback } from 'react';
+import { Button, Modal, Stack, Text, ThemeIcon, Box, Group, Progress, Combobox, useCombobox, InputBase, ScrollArea, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useRouter } from 'next/navigation';
-import { IconUpload, IconX, IconCheck } from '@tabler/icons-react';
+import { IconUpload, IconX, IconCheck, IconFile } from '@tabler/icons-react';
 import { useDropzone } from 'react-dropzone';
 
 const MAX_SIZE = 20 * 1024 * 1024; // 20MB
@@ -20,31 +20,34 @@ interface Props {
   releases?: ReleaseOption[];
 }
 
+interface FileUploadState {
+  file: File;
+  progress: number;
+  success: boolean;
+  error: string;
+}
+
 export default function UploadFileButton({ patientId, releases }: Props) {
   const [opened, { open, close }] = useDisclosure(false);
   const router = useRouter();
+  const [fileStates, setFileStates] = useState<FileUploadState[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
   const [selectedReleaseCode, setSelectedReleaseCode] = useState<string | null>(null);
 
   const handleClose = () => {
     if (uploading) return;
-    setError('');
-    setSuccess(false);
-    setProgress(0);
+    setFileStates([]);
     setSelectedReleaseCode(null);
     setReleaseSearch('');
     close();
   };
 
-  const uploadWithProgress = (url: string, formData: FormData): Promise<{ url: string }> => {
+  const uploadWithProgress = (url: string, formData: FormData, onProgress: (pct: number) => void): Promise<{ url: string }> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
-          setProgress(Math.round((e.loaded / e.total) * 80)); // up to 80% for upload
+          onProgress(Math.round((e.loaded / e.total) * 80));
         }
       });
       xhr.addEventListener('load', () => {
@@ -60,26 +63,23 @@ export default function UploadFileButton({ patientId, releases }: Props) {
     });
   };
 
-  const onDrop = async (accepted: File[], rejected: { file: File; errors: { code: string }[] }[]) => {
-    if (rejected.length > 0) {
-      const err = rejected[0]?.errors[0];
-      setError(err?.code === 'file-too-large' ? 'File exceeds 20MB limit.' : 'Invalid file type.');
-      return;
-    }
-    const file = accepted[0];
-    if (!file) return;
+  const updateFileState = useCallback((index: number, patch: Partial<FileUploadState>) => {
+    setFileStates(prev => prev.map((s, i) => i === index ? { ...s, ...patch } : s));
+  }, []);
 
-    setError('');
-    setSuccess(false);
-    setProgress(0);
-    setUploading(true);
+  const uploadFile = async (file: File, index: number, releaseCode: string | null): Promise<boolean> => {
+    updateFileState(index, { progress: 0, error: '', success: false });
 
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const { url: fileURL } = await uploadWithProgress('/api/upload', formData);
+      const { url: fileURL } = await uploadWithProgress(
+        '/api/upload',
+        formData,
+        (pct) => updateFileState(index, { progress: pct }),
+      );
 
-      setProgress(90);
+      updateFileState(index, { progress: 90 });
 
       const ext = file.name.split('.').pop()?.toLowerCase() ?? 'bin';
       const recordRes = await fetch('/api/records/upload', {
@@ -90,26 +90,57 @@ export default function UploadFileButton({ patientId, releases }: Props) {
           fileType: ext,
           originalName: file.name,
           patientId: patientId ?? undefined,
-          releaseCode: selectedReleaseCode ?? undefined,
+          releaseCode: releaseCode ?? undefined,
         }),
       });
       if (!recordRes.ok) throw new Error('Failed to save record');
 
-      setProgress(100);
-      setSuccess(true);
-      router.refresh();
-      setTimeout(() => handleClose(), 1000);
+      updateFileState(index, { progress: 100, success: true });
+      return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
+      updateFileState(index, { error: err instanceof Error ? err.message : 'Upload failed' });
+      return false;
+    }
+  };
+
+  const onDrop = async (accepted: File[], rejected: { file: File; errors: { code: string }[] }[]) => {
+    const rejectedStates: FileUploadState[] = rejected.map(({ file, errors }) => ({
+      file,
+      progress: 0,
+      success: false,
+      error: errors[0]?.code === 'file-too-large' ? 'Exceeds 20MB limit' : 'Invalid file type',
+    }));
+
+    const acceptedStates: FileUploadState[] = accepted.map(file => ({
+      file,
+      progress: 0,
+      success: false,
+      error: '',
+    }));
+
+    let startIndex = 0;
+    setFileStates(prev => {
+      startIndex = prev.length;
+      return [...prev, ...acceptedStates, ...rejectedStates];
+    });
+
+    if (accepted.length === 0) return;
+
+    setUploading(true);
+    const releaseCode = selectedReleaseCode;
+    const results = await Promise.all(accepted.map((file, i) => uploadFile(file, startIndex + i, releaseCode)));
+    setUploading(false);
+    if (results.some(Boolean)) router.refresh();
+
+    const allSucceeded = results.every(Boolean) && rejected.length === 0;
+    if (allSucceeded) {
+      setTimeout(() => handleClose(), 1200);
     }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (accepted, rejected) => onDrop(accepted, rejected as unknown as { file: File; errors: { code: string }[] }[]),
     accept: { 'image/*': [], 'application/pdf': ['.pdf'], 'image/tiff': ['.tif', '.tiff'], 'application/zip': ['.zip'] },
-    maxFiles: 1,
     maxSize: MAX_SIZE,
     disabled: uploading,
   });
@@ -144,20 +175,23 @@ export default function UploadFileButton({ patientId, releases }: Props) {
     ? `${selectedRelease.releaseCode}${selectedRelease.providerNames.length ? ` — ${selectedRelease.providerNames.join(', ')}` : ''}`
     : '';
 
+  const hasFiles = fileStates.length > 0;
+  const allDone = hasFiles && fileStates.every(s => s.success || s.error);
+
   return (
     <>
       <Button leftSection={<IconUpload size={16} />} onClick={open}>
         Upload Record
       </Button>
 
-      <Modal opened={opened} onClose={handleClose} title="Upload Record" size="lg" centered closeOnClickOutside={!uploading} closeOnEscape={!uploading} withCloseButton={!uploading}>
+      <Modal opened={opened} onClose={handleClose} title="Upload Records" size="lg" centered closeOnClickOutside={!uploading} closeOnEscape={!uploading} withCloseButton={!uploading}>
         <Stack gap="md">
           <Box
             {...getRootProps()}
             style={{
               border: `2px dashed ${isDragActive ? 'var(--mantine-color-blue-5)' : '#ced4da'}`,
               borderRadius: 8,
-              padding: '40px 24px',
+              padding: '32px 24px',
               textAlign: 'center',
               cursor: uploading ? 'not-allowed' : 'pointer',
               background: isDragActive ? 'var(--mantine-color-blue-0)' : 'var(--mantine-color-gray-0)',
@@ -166,20 +200,42 @@ export default function UploadFileButton({ patientId, releases }: Props) {
           >
             <input {...getInputProps()} />
             <Stack gap={8} align="center">
-              <ThemeIcon size="xl" variant="light" color={success ? 'green' : isDragActive ? 'blue' : 'gray'} radius="xl">
-                {success ? <IconCheck size={20} /> : <IconUpload size={20} />}
+              <ThemeIcon size="xl" variant="light" color={allDone && !fileStates.some(s => s.error) ? 'green' : isDragActive ? 'blue' : 'gray'} radius="xl">
+                {allDone && !fileStates.some(s => s.error) ? <IconCheck size={20} /> : <IconUpload size={20} />}
               </ThemeIcon>
               <Text size="sm" c={isDragActive ? 'blue' : 'dimmed'}>
-                {success ? 'Uploaded!' : isDragActive ? 'Drop file here' : 'Click or drag & drop'}
+                {isDragActive ? 'Drop files here' : 'Click or drag & drop — multiple files supported'}
               </Text>
-              <Text size="xs" c="dimmed">Images, PDF, TIFF, ZIP · Max 20MB</Text>
+              <Text size="xs" c="dimmed">Images, PDF, TIFF, ZIP · Max 20MB each</Text>
             </Stack>
           </Box>
 
-          {uploading && (
-            <Stack gap={4}>
-              <Text size="xs" c="dimmed">Uploading… {progress}%</Text>
-              <Progress value={progress} animated size="sm" />
+          {hasFiles && (
+            <Stack gap={6}>
+              {fileStates.map((s, i) => (
+                <Box key={i} style={{ border: '1px solid var(--mantine-color-gray-3)', borderRadius: 6, padding: '8px 12px' }}>
+                  <Group justify="space-between" wrap="nowrap" mb={s.error || (!s.success && s.progress > 0) ? 4 : 0}>
+                    <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
+                      <IconFile size={14} style={{ flexShrink: 0 }} />
+                      <Text size="xs" truncate style={{ maxWidth: 280 }}>{s.file.name}</Text>
+                    </Group>
+                    {s.success && <Badge size="xs" color="green">Done</Badge>}
+                    {s.error && <Badge size="xs" color="red">Failed</Badge>}
+                    {!s.success && !s.error && s.progress > 0 && (
+                      <Text size="xs" c="dimmed">{s.progress}%</Text>
+                    )}
+                  </Group>
+                  {!s.success && !s.error && s.progress > 0 && (
+                    <Progress value={s.progress} animated={s.progress < 100} size="xs" />
+                  )}
+                  {s.error && (
+                    <Group gap={4}>
+                      <IconX size={11} color="red" />
+                      <Text size="xs" c="red">{s.error}</Text>
+                    </Group>
+                  )}
+                </Box>
+              ))}
             </Stack>
           )}
 
@@ -220,13 +276,6 @@ export default function UploadFileButton({ patientId, releases }: Props) {
                 </Combobox.Options>
               </Combobox.Dropdown>
             </Combobox>
-          )}
-
-          {error && (
-            <Group gap={4}>
-              <IconX size={12} color="red" />
-              <Text size="xs" c="red">{error}</Text>
-            </Group>
           )}
         </Stack>
       </Modal>
