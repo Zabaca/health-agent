@@ -41,7 +41,7 @@ export const releases = sqliteTable('Release', {
   mailingAddress: text('mailingAddress').notNull(),
   phoneNumber: text('phoneNumber').notNull(),
   email: text('email').notNull(),
-  ssn: text('ssn').notNull(),
+  ssn: text('ssn'),
 
   // Release Authorization
   releaseAuthAgent: integer('releaseAuthAgent', { mode: 'boolean' }).notNull().default(false),

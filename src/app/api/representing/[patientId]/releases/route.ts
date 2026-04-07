@@ -7,6 +7,7 @@ import { nanoid } from "nanoid";
 import { staffReleaseSchema } from "@/lib/schemas/release";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
 import { sendReleaseSignatureRequiredEmail, getSiteBaseUrl } from "@/lib/email";
+import { encryptPii, extractLast4Ssn } from "@/lib/crypto";
 
 // GET /api/representing/[patientId]/releases — list releases where PDA is authorized agent
 export async function GET(
@@ -104,7 +105,7 @@ export async function POST(
   const data = parsed.data;
   const now = new Date().toISOString();
 
-  const releaseBase = {
+  const releaseBase = encryptPii({
     userId: patientId,
     firstName: data.firstName,
     middleName: data.middleName ?? null,
@@ -113,7 +114,7 @@ export async function POST(
     mailingAddress: data.mailingAddress,
     phoneNumber: data.phoneNumber,
     email: data.email,
-    ssn: data.ssn,
+    ssn: data.ssn ? extractLast4Ssn(data.ssn) : null,
     releaseAuthAgent: true,
     releaseAuthZabaca: false,
     authAgentFirstName: pda.firstName ?? '',
@@ -128,7 +129,7 @@ export async function POST(
     authDate: data.authDate,
     createdAt: now,
     updatedAt: now,
-  };
+  });
 
   const firstId = await db.transaction(async (tx) => {
     const ids: string[] = [];

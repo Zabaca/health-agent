@@ -111,7 +111,7 @@ export default async function DashboardPage() {
         mailingAddress:       dec.mailingAddress,
         phoneNumber:          dec.phoneNumber,
         email:                dec.email,
-        ssn:                  dec.ssn,
+        ssn:                  dec.ssn ?? undefined,
         releaseAuthAgent:     dec.releaseAuthAgent,
         releaseAuthZabaca:    dec.releaseAuthZabaca,
         authAgentFirstName:   dec.authAgentFirstName   ?? undefined,

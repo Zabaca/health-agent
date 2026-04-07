@@ -171,7 +171,7 @@ const releaseBaseObject = z.object({
   mailingAddress: z.string().min(1, "Mailing address is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   email: z.string().email("Please enter a valid email address"),
-  ssn: z.string().min(1, "SSN is required"),
+  ssn: z.string().optional().refine(val => !val || val.replace(/\D/g, '').length >= 4, "Please enter the last 4 digits of your SSN"),
   providers: z.array(providerSchema).min(1, "At least one healthcare provider is required"),
   releaseAuthAgent: z.boolean(),
   releaseAuthZabaca: z.boolean(),

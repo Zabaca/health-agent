@@ -5,7 +5,7 @@ import { releases as releasesTable, providers as providersTable, patientAssignme
 import { and, desc, eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
-import { encryptPii, decryptPii } from "@/lib/crypto";
+import { encryptPii, decryptPii, extractLast4Ssn } from "@/lib/crypto";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
 import { sendReleaseSignatureRequiredEmail, getSiteBaseUrl } from "@/lib/email";
 
@@ -60,7 +60,8 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
 
   try {
     const { providers, ...releaseData } = body;
-    const encryptedReleaseData = encryptPii(releaseData);
+    const normalizedReleaseData = { ...releaseData, ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : null };
+    const encryptedReleaseData = encryptPii(normalizedReleaseData);
 
     const created = await db.transaction(async (tx) => {
       const results = [];

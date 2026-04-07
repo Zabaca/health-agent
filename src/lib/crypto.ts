@@ -67,3 +67,8 @@ export function decryptPii<T extends { ssn?: string | null; dateOfBirth?: string
   if (result.dateOfBirth) result.dateOfBirth = decrypt(result.dateOfBirth);
   return result;
 }
+
+/** Extract the last 4 digits from an SSN string, stripping any formatting. */
+export function extractLast4Ssn(ssn: string): string {
+  return ssn.replace(/\D/g, '').slice(-4);
+}

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   TextInput,
-  PasswordInput,
   Button,
   SimpleGrid,
   Stack,
@@ -144,10 +143,11 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
               />
             )}
           />
-          <PasswordInput
-            label="Social Security Number"
-            placeholder="XXX-XX-XXXX"
-            required
+          <TextInput
+            label="Social Security Number (Last 4 digits)"
+            placeholder="1234"
+            maxLength={4}
+            description="Optional — last 4 digits only. Helps verify your identity."
             error={errors.ssn?.message}
             {...register("ssn")}
           />

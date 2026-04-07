@@ -1,62 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Group, Text, ActionIcon, Tooltip } from "@mantine/core";
-import { IconEye, IconEyeOff } from "@tabler/icons-react";
-
-const PRINT_STYLES = `
-  @media print {
-    .ssn-interactive { display: none !important; }
-    .ssn-print-only  { display: inline !important; }
-  }
-  .ssn-print-only { display: none; }
-`;
-
-function maskSsn(ssn: string): string {
-  const digits = ssn.replace(/\D/g, '');
-  if (digits.length === 9) return `***-**-${digits.slice(5)}`;
-  return `***-**-${ssn.slice(-4)}`;
-}
-
-const AUTO_HIDE_MS = 60_000;
+import { Text } from "@mantine/core";
 
 export default function SsnDisplay({ ssn }: { ssn: string }) {
-  const [visible, setVisible] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (visible) {
-      timerRef.current = setTimeout(() => setVisible(false), AUTO_HIDE_MS);
-    }
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [visible]);
-
+  const last4 = ssn.replace(/\D/g, '').slice(-4).padStart(4, '0');
   return (
-    <>
-      <style>{PRINT_STYLES}</style>
-      {/* Print-only: always shows full SSN */}
-      <span className="ssn-print-only" style={{ fontFamily: 'monospace', fontSize: 14 }}>
-        {ssn}
-      </span>
-      {/* Screen-only: masked with toggle */}
-      <Group gap="xs" align="center" className="ssn-interactive" wrap="nowrap">
-        <Text size="sm" style={{ fontFamily: 'monospace' }}>
-          {visible ? ssn : maskSsn(ssn)}
-        </Text>
-        <Tooltip label={visible ? 'Hide' : 'Show'}>
-          <ActionIcon
-            variant="subtle"
-            size="sm"
-            color="gray"
-            onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? 'Hide SSN' : 'Show SSN'}
-          >
-            {visible ? <IconEyeOff size={14} /> : <IconEye size={14} />}
-          </ActionIcon>
-        </Tooltip>
-      </Group>
-    </>
+    <Text size="sm" style={{ fontFamily: 'monospace' }}>
+      xxx-xx-{last4}
+    </Text>
   );
 }

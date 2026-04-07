@@ -6,7 +6,7 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
-import { decrypt, encryptPii } from "@/lib/crypto";
+import { decrypt, encryptPii, extractLast4Ssn } from "@/lib/crypto";
 import { z } from "zod";
 
 export const GET = contractRoute(contract.profile.get, async () => {
@@ -58,10 +58,11 @@ export const PUT = contractRoute(contract.profile.update, async ({ body }) => {
   const { session, error } = await requireActiveSession();
   if (error) return error;
 
-  const { avatarUrl, ...rest } = body;
+  const { avatarUrl, ssn, ...rest } = body;
+  const normalized = { ...rest, ssn: ssn ? extractLast4Ssn(ssn) : null };
   await db
     .update(users)
-    .set({ ...encryptPii(rest), profileComplete: true, avatarUrl: avatarUrl || null })
+    .set({ ...encryptPii(normalized), profileComplete: true, avatarUrl: avatarUrl || null })
     .where(eq(users.id, session.user.id));
 
   revalidatePath('/dashboard');
