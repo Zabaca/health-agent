@@ -80,9 +80,8 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
       if (!existingUser?.dateOfBirth) patch.dateOfBirth = encrypt(releaseData.dateOfBirth);
       if (!existingUser?.address)     patch.address     = releaseData.mailingAddress;
       if (!existingUser?.phoneNumber) patch.phoneNumber = releaseData.phoneNumber;
-      if (!existingUser?.ssn && releaseData.ssn) {
-        const last4 = extractLast4Ssn(releaseData.ssn);
-        if (last4) patch.ssn = encrypt(last4);
+      if (!existingUser?.ssn && normalizedReleaseData.ssn) {
+        patch.ssn = encrypt(normalizedReleaseData.ssn);
       }
       if (Object.keys(patch).length > 0) {
         await db.update(users).set(patch).where(eq(users.id, userId));
