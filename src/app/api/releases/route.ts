@@ -6,7 +6,7 @@ import { desc, eq } from "drizzle-orm";
 import { type ProviderFormData } from "@/lib/schemas/release";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
-import { encrypt, encryptPii, decryptPii } from "@/lib/crypto";
+import { encrypt, encryptPii, decryptPii, extractLast4Ssn } from "@/lib/crypto";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
 import { sendNewReleaseNotificationEmail } from "@/lib/email";
 
@@ -36,7 +36,11 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
 
   try {
     const { providers, ...releaseData } = body;
-    const encryptedReleaseData = encryptPii(releaseData);
+    const normalizedReleaseData = {
+      ...releaseData,
+      ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : null,
+    };
+    const encryptedReleaseData = encryptPii(normalizedReleaseData);
 
     const created = await db.transaction(async (tx) => {
       const results = [];
@@ -76,7 +80,9 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
       if (!existingUser?.dateOfBirth) patch.dateOfBirth = encrypt(releaseData.dateOfBirth);
       if (!existingUser?.address)     patch.address     = releaseData.mailingAddress;
       if (!existingUser?.phoneNumber) patch.phoneNumber = releaseData.phoneNumber;
-      if (!existingUser?.ssn)         patch.ssn         = encrypt(releaseData.ssn);
+      if (!existingUser?.ssn && normalizedReleaseData.ssn) {
+        patch.ssn = encrypt(normalizedReleaseData.ssn);
+      }
       if (Object.keys(patch).length > 0) {
         await db.update(users).set(patch).where(eq(users.id, userId));
       }

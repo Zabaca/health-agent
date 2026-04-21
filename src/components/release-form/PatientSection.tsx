@@ -1,6 +1,6 @@
 "use client";
 
-import { SimpleGrid, TextInput, PasswordInput, Title, Paper } from "@mantine/core";
+import { SimpleGrid, TextInput, Title, Paper } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useFormContext, Controller } from "react-hook-form";
 import type { ReleaseFormData } from "@/types/release";
@@ -59,10 +59,11 @@ export default function PatientSection() {
             />
           )}
         />
-        <PasswordInput
-          label="Social Security Number"
-          placeholder="XXX-XX-XXXX"
-          required
+        <TextInput
+          label="Social Security Number (Last 4 digits)"
+          placeholder="1234"
+          maxLength={4}
+          description="Optional — last 4 digits only. Helps verify your identity."
           error={errors.ssn?.message}
           {...register("ssn")}
         />
