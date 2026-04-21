@@ -26,13 +26,6 @@ function needsEncryption(value: string | null | undefined): value is string {
   return !!value && !value.startsWith(ENC_PREFIX);
 }
 
-/** Decrypt a value (handles both encrypted and legacy plaintext), then strip to last 4 SSN digits. */
-function normalizeSSN(raw: string): string | null {
-  const plaintext = raw.startsWith(ENC_PREFIX) ? decrypt(raw) : raw;
-  const digits = plaintext.replace(/\D/g, '');
-  if (!digits) return null;
-  return digits.slice(-4);
-}
 
 async function main() {
   if (!process.env.ENCRYPTION_KEY) {
@@ -65,12 +58,10 @@ async function main() {
 
     // Normalize SSN: encrypt if plaintext, truncate to last 4 if full SSN
     if (user.ssn) {
-      const last4 = normalizeSSN(user.ssn);
-      const currentDecrypted = user.ssn.startsWith(ENC_PREFIX) ? decrypt(user.ssn) : user.ssn;
-      const currentDigits = currentDecrypted.replace(/\D/g, '');
-      // Update if plaintext OR if stored digits are more than 4
-      if (needsEncryption(user.ssn) || currentDigits.length > 4) {
-        patch.ssn = last4 ? encrypt(last4) : null;
+      const plaintext = user.ssn.startsWith(ENC_PREFIX) ? decrypt(user.ssn) : user.ssn;
+      const digits = plaintext.replace(/\D/g, '');
+      if (needsEncryption(user.ssn) || digits.length > 4) {
+        patch.ssn = digits.length > 0 ? encrypt(digits.slice(-4)) : null;
       }
     }
 
@@ -101,11 +92,10 @@ async function main() {
 
     // Normalize SSN
     if (release.ssn) {
-      const last4 = normalizeSSN(release.ssn);
-      const currentDecrypted = release.ssn.startsWith(ENC_PREFIX) ? decrypt(release.ssn) : release.ssn;
-      const currentDigits = currentDecrypted.replace(/\D/g, '');
-      if (needsEncryption(release.ssn) || currentDigits.length > 4) {
-        patch.ssn = last4 ? encrypt(last4) : null;
+      const plaintext = release.ssn.startsWith(ENC_PREFIX) ? decrypt(release.ssn) : release.ssn;
+      const digits = plaintext.replace(/\D/g, '');
+      if (needsEncryption(release.ssn) || digits.length > 4) {
+        patch.ssn = digits.length > 0 ? encrypt(digits.slice(-4)) : null;
       }
     }
 
