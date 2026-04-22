@@ -186,6 +186,6 @@ export const profileResponseSchema = z.object({
   dateOfBirth: z.string(),
   address: z.string(),
   phoneNumber: z.string(),
-  ssn: z.string(),
+  ssn: z.string().nullable(),
   avatarUrl: z.string().nullable(),
 });
