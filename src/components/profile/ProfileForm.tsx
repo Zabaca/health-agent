@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   TextInput,
   Button,
@@ -27,7 +26,6 @@ interface ProfileFormProps {
 }
 
 export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw = 700 }: ProfileFormProps) {
-  const router = useRouter();
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);

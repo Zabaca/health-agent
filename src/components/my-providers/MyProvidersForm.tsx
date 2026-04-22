@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Accordion, Alert, Button, Group, Paper, Stack, Text } from "@mantine/core";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -83,7 +82,6 @@ function SortableItem({ id, index, onRemove, readOnly }: SortableItemProps) {
 }
 
 export default function MyProvidersForm({ defaultValues, onComplete, onSave, redirectTo, title = "My Providers", titleOrder = 4, hideTitle, noBorder, maw = 700, readOnly }: Props) {
-  const router = useRouter();
   const methods = useForm<MyProvidersFormData>({
     resolver: zodResolver(schema),
     defaultValues: { providers: defaultValues },
