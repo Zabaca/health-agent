@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, patientAssignments, users } from "@/lib/db/schema";
@@ -123,5 +124,6 @@ export async function POST(req: NextRequest) {
     console.error('[invite] email failed:', err);
   }
 
+  revalidatePath('/dashboard');
   return NextResponse.json({ id }, { status: 201 });
 }

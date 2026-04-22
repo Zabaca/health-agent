@@ -23,9 +23,10 @@ interface Props {
   savedProviders?: UserProviderRow[];
   onComplete?: (releaseId: string) => void;
   onBack?: () => void;
+  redirectTo?: string;
 }
 
-export default function ReleaseForm({ releaseId, defaultValues, recipients, savedProviders, onComplete, onBack }: Props) {
+export default function ReleaseForm({ releaseId, defaultValues, recipients, savedProviders, onComplete, onBack, redirectTo }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -115,8 +116,7 @@ export default function ReleaseForm({ releaseId, defaultValues, recipients, save
       if (onComplete && savedReleaseId) {
         onComplete(savedReleaseId);
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        window.location.href = redirectTo ?? "/releases";
       }
     } catch {
       setServerError("Unexpected error. Please try again.");

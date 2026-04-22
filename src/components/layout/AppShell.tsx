@@ -33,6 +33,7 @@ export default function AppShell({ children, title = "Zabaca", primaryColor = "b
         <MantineAppShell.Header>
           <Group h="100%" px="md" gap="sm">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <img src="/logomark.png" alt="Zabaca" width={32} height={32} style={{ borderRadius: 8 }} />
             <Text fw={700} size="lg" c={primaryColor}>{title}</Text>
           </Group>
         </MantineAppShell.Header>

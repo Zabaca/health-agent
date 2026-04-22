@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { userProviders } from "@/lib/db/schema";
@@ -41,5 +42,6 @@ export const PUT = contractRoute(contract.myProviders.replace, async ({ body }) 
     }
   });
 
+  revalidatePath('/dashboard');
   return NextResponse.json({ success: true });
 });

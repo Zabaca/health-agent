@@ -1,222 +1,77 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { releases as releasesTable, users, patientAssignments, userProviders } from "@/lib/db/schema";
-import { and, desc, eq } from "drizzle-orm";
-import { Button } from "@mantine/core";
-import Link from "next/link";
-import PageHeader from "@/components/shared/PageHeader";
-import ReleaseList from "@/components/dashboard/ReleaseList";
-import type { ReleaseSummary } from "@/types/release";
-import { decrypt, decryptPii } from "@/lib/crypto";
-import OnboardingModal from "@/components/onboarding/OnboardingModal";
-import type { ProfileFormData } from "@/lib/schemas/profile";
-import type { MyProviderFormData, ProviderFormData, ReleaseFormData } from "@/lib/schemas/release";
+import { releases as releasesTable, users, userProviders, patientDesignatedAgents, incomingFiles } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
+import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
+import DashboardSummary from "@/components/dashboard/DashboardSummary";
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: "Dashboard — Medical Record Release" };
 
 export default async function DashboardPage() {
   const session = await auth();
-
   const userId = session?.user?.id;
   if (!userId) return null;
 
-  const [allReleases, user] = await Promise.all([
-    db.query.releases.findMany({
-      where: eq(releasesTable.userId, userId),
-      columns: { id: true, firstName: true, lastName: true, createdAt: true, updatedAt: true, voided: true, authSignatureImage: true, releaseCode: true, releaseAuthAgent: true, authAgentFirstName: true, authAgentLastName: true },
-      with: { providers: { columns: { providerName: true, insurance: true, providerType: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
-      orderBy: [desc(releasesTable.updatedAt)],
-    }),
-    db.query.users.findFirst({ where: eq(users.id, userId) }),
-  ]);
+  const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+  const isPatient = user?.type === 'user' && !session?.user?.isAgent;
 
-  const releases: ReleaseSummary[] = allReleases.map((r) => ({ ...r, providerNames: r.providers.map((p) => p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName) }));
+  let profileComplete = false;
+  let providerCount = 0;
+  let pdaCount = 0;
+  let recordCount = 0;
+  let recentReleases: { id: string; providerNames: string[]; signed: boolean; voided: boolean; createdAt: string }[] = [];
+  let releaseCount = 0;
+  let releaseCreated = false;
 
-  // Onboarding: only for unboarded patients
-  const isUnboardedPatient = user?.type === 'user' && !user.onboarded;
-
-  let assignedAgent: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    email: string;
-    phoneNumber: string | null;
-    address: string | null;
-    avatarUrl: string | null;
-  } | null = null;
-  let initialProviderValues: MyProviderFormData[] = [];
-  let userProviderRows: Awaited<ReturnType<typeof db.query.userProviders.findMany>> = [];
-  let initialReleaseId: string | undefined;
-  let releaseDefaultValues: Partial<ReleaseFormData>;
-
-  if (isUnboardedPatient) {
-    const [assignment, fetchedProviderRows, existingRelease] = await Promise.all([
-      db.query.patientAssignments.findFirst({
-        where: eq(patientAssignments.patientId, userId),
-        with: {
-          assignedTo: {
-            columns: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phoneNumber: true,
-              address: true,
-              avatarUrl: true,
-            },
-          },
-        },
-      }),
-      db.query.userProviders.findMany({
-        where: eq(userProviders.userId, userId),
-        orderBy: (up, { asc }) => [asc(up.order)],
-      }),
-      db.query.releases.findFirst({
-        where: and(eq(releasesTable.userId, userId), eq(releasesTable.voided, false)),
-        with: { providers: { orderBy: (p, { asc }) => [asc(p.order)] } },
+  if (isPatient) {
+    const [providerRows, pdaRows, allReleases, recordRows] = await Promise.all([
+      db.query.userProviders.findMany({ where: eq(userProviders.userId, userId), columns: { id: true } }),
+      db.query.patientDesignatedAgents.findMany({ where: eq(patientDesignatedAgents.patientId, userId), columns: { id: true } }),
+      db.query.releases.findMany({
+        where: eq(releasesTable.userId, userId),
+        columns: { id: true, voided: true, authSignatureImage: true, createdAt: true },
+        with: { providers: { columns: { providerName: true, insurance: true, providerType: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
         orderBy: [desc(releasesTable.updatedAt)],
       }),
+      db.query.incomingFiles.findMany({ where: eq(incomingFiles.patientId, userId), columns: { id: true } }),
     ]);
 
-    assignedAgent = assignment?.assignedTo ?? null;
-    userProviderRows = fetchedProviderRows;
+    profileComplete = user?.profileComplete ?? false;
+    providerCount = providerRows.length;
+    pdaCount = pdaRows.length;
+    recordCount = recordRows.length;
 
-    initialProviderValues = userProviderRows.map((p) => ({
-      providerName: p.providerName,
-      providerType: p.providerType as MyProviderFormData["providerType"],
-      physicianName: p.physicianName ?? undefined,
-      patientId: p.patientId ?? undefined,
-      insurance: p.insurance ?? undefined,
-      patientMemberId: p.patientMemberId ?? undefined,
-      groupId: p.groupId ?? undefined,
-      planName: p.planName ?? undefined,
-      phone: p.phone ?? undefined,
-      fax: p.fax ?? undefined,
-      providerEmail: p.providerEmail ?? undefined,
-      address: p.address ?? undefined,
-      membershipIdFront: p.membershipIdFront ?? undefined,
-      membershipIdBack: p.membershipIdBack ?? undefined,
+    const activeReleases = allReleases.filter((r) => !r.voided);
+    releaseCreated = activeReleases.length > 0;
+    releaseCount = activeReleases.length;
+
+    recentReleases = allReleases.slice(0, 3).map((r) => ({
+      id: r.id,
+      voided: r.voided,
+      signed: !!r.authSignatureImage,
+      createdAt: r.createdAt,
+      providerNames: r.providers.map((p) => p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName),
     }));
-
-    if (existingRelease) {
-      // Pre-populate the release form with all existing data, decrypting PII fields
-      initialReleaseId = existingRelease.id;
-      const dec = decryptPii(existingRelease);
-      releaseDefaultValues = {
-        firstName:            dec.firstName,
-        middleName:           dec.middleName    ?? undefined,
-        lastName:             dec.lastName,
-        dateOfBirth:          dec.dateOfBirth,
-        mailingAddress:       dec.mailingAddress,
-        phoneNumber:          dec.phoneNumber,
-        email:                dec.email,
-        ssn:                  dec.ssn ?? undefined,
-        releaseAuthAgent:     dec.releaseAuthAgent,
-        releaseAuthZabaca:    dec.releaseAuthZabaca,
-        authAgentFirstName:   dec.authAgentFirstName   ?? undefined,
-        authAgentLastName:    dec.authAgentLastName    ?? undefined,
-        authAgentOrganization:dec.authAgentOrganization?? undefined,
-        authAgentAddress:     dec.authAgentAddress     ?? undefined,
-        authAgentPhone:       dec.authAgentPhone       ?? undefined,
-        authAgentEmail:       dec.authAgentEmail       ?? undefined,
-        authExpirationDate:   dec.authExpirationDate   ?? undefined,
-        authExpirationEvent:  dec.authExpirationEvent  ?? undefined,
-        authPrintedName:      dec.authPrintedName,
-        authSignatureImage:   dec.authSignatureImage   ?? undefined,
-        authDate:             dec.authDate,
-        authAgentName:        dec.authAgentName        ?? undefined,
-        providers: existingRelease.providers.map((p) => ({
-          providerName:        p.providerName,
-          providerType:        p.providerType as ProviderFormData["providerType"],
-          physicianName:       p.physicianName       ?? undefined,
-          patientId:           p.patientId           ?? undefined,
-          insurance:           p.insurance           ?? undefined,
-          patientMemberId:     p.patientMemberId     ?? undefined,
-          groupId:             p.groupId             ?? undefined,
-          planName:            p.planName            ?? undefined,
-          phone:               p.phone               ?? undefined,
-          fax:                 p.fax                 ?? undefined,
-          providerEmail:       p.providerEmail       ?? undefined,
-          address:             p.address             ?? undefined,
-          membershipIdFront:   p.membershipIdFront   ?? undefined,
-          membershipIdBack:    p.membershipIdBack    ?? undefined,
-          historyPhysical:     p.historyPhysical,
-          diagnosticResults:   p.diagnosticResults,
-          treatmentProcedure:  p.treatmentProcedure,
-          prescriptionMedication: p.prescriptionMedication,
-          imagingRadiology:    p.imagingRadiology,
-          dischargeSummaries:  p.dischargeSummaries,
-          specificRecords:     p.specificRecords,
-          specificRecordsDesc: p.specificRecordsDesc ?? undefined,
-          benefitsCoverage:    p.benefitsCoverage,
-          claimsPayment:       p.claimsPayment,
-          eligibilityEnrollment: p.eligibilityEnrollment,
-          financialBilling:    p.financialBilling,
-          medicalRecords:      p.medicalRecords,
-          dentalRecords:       p.dentalRecords,
-          otherNonSpecific:    p.otherNonSpecific,
-          otherNonSpecificDesc: p.otherNonSpecificDesc ?? undefined,
-          sensitiveCommDiseases: p.sensitiveCommDiseases,
-          sensitiveReproductiveHealth: p.sensitiveReproductiveHealth,
-          sensitiveHivAids:    p.sensitiveHivAids,
-          sensitiveMentalHealth: p.sensitiveMentalHealth,
-          sensitiveSubstanceUse: p.sensitiveSubstanceUse,
-          sensitivePsychotherapy: p.sensitivePsychotherapy,
-          sensitiveOther:      p.sensitiveOther,
-          sensitiveOtherDesc:  p.sensitiveOtherDesc ?? undefined,
-          dateRangeFrom:       p.dateRangeFrom       ?? undefined,
-          dateRangeTo:         p.dateRangeTo         ?? undefined,
-          allAvailableDates:   p.allAvailableDates,
-          purpose:             p.purpose             ?? undefined,
-          purposeOther:        p.purposeOther        ?? undefined,
-        })),
-      };
-    } else {
-      // Fall back to pre-populating from profile data
-      releaseDefaultValues = {
-        firstName:      user?.firstName   ?? "",
-        middleName:     user?.middleName  ?? undefined,
-        lastName:       user?.lastName    ?? "",
-        dateOfBirth:    user?.dateOfBirth ? decrypt(user.dateOfBirth) : "",
-        mailingAddress: user?.address     ?? "",
-        phoneNumber:    user?.phoneNumber ?? "",
-        email:          session.user.email ?? "",
-        ssn:            user?.ssn         ? decrypt(user.ssn) : "",
-      };
-    }
-  } else {
-    releaseDefaultValues = {};
   }
 
-  const initialProfileValues: ProfileFormData = {
-    firstName:   user?.firstName   ?? "",
-    middleName:  user?.middleName  ?? "",
-    lastName:    user?.lastName    ?? "",
-    dateOfBirth: user?.dateOfBirth ? decrypt(user.dateOfBirth) : "",
-    address:     user?.address     ?? "",
-    phoneNumber: user?.phoneNumber ?? "",
-    ssn:         user?.ssn         ? decrypt(user.ssn) : "",
-    avatarUrl:   user?.avatarUrl   ?? "",
-  };
+  const showChecklist = isPatient && (!profileComplete || providerCount === 0 || pdaCount === 0 || !releaseCreated);
 
-  return (
-    <>
-      {isUnboardedPatient && (
-        <OnboardingModal
-          assignedAgent={assignedAgent}
-          initialProfileValues={initialProfileValues}
-          initialProviderValues={initialProviderValues}
-          initialProviderRows={userProviderRows}
-          releaseDefaultValues={releaseDefaultValues}
-          initialReleaseId={initialReleaseId}
-        />
-      )}
-      <PageHeader
-        title="HIPAA Releases"
-        action={<Button component={Link} href="/releases/new">+ New Release</Button>}
-      />
-      <ReleaseList releases={releases} />
-    </>
+  return showChecklist ? (
+    <OnboardingChecklist
+      profileComplete={profileComplete}
+      providerAdded={providerCount > 0}
+      pdaAdded={pdaCount > 0}
+      releaseCreated={releaseCreated}
+    />
+  ) : (
+    <DashboardSummary
+      firstName={user?.firstName ?? null}
+      releaseCount={releaseCount}
+      providerCount={providerCount}
+      pdaCount={pdaCount}
+      recordCount={recordCount}
+      recentReleases={recentReleases}
+    />
   );
 }

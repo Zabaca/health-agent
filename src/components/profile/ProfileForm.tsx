@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   TextInput,
   Button,
@@ -21,10 +22,12 @@ import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
 interface ProfileFormProps {
   defaultValues: ProfileFormData;
   onComplete?: (data: ProfileFormData) => void;
+  redirectTo?: string;
   maw?: number | string;
 }
 
-export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: ProfileFormProps) {
+export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw = 700 }: ProfileFormProps) {
+  const router = useRouter();
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,6 +60,8 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
         setServerError("Failed to save profile. Please try again.");
       } else if (onComplete) {
         onComplete(data);
+      } else if (redirectTo) {
+        window.location.href = redirectTo;
       } else {
         setSuccess(true);
         reset(data);
@@ -140,6 +145,7 @@ export default function ProfileForm({ defaultValues, onComplete, maw = 700 }: Pr
                       : ""
                   )
                 }
+                styles={{ root: { alignSelf: 'end' } }}
               />
             )}
           />

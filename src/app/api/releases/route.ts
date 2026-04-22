@@ -38,7 +38,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
     const { providers, ...releaseData } = body;
     const normalizedReleaseData = {
       ...releaseData,
-      ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : null,
+      ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : "",
     };
     const encryptedReleaseData = encryptPii(normalizedReleaseData);
 

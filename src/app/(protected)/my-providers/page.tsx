@@ -7,7 +7,8 @@ import type { MyProviderFormData } from "@/lib/schemas/release";
 
 export const metadata = { title: "My Providers — Medical Record Release" };
 
-export default async function MyProvidersPage() {
+export default async function MyProvidersPage({ searchParams }: { searchParams: { redirect?: string } }) {
+  const { redirect } = searchParams;
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return null;
@@ -35,5 +36,5 @@ export default async function MyProvidersPage() {
     membershipIdBack: r.membershipIdBack ?? "",
   }));
 
-  return <MyProvidersForm defaultValues={providers} maw="100%" title="Health Providers" titleOrder={3} noBorder />;
+  return <MyProvidersForm defaultValues={providers} maw="100%" redirectTo={redirect} title="Health Providers" titleOrder={3} noBorder />;
 }
