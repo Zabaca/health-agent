@@ -19382,7 +19382,7 @@
     {
       "type": "frame",
       "id": "c9d4e",
-      "x": 1356,
+      "x": 904,
       "y": 974,
       "name": "01d - Biometric Unlock",
       "width": 402,
@@ -34054,7 +34054,7 @@
     {
       "type": "frame",
       "id": "x4Dlb",
-      "x": 1808,
+      "x": 1356,
       "y": 974,
       "name": "01e - Reset Password",
       "clip": true,
@@ -41746,6 +41746,15 @@
           ]
         }
       ]
+    },
+    {
+      "type": "note",
+      "id": "5zb1w",
+      "x": 1974,
+      "y": 1248,
+      "width": 250,
+      "height": 219,
+      "content": "Null state -\n\nConnect to Apple health."
     }
   ],
   "variables": {
