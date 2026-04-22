@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { patientDesignatedAgents, patientAssignments } from "@/lib/db/schema";
+import { patientDesignatedAgents } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import MyDesignatedAgentsClient from "@/components/designated-agents/MyDesignatedAgentsClient";
 
@@ -15,17 +15,11 @@ export default async function MyDesignatedAgentsPage({ searchParams }: { searchP
 
   const patientId = session.user.id;
 
-  const [pdas, assignment] = await Promise.all([
-    db.query.patientDesignatedAgents.findMany({
-      where: eq(patientDesignatedAgents.patientId, patientId),
-      with: { agentUser: true },
-      orderBy: (t, { desc }) => [desc(t.createdAt)],
-    }),
-    db.query.patientAssignments.findFirst({
-      where: eq(patientAssignments.patientId, patientId),
-      with: { assignedTo: true },
-    }),
-  ]);
+  const pdas = await db.query.patientDesignatedAgents.findMany({
+    where: eq(patientDesignatedAgents.patientId, patientId),
+    with: { agentUser: true },
+    orderBy: (t, { desc }) => [desc(t.createdAt)],
+  });
 
   const designatedAgents = pdas.map(p => ({
     id: p.id,
@@ -48,19 +42,9 @@ export default async function MyDesignatedAgentsPage({ searchParams }: { searchP
       : null,
   }));
 
-  const assignedAgent = assignment
-    ? {
-        id: assignment.assignedTo.id,
-        email: assignment.assignedTo.email,
-        firstName: assignment.assignedTo.firstName,
-        lastName: assignment.assignedTo.lastName,
-      }
-    : null;
-
   return (
     <>
       <MyDesignatedAgentsClient
-        assignedAgent={assignedAgent}
         designatedAgents={designatedAgents}
         redirectTo={redirectTo}
       />

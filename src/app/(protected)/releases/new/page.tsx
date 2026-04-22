@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, patientAssignments, userProviders, patientDesignatedAgents } from "@/lib/db/schema";
+import { users, userProviders, patientDesignatedAgents } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import ReleaseForm from "@/components/release-form/ReleaseForm";
 import { decrypt } from "@/lib/crypto";
@@ -13,9 +13,8 @@ export default async function NewReleasePage({ searchParams }: { searchParams: {
   const session = await auth();
   const userId = session?.user?.id;
 
-  const [user, assignment, providers, pdaRelations] = await Promise.all([
+  const [user, providers, pdaRelations] = await Promise.all([
     userId ? db.query.users.findFirst({ where: eq(users.id, userId) }) : undefined,
-    userId ? db.query.patientAssignments.findFirst({ where: eq(patientAssignments.patientId, userId) }) : undefined,
     userId ? db.query.userProviders.findMany({ where: eq(userProviders.userId, userId) }) : Promise.resolve([]),
     userId ? db.query.patientDesignatedAgents.findMany({
       where: and(
@@ -26,23 +25,7 @@ export default async function NewReleasePage({ searchParams }: { searchParams: {
     }) : Promise.resolve([]),
   ]);
 
-  const assignedAgent = assignment
-    ? await db.query.users.findFirst({ where: eq(users.id, assignment.assignedToId) })
-    : null;
-
   const recipients: RecipientOption[] = [];
-  if (assignedAgent) {
-    recipients.push({
-      id: assignedAgent.id,
-      type: 'agent',
-      label: [assignedAgent.firstName, assignedAgent.lastName].filter(Boolean).join(' ') || assignedAgent.email,
-      firstName: assignedAgent.firstName,
-      lastName: assignedAgent.lastName,
-      email: assignedAgent.email,
-      phoneNumber: assignedAgent.phoneNumber,
-      address: assignedAgent.address,
-    });
-  }
   for (const rel of pdaRelations) {
     if (!rel.agentUser) continue;
     const u = rel.agentUser;
