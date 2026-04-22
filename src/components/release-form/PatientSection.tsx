@@ -47,6 +47,7 @@ export default function PatientSection() {
               required
               maxDate={new Date()}
               popoverProps={{ withinPortal: true, zIndex: 300 }}
+              styles={{ root: { alignSelf: 'end' } }}
               error={errors.dateOfBirth?.message}
               value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
               onChange={(date) =>
