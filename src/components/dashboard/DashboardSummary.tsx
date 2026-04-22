@@ -31,12 +31,12 @@ function StatCard({ icon, count, label, href }: { icon: React.ReactNode; count: 
       href={href}
       style={{ textDecoration: 'none' }}
     >
-      <Group justify="space-between" align="flex-start">
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Stack gap={4}>
           <Text size="2rem" fw={700} lh={1}>{count}</Text>
           <Text size="sm" c="dimmed">{label}</Text>
         </Stack>
-        <ThemeIcon size={40} radius="md" variant="light" color="blue">
+        <ThemeIcon size={40} radius="md" variant="light" color="blue" style={{ flexShrink: 0 }}>
           {icon}
         </ThemeIcon>
       </Group>
