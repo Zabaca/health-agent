@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Text,
   Stack,
@@ -151,7 +150,6 @@ function PermissionsForm({ control }: { control: any }) {
 }
 
 export default function MyDesignatedAgentsClient({ designatedAgents: initial, redirectTo }: Props) {
-  const router = useRouter();
   const [agents, setAgents] = useState(initial);
   const [inviteOpen, { open: openInvite, close: closeInvite }] = useDisclosure();
   const [editTarget, setEditTarget] = useState<DesignatedAgent | null>(null);
