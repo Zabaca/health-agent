@@ -45,7 +45,7 @@ export const releaseWithProvidersSchema = z.object({
   mailingAddress: z.string(),
   phoneNumber: z.string(),
   email: z.string(),
-  ssn: z.string(),
+  ssn: z.string().nullable(),
   releaseAuthAgent: z.boolean(),
   releaseAuthZabaca: z.boolean(),
   authAgentFirstName: z.string().nullable(),
