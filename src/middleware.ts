@@ -11,7 +11,6 @@ export default auth((req) => {
   const isAgent = session?.user?.isAgent;
   const isPda = session?.user?.isPda;
   const isPatient = session?.user?.isPatient;
-  const isOnboarded = session?.user?.onboarded;
   const mustChange = session?.user?.mustChangePassword;
 
   // isPdaOnly: has PDA relationships but is NOT a patient (no patientAssignment row)
@@ -78,12 +77,6 @@ export default auth((req) => {
       }
     } else {
       // Patient (or patient+PDA) — may access patient routes and /representing
-      // Unboarded patients may only access /dashboard or /representing
-      if (!isOnboarded &&
-          !nextUrl.pathname.startsWith('/dashboard') &&
-          !nextUrl.pathname.startsWith('/representing')) {
-        return NextResponse.redirect(new URL('/dashboard', nextUrl));
-      }
     }
   }
 
@@ -91,5 +84,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|_next/static|_next/image|uploads|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|_next/static|_next/image|uploads|.*\\.png|.*\\.ico|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.webp|.*\\.gif|.*\\.woff2?).*)"],
 };

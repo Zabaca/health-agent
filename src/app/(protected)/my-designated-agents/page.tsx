@@ -7,7 +7,8 @@ import MyDesignatedAgentsClient from "@/components/designated-agents/MyDesignate
 
 export const metadata = { title: "My Designated Agents" };
 
-export default async function MyDesignatedAgentsPage() {
+export default async function MyDesignatedAgentsPage({ searchParams }: { searchParams: { redirect?: string } }) {
+  const redirectTo = searchParams.redirect;
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (session.user.type === 'admin' || session.user.isAgent) redirect("/dashboard");
@@ -61,6 +62,7 @@ export default async function MyDesignatedAgentsPage() {
       <MyDesignatedAgentsClient
         assignedAgent={assignedAgent}
         designatedAgents={designatedAgents}
+        redirectTo={redirectTo}
       />
     </>
   );

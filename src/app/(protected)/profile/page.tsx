@@ -7,7 +7,8 @@ import { decrypt } from "@/lib/crypto";
 
 export const metadata = { title: "My Profile — Medical Record Release" };
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: { searchParams: { redirect?: string } }) {
+  const { redirect } = searchParams;
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return null;
@@ -19,6 +20,7 @@ export default async function ProfilePage() {
   return (
     <ProfileForm
       maw="100%"
+      redirectTo={redirect}
       defaultValues={{
         firstName:   user?.firstName   ?? "",
         middleName:  user?.middleName  ?? "",

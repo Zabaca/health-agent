@@ -50,6 +50,7 @@ interface DesignatedAgent {
 interface Props {
   assignedAgent: AssignedAgent | null;
   designatedAgents: DesignatedAgent[];
+  redirectTo?: string;
 }
 
 const permissionsFields = {
@@ -157,7 +158,7 @@ function PermissionsForm({ control }: { control: any }) {
   );
 }
 
-export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgents: initial }: Props) {
+export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgents: initial, redirectTo }: Props) {
   const [agents, setAgents] = useState(initial);
   const [inviteOpen, { open: openInvite, close: closeInvite }] = useDisclosure();
   const [editTarget, setEditTarget] = useState<DesignatedAgent | null>(null);
@@ -204,6 +205,7 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
       await reload();
       closeInvite();
       inviteForm.reset({ healthRecordsPermission: '', manageProvidersPermission: '', releasePermission: '' });
+      if (redirectTo) window.location.href = redirectTo;
     } finally {
       setLoading(false);
     }

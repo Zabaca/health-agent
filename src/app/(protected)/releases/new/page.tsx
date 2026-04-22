@@ -8,7 +8,8 @@ import type { RecipientOption } from "@/components/release-form/AuthorizationSec
 
 export const metadata = { title: "New Release — Medical Record Release" };
 
-export default async function NewReleasePage() {
+export default async function NewReleasePage({ searchParams }: { searchParams: { redirect?: string } }) {
+  const redirectTo = searchParams.redirect;
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -62,6 +63,7 @@ export default async function NewReleasePage() {
     <ReleaseForm
       savedProviders={providers}
       recipients={recipients}
+      redirectTo={redirectTo}
       defaultValues={{
         email:          session?.user?.email ?? "",
         firstName:      user?.firstName      ?? "",

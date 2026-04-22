@@ -39,6 +39,7 @@ interface Props {
   defaultValues: MyProviderFormData[];
   onComplete?: (providers: MyProviderFormData[]) => void;
   onSave?: (providers: MyProviderFormData[]) => Promise<void>;
+  redirectTo?: string;
   title?: string;
   titleOrder?: 1 | 2 | 3 | 4 | 5 | 6;
   hideTitle?: boolean;
@@ -80,7 +81,7 @@ function SortableItem({ id, index, onRemove, readOnly }: SortableItemProps) {
   );
 }
 
-export default function MyProvidersForm({ defaultValues, onComplete, onSave, title = "My Providers", titleOrder = 4, hideTitle, noBorder, maw = 700, readOnly }: Props) {
+export default function MyProvidersForm({ defaultValues, onComplete, onSave, redirectTo, title = "My Providers", titleOrder = 4, hideTitle, noBorder, maw = 700, readOnly }: Props) {
   const methods = useForm<MyProvidersFormData>({
     resolver: zodResolver(schema),
     defaultValues: { providers: defaultValues },
@@ -148,6 +149,8 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, tit
         if (result.status !== 200) throw new Error("Failed to save providers");
         if (onComplete) {
           onComplete(data.providers);
+        } else if (redirectTo) {
+          window.location.href = redirectTo;
         } else {
           setSuccess(true);
           methods.reset(data);
