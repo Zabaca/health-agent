@@ -1,0 +1,4 @@
+[install]
+# Use flat node_modules so Metro (and other tools that don't understand
+# isolated layouts) can resolve transitive deps. Required for apps/mobile.
+linker = "hoisted"

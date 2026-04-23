@@ -1,3 +1,28 @@
+## Repo layout
+
+Bun-workspace monorepo. Do not run commands at the repo root expecting Next.js behavior; root scripts proxy into `apps/web`.
+
+- `apps/web/` — Next.js 14 app (patient portal). All Next.js code lives here: `src/`, `public/`, `drizzle/`, `scripts/`, `.env*`, `next.config.mjs`, `tsconfig.json`, `drizzle.config.ts`.
+- `apps/mobile/` — Expo bare-workflow React Native app. Native `ios/` and `android/` trees are committed. Metro config (`metro.config.js`) watches `packages/types` at the workspace root.
+- `packages/types/` — `@health-agent/types`: shared Zod schemas (consumed by both apps). Source TS is exported directly; no build step. Web picks it up via `transpilePackages`, mobile via Metro's `watchFolders`.
+- `bunfig.toml` — `linker = "hoisted"`. Required for Metro compatibility; also makes transitive deps visible to Next.js. Don't switch to `isolated`.
+- `vercel.json` — deploys `apps/web` only (`cd apps/web && bun run build`).
+
+## Working inside the workspace
+
+- Root `bun dev`, `bun build`, `bun lint`, `bun type-check`, `bun db:migrate`, etc., all proxy into `apps/web`. Prefer these at the repo root.
+- For mobile, `cd apps/mobile` and use `bun ios` / `bun android` / `bun start`. iOS requires `cd ios && pod install` first (CocoaPods 1.15+).
+- When adding a new dependency used by only one app/package, declare it in **that** workspace's `package.json`, not at the root. Root `package.json` has no deps — it's workspace-only.
+- New cross-surface Zod schemas go in `packages/types/src/schemas/` and are imported as `@health-agent/types`. Don't add new schemas to `apps/web/src/lib/schemas/`. (The legacy `release.ts` still lives there pending a migration; `profile.ts` already moved.)
+- Test web after a structural change: `bun run type-check && bun run lint && bun run build` at root.
+- Test mobile Metro resolution: `cd apps/mobile && node -e "require('./metro.config.js')"` (catches workspace-resolver breakage cheaply).
+
+## Secrets & env
+
+- Web env files live in `apps/web/.env` / `.env.local`. Mobile in `apps/mobile/.env`.
+- Never commit real `.env` — only `.env.example`. Signing keys (`*.jks`, `*.p8`, `*.p12`) are gitignored.
+- Vercel env vars apply to `apps/web` only. The "Root Directory" field in the Vercel dashboard **must be empty** — `vercel.json` handles the `cd apps/web`. Setting it to a subpath will compound and break builds.
+
 <!-- VERCEL BEST PRACTICES START -->
 ## Best practices for developing on Vercel
 
