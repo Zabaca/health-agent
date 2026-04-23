@@ -19,7 +19,7 @@ Bun-workspace monorepo. Do not run commands at the repo root expecting Next.js b
 
 ## Secrets & env
 
-- Web env files live in `apps/web/.env` / `.env.local`. Mobile in `apps/mobile/.env`.
+- For local dev, env lives at the **repo root** (`.env` / `.env.example`). direnv (`.envrc`) loads `.env` into the shell; subprocesses like `next dev` and `drizzle-kit` pick it up via `process.env`. Do not add `.env` / `.env.example` inside `apps/*` — keep them at the root only.
 - Never commit real `.env` — only `.env.example`. Signing keys (`*.jks`, `*.p8`, `*.p12`) are gitignored.
 - Vercel env vars apply to `apps/web` only. The "Root Directory" field in the Vercel dashboard **must be empty** — `vercel.json` handles the `cd apps/web`. Setting it to a subpath will compound and break builds.
 
