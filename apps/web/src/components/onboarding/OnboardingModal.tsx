@@ -22,7 +22,7 @@ import MyProvidersForm from "@/components/my-providers/MyProvidersForm";
 import ReleaseForm from "@/components/release-form/ReleaseForm";
 import ScheduleCallForm from "@/components/schedule-call/ScheduleCallForm";
 import { apiClient } from "@/lib/api/client";
-import type { ProfileFormData } from "@/lib/schemas/profile";
+import type { ProfileFormData } from "@health-agent/types";
 import type { MyProviderFormData, ReleaseFormData, ProviderFormData } from "@/lib/schemas/release";
 import type { UserProviderRow } from "@/lib/db/types";
 

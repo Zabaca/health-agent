@@ -4,9 +4,10 @@ Shared Zod schemas and types used across `apps/web` and `apps/mobile`.
 
 ## Current state
 
-This package contains `profile` and `release` schemas copied from `apps/web/src/lib/schemas/*`. The web app has **not** yet been migrated to consume them from here — it still imports the originals. A follow-up ticket will redirect web imports to `@health-agent/types` and delete the duplicates.
+- **Profile schemas** — consumed by both web and mobile from here (single source of truth). The old `apps/web/src/lib/schemas/profile.ts` has been deleted.
+- **Release schemas** — still duplicated at `apps/web/src/lib/schemas/release.ts` for now. Follow-up ticket will migrate those imports (~15 call sites) and delete the web-side copy.
 
-The mobile app (`apps/mobile`) is the first consumer; all new cross-surface schemas should be added here.
+All **new** cross-surface schemas should be added here, never in `apps/web/src/lib/schemas/`.
 
 ## Usage
 

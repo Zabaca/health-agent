@@ -1,6 +1,20 @@
 # Health Agent
 
-A Next.js web app for managing medical record release forms across three roles: **patients**, **agents**, and **admins**. Patients register, complete their profile, schedule calls, and submit record release forms. Agents and admins manage assigned patients, review submissions, and coordinate scheduled calls.
+A Bun-workspace monorepo for the Zabaca HealthAgent product:
+
+- **`apps/web`** — Next.js 14 patient portal for managing medical record release forms across three roles: **patients**, **agents**, and **admins**. Patients register, complete their profile, and submit record release forms. Agents and admins manage assigned patients.
+- **`apps/mobile`** — Expo bare-workflow React Native app (iOS + Android) — scaffolded and ready for HealthKit integration.
+- **`packages/types`** — Shared Zod schemas consumed by both web and mobile.
+
+```
+health-agent/
+├── apps/
+│   ├── web/          ← Next.js
+│   └── mobile/       ← Expo (iOS + Android)
+├── packages/
+│   └── types/        ← shared Zod schemas
+└── package.json      ← Bun workspace root
+```
 
 ## Tech Stack
 
@@ -33,7 +47,7 @@ bun install
 
 ### 2. Configure environment variables
 
-Copy the example below into a `.env` file at the project root:
+Copy the example below into `apps/web/.env` (web-specific). Mobile env vars live in `apps/mobile/.env` — see `apps/mobile/.env.example`.
 
 ```env
 DATABASE_URL="file:./dev.db"
@@ -258,71 +272,77 @@ Store the age private key as a CI secret named `SOPS_AGE_KEY` and SOPS will use 
 
 ## Available Scripts
 
+All root scripts proxy into `apps/web`. Run mobile commands from `apps/mobile`.
+
+### Web (run from repo root)
+
 | Command | Description |
 |---------|-------------|
-| `bun dev` | Start development server at http://localhost:3000 |
-| `bun build` | Run migrations then build for production |
-| `bun start` | Start production server (requires build first) |
-| `bun lint` | Run oxlint on all source files |
-| `bun lint:fix` | Run oxlint with auto-fix |
-| `bun type-check` | Run TypeScript type checking |
-| `bun db:generate` | Generate a new Drizzle migration from schema changes |
-| `bun db:migrate` | Apply pending database migrations |
-| `bun seed:staff` | Seed initial admin and agent accounts |
-| `bun migrate:encrypt-pii` | Encrypt existing plaintext PII in the database |
+| `bun dev` | Start the Next.js dev server at http://localhost:3000 |
+| `bun build` | Production build |
+| `bun start` | Start the production server (after `bun build`) |
+| `bun lint` / `bun lint:fix` | oxlint |
+| `bun type-check` | `tsc --noEmit` |
+| `bun db:generate` | Generate a new Drizzle migration |
+| `bun db:migrate` | Apply pending migrations |
+| `bun seed:staff` | Seed initial admin + agent accounts |
+| `bun migrate:encrypt-pii` | One-time PII encryption migration |
+
+### Mobile (run from `apps/mobile`)
+
+| Command | Description |
+|---------|-------------|
+| `bun ios` | Build + launch in iOS simulator (requires Xcode + `cd ios && pod install`) |
+| `bun android` | Build + launch on Android emulator (requires Android Studio) |
+| `bun start` | Metro bundler only |
+| `bun prebuild:clean` | Regenerate native `ios/` and `android/` folders |
+| `./scripts/build-ios.sh` | Archive + export IPA + upload to TestFlight |
+| `./scripts/build-android.sh` | `./gradlew assembleRelease` → signed APK |
+
+See `apps/mobile/README.md` for mobile-specific setup (CocoaPods, signing, App Store config).
 
 ---
 
 ## Project Structure
 
 ```
-src/
-├── app/
-│   ├── (auth)/
-│   │   ├── login               # Login page
-│   │   └── register            # Register page
-│   ├── (protected)/            # Patient-facing pages
-│   │   ├── dashboard           # Release list + scheduled calls
-│   │   ├── profile             # Patient profile
-│   │   ├── my-providers        # Saved provider list
-│   │   ├── schedule-call       # Book a call
-│   │   ├── scheduled-calls/    # Call detail + reschedule
-│   │   └── releases/           # New release & read-only view
-│   ├── (admin)/admin/          # Admin-only pages
-│   │   ├── dashboard           # All patients
-│   │   ├── patients/[id]       # Patient detail + releases
-│   │   ├── releases/lookup     # Look up any release by code
-│   │   ├── call-schedule/      # Admin call management
-│   │   ├── profile             # Admin profile
-│   │   └── change-password
-│   ├── (agent)/agent/          # Agent-only pages (mirrors admin)
-│   │   └── releases/lookup     # Look up assigned-patient releases by code
-│   └── api/
-│       ├── fax/route.ts        # POST /api/fax — calls Faxage, logs result to ReleaseRequestLog
-│       └── ...                 # ts-rest contract handlers
-├── components/
-│   ├── auth/                   # LoginForm, RegisterForm
-│   ├── dashboard/              # ReleaseList, scheduled call cards
-│   ├── layout/                 # AppShell, Sidebar (role-aware)
-│   ├── release-form/           # Form sections and field components
-│   └── release-view/           # Read-only view, ExportTiffButton, FaxButton, PrintButton
-├── lib/
-│   ├── api/
-│   │   ├── contract.ts         # ts-rest API contract definition
-│   │   ├── contract-handler.ts # Server-side handler factory
-│   │   ├── client.ts           # Type-safe frontend client
-│   │   └── response-schemas.ts # Shared Zod response shapes
-│   ├── crypto.ts               # AES-256-GCM encrypt/decrypt for PII
-│   ├── r2.ts                   # Cloudflare R2 upload/get helpers via S3-compatible API
-│   ├── db/                     # Drizzle client, schema, and inferred DB types
-│   ├── schemas/                # Zod schemas (single source of truth for form types)
-│   └── utils/
-│       └── releaseCode.ts      # Time-based short release code generator
-└── types/                      # Re-export barrel for shared types
-scripts/
-├── seed-admins.ts              # Seeds admin/agent accounts
-└── encrypt-existing-pii.ts     # One-time migration to encrypt plaintext PII
-drizzle/                        # SQL migrations (auto-generated by drizzle-kit)
-dev.db                          # SQLite database file (auto-generated, git-ignored)
-public/                         # Static assets only — uploads are stored in Cloudflare R2
+health-agent/
+├── apps/
+│   ├── web/                        # Next.js 14 app
+│   │   ├── src/app/
+│   │   │   ├── (auth)/             # login, register, forgot/reset password, invites
+│   │   │   ├── (protected)/        # patient: dashboard, profile, providers, records, releases
+│   │   │   ├── (admin)/admin/      # admin-only pages
+│   │   │   ├── (agent)/agent/      # agent-only pages
+│   │   │   ├── (patient-designated-agent)/representing/  # PDA workspace
+│   │   │   └── api/                # route handlers (ts-rest contract + fax/upload)
+│   │   ├── src/components/         # auth, dashboard, release-form/-view, release,
+│   │   │                             my-providers, designated-agents, schedule-call, staff
+│   │   ├── src/lib/
+│   │   │   ├── api/                # ts-rest contract + client + response schemas
+│   │   │   ├── crypto.ts           # AES-256-GCM PII encryption
+│   │   │   ├── db/                 # Drizzle client, schema, inferred types
+│   │   │   ├── r2.ts               # Cloudflare R2 via S3 API
+│   │   │   ├── schemas/release.ts  # Release Zod schemas (profile now in packages/types)
+│   │   │   └── utils/releaseCode.ts
+│   │   ├── drizzle/                # SQL migrations
+│   │   ├── scripts/                # seed + migration scripts
+│   │   ├── public/                 # static assets (uploads go to R2)
+│   │   └── next.config.mjs / tsconfig.json / drizzle.config.ts / .env
+│   └── mobile/                     # Expo bare-workflow app
+│       ├── App.js / index.js
+│       ├── app.json                # bundle ID com.zabaca.healthagent, HealthKit usage strings
+│       ├── metro.config.js         # monorepo resolver (watches packages/types)
+│       ├── ios/                    # native iOS (Xcode project + Podfile + Podfile.lock)
+│       ├── android/                # native Android (Gradle)
+│       ├── scripts/                # build-ios.sh, build-android.sh
+│       ├── eas.json                # EAS Build + Update config
+│       └── README.md               # mobile-specific dev + release docs
+├── packages/
+│   └── types/                      # @health-agent/types — shared Zod schemas (web + mobile)
+├── docs/
+│   └── app-store-checklist.md      # App Store / Play Store setup checklist
+├── bunfig.toml                     # linker = "hoisted" (required for Metro)
+├── vercel.json                     # deploys apps/web
+└── package.json                    # workspace root (bun workspaces)
 ```

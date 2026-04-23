@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Paper, Title, TextInput, Button, Stack, SimpleGrid, Text } from "@mantine/core";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { staffProfileSchema, type StaffProfileFormData } from "@/lib/schemas/profile";
+import { staffProfileSchema, type StaffProfileFormData } from "@health-agent/types";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
 

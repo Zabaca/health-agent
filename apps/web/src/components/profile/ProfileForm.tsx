@@ -12,7 +12,7 @@ import {
 import { DatePickerInput } from "@mantine/dates";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { profileSchema, type ProfileFormData } from "@/lib/schemas/profile";
+import { profileSchema, type ProfileFormData } from "@health-agent/types";
 import { apiClient } from "@/lib/api/client";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import PageHeader from "@/components/shared/PageHeader";

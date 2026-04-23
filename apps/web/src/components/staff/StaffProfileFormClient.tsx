@@ -2,7 +2,7 @@
 
 import { apiClient } from "@/lib/api/client";
 import StaffProfileForm from "./StaffProfileForm";
-import type { StaffProfileFormData } from "@/lib/schemas/profile";
+import type { StaffProfileFormData } from "@health-agent/types";
 
 interface Props {
   defaultValues?: Partial<StaffProfileFormData>;

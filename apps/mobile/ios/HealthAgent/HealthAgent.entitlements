@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-  <dict/>
+  <dict>
+    <!--
+      TODO: When HealthKit integration lands, enable the entitlement:
+
+        <key>com.apple.developer.healthkit</key>
+        <true/>
+
+      Also enable the HealthKit capability on the App ID in App Store
+      Connect, and add any required clinical-record access keys here.
+      Info.plist already carries NSHealthShareUsageDescription +
+      NSHealthUpdateUsageDescription; without this entitlement, HealthKit
+      APIs will return errors at runtime.
+    -->
+  </dict>
 </plist>

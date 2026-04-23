@@ -1,7 +1,7 @@
 import { initContract } from '@ts-rest/core';
 import { z } from 'zod';
 import { releaseSchema, myProviderSchema, staffReleaseSchema } from '@/lib/schemas/release';
-import { profileSchema, staffProfileSchema } from '@/lib/schemas/profile';
+import { profileSchema, staffProfileSchema } from "@health-agent/types";
 import {
   releaseSummarySchema,
   releaseWithProvidersSchema,
