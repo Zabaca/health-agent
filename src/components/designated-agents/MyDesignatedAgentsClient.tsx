@@ -14,7 +14,6 @@ import {
   Autocomplete,
   Radio,
   SimpleGrid,
-  Divider,
   Alert,
   Avatar,
   Tooltip,
@@ -26,13 +25,6 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import PageHeader from "@/components/shared/PageHeader";
-
-interface AssignedAgent {
-  id: string;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-}
 
 interface DesignatedAgent {
   id: string;
@@ -48,7 +40,6 @@ interface DesignatedAgent {
 }
 
 interface Props {
-  assignedAgent: AssignedAgent | null;
   designatedAgents: DesignatedAgent[];
   redirectTo?: string;
 }
@@ -158,7 +149,7 @@ function PermissionsForm({ control }: { control: any }) {
   );
 }
 
-export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgents: initial, redirectTo }: Props) {
+export default function MyDesignatedAgentsClient({ designatedAgents: initial, redirectTo }: Props) {
   const [agents, setAgents] = useState(initial);
   const [inviteOpen, { open: openInvite, close: closeInvite }] = useDisclosure();
   const [editTarget, setEditTarget] = useState<DesignatedAgent | null>(null);
@@ -277,28 +268,6 @@ export default function MyDesignatedAgentsClient({ assignedAgent, designatedAgen
         title="My Designated Agents"
         action={<Button leftSection={<IconPlus size={14} />} onClick={openInvite}>Invite Representative</Button>}
       />
-
-      {/* Assigned Agent (read-only) */}
-      <div>
-        {assignedAgent ? (
-          <Card withBorder padding="md" radius="md">
-            <Group>
-              <IconUser size={20} />
-              <div>
-                <Text fw={500}>
-                  {[assignedAgent.firstName, assignedAgent.lastName].filter(Boolean).join(' ') || assignedAgent.email}
-                </Text>
-                <Text size="sm" c="dimmed">{assignedAgent.email}</Text>
-              </div>
-              <Badge ml="auto" color="blue" variant="light">Assigned by Zabaca</Badge>
-            </Group>
-          </Card>
-        ) : (
-          <Text c="dimmed" size="sm">No agent assigned yet.</Text>
-        )}
-      </div>
-
-      <Divider />
 
       {agents.length === 0 ? (
         <Text c="dimmed" size="sm">No representatives yet. Invite a family member or caregiver.</Text>

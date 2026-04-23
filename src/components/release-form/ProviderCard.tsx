@@ -51,6 +51,7 @@ export default function ProviderCard({ index, isOpen, onRemove, dragHandleProps 
     <Accordion.Item
       value={`provider-${index}`}
       style={{
+        position: "relative",
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
         borderBottom: "none",
@@ -59,7 +60,7 @@ export default function ProviderCard({ index, isOpen, onRemove, dragHandleProps 
       }}
     >
       <Accordion.Control>
-        <Group gap="xs" wrap="nowrap" align="center">
+        <Group gap="xs" wrap="nowrap" align="center" pr={110}>
           <div
             {...(dragHandleProps as React.HTMLAttributes<HTMLDivElement>)}
             style={{ display: "flex", alignItems: "center", color: "var(--mantine-color-gray-5)", touchAction: "none", cursor: "grab" }}
@@ -80,6 +81,21 @@ export default function ProviderCard({ index, isOpen, onRemove, dragHandleProps 
           )}
         </Group>
       </Accordion.Control>
+      <Button
+        variant="light"
+        color="red"
+        size="xs"
+        onClick={onRemove}
+        style={{
+          position: "absolute",
+          top: "50%",
+          right: 48,
+          transform: "translateY(-50%)",
+          zIndex: 2,
+        }}
+      >
+        Remove
+      </Button>
       <Accordion.Panel>
         <Stack gap="md">
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
@@ -221,15 +237,6 @@ export default function ProviderCard({ index, isOpen, onRemove, dragHandleProps 
             />
           )}
 
-          <Button
-            variant="light"
-            color="red"
-            size="sm"
-            onClick={onRemove}
-            mt="sm"
-          >
-            Remove Provider
-          </Button>
         </Stack>
       </Accordion.Panel>
     </Accordion.Item>
