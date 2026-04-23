@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "HealthAgent",
+    "slug": "health-agent",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "platforms": ["ios", "android"],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F5F4F1"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.zabaca.healthagent",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "HealthAgent reads your health data to display vitals, activity, sleep, and lab results on your dashboard.",
+        "NSHealthUpdateUsageDescription": "HealthAgent writes health data to keep your records in sync."
+      }
+    },
+    "android": {
+      "package": "com.zabaca.healthagent",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#3D8A5A"
+      }
+    },
+    "plugins": ["expo-updates"],
+    "updates": {
+      "url": "https://u.expo.dev/FILL_IN_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}
