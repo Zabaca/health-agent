@@ -22,9 +22,11 @@ jobs:
 
       - name: Lint
         run: bun run lint
+        working-directory: apps/web
 
       - name: Build
         run: bun run next build --no-lint
+        working-directory: apps/web
         env:
           DATABASE_URL: file:./ci.db
           AUTH_SECRET: ci-secret-at-least-32-characters-long

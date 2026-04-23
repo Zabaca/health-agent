@@ -38,6 +38,8 @@ prisma/dev.db-journal
 # Uploads
 public/uploads/*
 !public/uploads/.gitkeep
+apps/web/public/uploads/*
+!apps/web/public/uploads/.gitkeep
 
 # Logs
 npm-debug.log*
@@ -65,4 +67,30 @@ next-env.d.ts
 .mcp.json
 
 # Docs
-docs/
+docs/*
+!docs/app-store-checklist.md
+
+# Expo / React Native (apps/mobile)
+apps/mobile/.expo/
+apps/mobile/build/
+apps/mobile/node_modules/
+apps/mobile/ios/build/
+apps/mobile/ios/Pods/
+apps/mobile/ios/DerivedData/
+apps/mobile/ios/*.xcworkspace/xcuserdata/
+apps/mobile/ios/*.xcodeproj/xcuserdata/
+apps/mobile/android/.gradle/
+apps/mobile/android/build/
+apps/mobile/android/app/build/
+apps/mobile/android/.idea/
+apps/mobile/android/local.properties
+
+# Mobile signing / secrets
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+apps/mobile/secrets/
+
+# SOPS decrypted
+.decrypted~*
