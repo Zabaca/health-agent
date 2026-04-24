@@ -70,6 +70,9 @@ next-env.d.ts
 docs/*
 !docs/app-store-checklist.md
 
+# QA test plans (kept local only)
+qa/test plans/
+
 # Expo / React Native (apps/mobile)
 apps/mobile/.expo/
 apps/mobile/build/
