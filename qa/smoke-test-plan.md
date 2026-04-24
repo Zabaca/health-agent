@@ -1,6 +1,6 @@
 # Smoke Test Plan — Web App
 
-Quick health check for the web app. Covers the most critical paths across every role so a tester can confirm a build is fundamentally working in under 5 minutes. **Fax is out of scope** for this smoke test — see `qa/test plans/fax-test-plan.md` for that.
+Quick health check for the web app. Covers the most critical paths across every role so a tester can confirm a build is fundamentally working in under 5 minutes.
 
 Test style: whenever possible, navigate via normal UI (clicking sidebar links, buttons, cards) instead of pasting URLs — this implicitly verifies that links and click-throughs aren't broken.
 
