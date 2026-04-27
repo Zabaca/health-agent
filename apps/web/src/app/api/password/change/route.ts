@@ -23,6 +23,12 @@ export async function PUT(req: NextRequest) {
     columns: { password: true },
   });
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!user.password) {
+    return NextResponse.json(
+      { error: 'This account signs in with a social provider and has no password.' },
+      { status: 400 },
+    );
+  }
 
   const valid = await verifyPassword(currentPassword, user.password);
   if (!valid) {

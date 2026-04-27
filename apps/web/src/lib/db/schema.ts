@@ -4,7 +4,15 @@ import { relations } from 'drizzle-orm';
 export const users = sqliteTable('User', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
-  password: text('password').notNull(),
+  /**
+   * Nullable so OAuth-only users (Apple / Google) don't carry a password row.
+   * Email/password users still set this on register.
+   */
+  password: text('password'),
+  /** Apple `sub` claim — set when the user signs in with Apple. */
+  appleId: text('appleId').unique(),
+  /** Google `sub` claim — set when the user signs in with Google. */
+  googleId: text('googleId').unique(),
   /**
    * All non-admin users are 'user'. Role elevation is handled via relationship tables:
    *   - Zabaca agent privilege → zabacaAgentRoles table

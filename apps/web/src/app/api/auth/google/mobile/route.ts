@@ -1,0 +1,39 @@
+import { NextResponse } from "next/server";
+import { verifyGoogleIdToken, signMobileSessionToken } from "@/lib/oauth-verify";
+import { upsertOAuthUser } from "@/lib/oauth-link";
+import { buildUserSessionPayload } from "@/auth";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+
+export async function POST(req: Request) {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const idToken = (body as { idToken?: unknown })?.idToken;
+  if (typeof idToken !== "string" || !idToken) {
+    return NextResponse.json({ error: "idToken is required" }, { status: 400 });
+  }
+
+  let verified;
+  try {
+    verified = await verifyGoogleIdToken(idToken);
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Invalid Google ID token", detail: (err as Error).message },
+      { status: 401 },
+    );
+  }
+
+  const dbUser = await upsertOAuthUser("google", verified.sub, verified.email);
+  const fresh = await db.query.users.findFirst({ where: eq(users.id, dbUser.id) });
+  if (!fresh) return NextResponse.json({ error: "User not found after upsert" }, { status: 500 });
+
+  const payload = await buildUserSessionPayload(fresh);
+  const sessionToken = await signMobileSessionToken({ sub: payload.id, ...payload });
+
+  return NextResponse.json({ user: payload, sessionToken });
+}

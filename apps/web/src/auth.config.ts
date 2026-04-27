@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import { upsertOAuthUser } from "@/lib/oauth-link";
 
 export const authConfig = {
   session: { strategy: "jwt" },
@@ -7,6 +8,27 @@ export const authConfig = {
   },
   providers: [],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Email/password — handled inside Credentials.authorize, just allow.
+      if (account?.provider === "credentials") return true;
+
+      // OAuth — upsert by Apple/Google sub + email, then mutate user.id so the
+      // JWT carries our DB id (not the provider id).
+      if (account?.provider === "google" || account?.provider === "apple") {
+        const sub = account.providerAccountId;
+        const email = (profile?.email as string | undefined) ?? user.email;
+        if (!sub || !email) return false;
+
+        const dbUser = await upsertOAuthUser(account.provider, sub, email);
+        // Lazy import to avoid circular dep with auth.ts
+        const { buildUserSessionPayload } = await import("./auth");
+        const payload = await buildUserSessionPayload(dbUser);
+        Object.assign(user, payload);
+        return true;
+      }
+
+      return true;
+    },
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;

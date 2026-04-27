@@ -1,14 +1,59 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import Apple from "next-auth/providers/apple";
 import { authConfig } from "./auth.config";
 import { db } from "@/lib/db";
 import { users, zabacaAgentRoles, patientDesignatedAgents, patientAssignments } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth-helpers";
 
+/**
+ * Builds the role flags + session payload that we attach to the JWT.
+ * Used by both the Credentials provider and the signIn callback for OAuth.
+ */
+export async function buildUserSessionPayload(user: typeof users.$inferSelect) {
+  const [agentRole, pdaRelation, patientAssignment] = await Promise.all([
+    db.query.zabacaAgentRoles.findFirst({ where: eq(zabacaAgentRoles.userId, user.id) }),
+    db.query.patientDesignatedAgents.findFirst({
+      where: and(
+        eq(patientDesignatedAgents.agentUserId, user.id),
+        eq(patientDesignatedAgents.status, 'accepted'),
+      ),
+      columns: { id: true },
+    }),
+    db.query.patientAssignments.findFirst({
+      where: eq(patientAssignments.patientId, user.id),
+      columns: { id: true },
+    }),
+  ]);
+
+  return {
+    id: user.id,
+    email: user.email,
+    type: user.type,
+    isAgent: !!agentRole,
+    isPda: !!pdaRelation,
+    isPatient: !!patientAssignment,
+    mustChangePassword: user.mustChangePassword,
+    onboarded: user.onboarded,
+    disabled: user.disabled,
+  };
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    }),
+    Apple({
+      clientId: process.env.AUTH_APPLE_ID,
+      clientSecret: process.env.AUTH_APPLE_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    }),
     Credentials({
       name: "credentials",
       credentials: {
@@ -23,6 +68,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         if (!user) return null;
+        // OAuth-only accounts have no password — block email/password sign-in for them.
+        if (!user.password) return null;
 
         const isValid = await verifyPassword(
           credentials.password as string,
@@ -31,32 +78,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isValid) return null;
 
-        const [agentRole, pdaRelation, patientAssignment] = await Promise.all([
-          db.query.zabacaAgentRoles.findFirst({ where: eq(zabacaAgentRoles.userId, user.id) }),
-          db.query.patientDesignatedAgents.findFirst({
-            where: and(
-              eq(patientDesignatedAgents.agentUserId, user.id),
-              eq(patientDesignatedAgents.status, 'accepted'),
-            ),
-            columns: { id: true },
-          }),
-          db.query.patientAssignments.findFirst({
-            where: eq(patientAssignments.patientId, user.id),
-            columns: { id: true },
-          }),
-        ]);
-
-        return {
-          id: user.id,
-          email: user.email,
-          type: user.type,
-          isAgent: !!agentRole,
-          isPda: !!pdaRelation,
-          isPatient: !!patientAssignment,
-          mustChangePassword: user.mustChangePassword,
-          onboarded: user.onboarded,
-          disabled: user.disabled,
-        };
+        return buildUserSessionPayload(user);
       },
     }),
   ],
