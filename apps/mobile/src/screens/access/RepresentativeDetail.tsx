@@ -9,10 +9,10 @@ import { PermissionPicker } from "@/components/PermissionPicker";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { useTheme } from "@/theme/ThemeProvider";
 import { mockAgents } from "@/mock/agents";
-import type { AccessParamList } from "@/navigation/types";
+import type { ProfileParamList } from "@/navigation/types";
 
-type R = RouteProp<AccessParamList, "RepresentativeDetail">;
-type Nav = NativeStackNavigationProp<AccessParamList>;
+type R = RouteProp<ProfileParamList, "RepresentativeDetail">;
+type Nav = NativeStackNavigationProp<ProfileParamList>;
 
 const cap = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
 

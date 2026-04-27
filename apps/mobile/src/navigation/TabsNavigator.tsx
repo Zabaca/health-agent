@@ -1,10 +1,10 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Home as HomeIcon, FileText, Send, Users, User } from "lucide-react-native";
+import { Home as HomeIcon, FileText, Send, Stethoscope, User } from "lucide-react-native";
 import { useTheme } from "@/theme/ThemeProvider";
 import { HomeStack } from "./HomeStack";
 import { RecordsStack } from "./RecordsStack";
 import { ReleasesStack } from "./ReleasesStack";
-import { AccessStack } from "./AccessStack";
+import { ProvidersStack } from "./ProvidersStack";
 import { ProfileStack } from "./ProfileStack";
 import type { TabsParamList } from "./types";
 
@@ -31,8 +31,8 @@ export function TabsNavigator() {
                 ? FileText
                 : route.name === "ReleasesTab"
                   ? Send
-                  : route.name === "AccessTab"
-                    ? Users
+                  : route.name === "ProvidersTab"
+                    ? Stethoscope
                     : User;
           return <Icon color={color} size={size} />;
         },
@@ -41,8 +41,8 @@ export function TabsNavigator() {
       <Tabs.Screen name="HomeTab" component={HomeStack} options={{ title: "Home" }} />
       <Tabs.Screen name="RecordsTab" component={RecordsStack} options={{ title: "Records" }} />
       <Tabs.Screen name="ReleasesTab" component={ReleasesStack} options={{ title: "Releases" }} />
-      <Tabs.Screen name="AccessTab" component={AccessStack} options={{ title: "Access" }} />
-      <Tabs.Screen name="ProfileTab" component={ProfileStack} options={{ title: "Profile" }} />
+      <Tabs.Screen name="ProvidersTab" component={ProvidersStack} options={{ title: "Providers" }} />
+      <Tabs.Screen name="ProfileTab" component={ProfileStack} options={{ title: "Profile", popToTopOnBlur: true }} />
     </Tabs.Navigator>
   );
 }

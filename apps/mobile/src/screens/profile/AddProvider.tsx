@@ -8,9 +8,9 @@ import { Screen } from "@/components/Screen";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/theme/ThemeProvider";
-import type { ProfileParamList } from "@/navigation/types";
+import type { ProvidersParamList } from "@/navigation/types";
 
-type Nav = NativeStackNavigationProp<ProfileParamList>;
+type Nav = NativeStackNavigationProp<ProvidersParamList>;
 
 export default function AddProvider() {
   const t = useTheme();

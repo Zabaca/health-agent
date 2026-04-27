@@ -9,4 +9,8 @@ export const mockUser = {
   ssnLast4: "4421",
   appleHealthConnected: true,
   faceIdEnabled: true,
+  // Toggle to demo Releases empty states:
+  //   false → "Complete your account first" empty
+  //   true  → either populated list (if releases exist) or "No releases yet" empty
+  setupComplete: false,
 };

@@ -8,10 +8,10 @@ import { Button } from "@/components/Button";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { useTheme } from "@/theme/ThemeProvider";
 import { mockProviders } from "@/mock/providers";
-import type { ProfileParamList } from "@/navigation/types";
+import type { ProvidersParamList } from "@/navigation/types";
 
-type R = RouteProp<ProfileParamList, "ProviderDetail">;
-type Nav = NativeStackNavigationProp<ProfileParamList>;
+type R = RouteProp<ProvidersParamList, "ProviderDetail">;
+type Nav = NativeStackNavigationProp<ProvidersParamList>;
 
 export default function ProviderDetail() {
   const t = useTheme();

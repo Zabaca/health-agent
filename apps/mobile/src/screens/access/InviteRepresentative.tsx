@@ -8,9 +8,9 @@ import { Screen } from "@/components/Screen";
 import { Input } from "@/components/Input";
 import { PermissionPicker } from "@/components/PermissionPicker";
 import { useTheme } from "@/theme/ThemeProvider";
-import type { AccessParamList } from "@/navigation/types";
+import type { ProfileParamList } from "@/navigation/types";
 
-type Nav = NativeStackNavigationProp<AccessParamList>;
+type Nav = NativeStackNavigationProp<ProfileParamList>;
 
 export default function InviteRepresentative() {
   const t = useTheme();

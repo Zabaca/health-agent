@@ -2,14 +2,17 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Plus, Search, Calendar, ChevronRight } from "lucide-react-native";
+import { Plus, Search, Calendar, ChevronRight, ListChecks, ClipboardList, User, Stethoscope } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
+import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/theme/ThemeProvider";
 import { mockReleases, type ReleaseStatus } from "@/mock/releases";
+import { mockUser } from "@/mock/user";
 import type { ReleasesParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ReleasesParamList>;
+type ParentNav = { navigate: (name: string, params?: object) => void } | undefined;
 
 const tabs: { id: ReleaseStatus; label: string }[] = [
   { id: "active", label: "Active" },
@@ -22,33 +25,98 @@ export default function ReleasesList() {
   const nav = useNavigation<Nav>();
   const [tab, setTab] = useState<ReleaseStatus>("active");
 
+  const setupIncomplete = !mockUser.setupComplete;
+  const noReleases = mockReleases.length === 0;
+
+  const goToProfileEdit = () => {
+    const parent = nav.getParent() as ParentNav;
+    parent?.navigate("ProfileTab", { screen: "EditProfile" });
+  };
+  const goToProvidersTab = () => {
+    const parent = nav.getParent() as ParentNav;
+    parent?.navigate("ProvidersTab");
+  };
+
+  const headerRow = (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+      <Text
+        style={[t.type.h1, { flex: 1 }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.6}
+      >
+        My Releases
+      </Text>
+      <Pressable
+        disabled={setupIncomplete}
+        onPress={() => nav.navigate("WizardStep1")}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          backgroundColor: setupIncomplete ? t.colors.textSecondary : t.colors.primary,
+          paddingVertical: 8,
+          paddingHorizontal: 14,
+          borderRadius: t.radius.pill,
+          opacity: setupIncomplete ? 0.7 : 1,
+        }}
+      >
+        <Plus size={16} color="#FFFFFF" />
+        <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>New Release</Text>
+      </Pressable>
+    </View>
+  );
+
+  if (setupIncomplete) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <EmptyState
+          icon={<ListChecks size={32} color="#92400E" />}
+          iconBg="#FEF3C7"
+          title="Complete your account first"
+          subtitle="Finish the mandatory setup before requesting a HIPAA release: complete your profile and add a health provider."
+          actions={[
+            {
+              label: "Complete Profile",
+              icon: <User size={16} color="#FFFFFF" />,
+              onPress: goToProfileEdit,
+            },
+            {
+              label: "Add Health Provider",
+              icon: <Stethoscope size={16} color={t.colors.textPrimary} />,
+              variant: "secondary",
+              onPress: goToProvidersTab,
+            },
+          ]}
+        />
+      </Screen>
+    );
+  }
+
+  if (noReleases) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <EmptyState
+          icon={<ClipboardList size={32} color={t.colors.textSecondary} />}
+          title="No releases yet"
+          subtitle="Create your first HIPAA release to authorize a provider to share your records."
+          actions={[
+            {
+              label: "Create Your First Release",
+              icon: <Plus size={16} color="#FFFFFF" />,
+              onPress: () => nav.navigate("WizardStep1"),
+            },
+          ]}
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen safeTop contentContainerStyle={{ gap: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <Text
-          style={[t.type.h1, { flex: 1 }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.6}
-        >
-          My Releases
-        </Text>
-        <Pressable
-          onPress={() => nav.navigate("WizardStep1")}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            backgroundColor: t.colors.primary,
-            paddingVertical: 8,
-            paddingHorizontal: 14,
-            borderRadius: t.radius.pill,
-          }}
-        >
-          <Plus size={16} color="#FFFFFF" />
-          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>New Release</Text>
-        </Pressable>
-      </View>
+      {headerRow}
 
       <View
         style={{

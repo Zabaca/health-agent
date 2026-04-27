@@ -1,8 +1,9 @@
 import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { ChevronRight, Plus, Eye, Pencil } from "lucide-react-native";
+import { ChevronRight, Plus, Eye, Pencil, ShieldOff, Stethoscope } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
+import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRole } from "@/hooks/useRole";
 import { findPatient } from "@/mock/pda";
@@ -16,21 +17,66 @@ export default function PdaProviders() {
   const nav = useNavigation<Nav>();
   const { representing } = useRole();
   const patient = findPatient(representing);
-  const isEditor = patient.permissions.providers === "editor";
+  const perm = patient.permissions.providers;
+  const isEditor = perm === "editor";
   const firstName = patient.name.split(" ")[0];
+  const items = mockProviders.slice(0, 2);
+  const empty = items.length === 0;
+
+  const headerRow = (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+      <Text style={[t.type.h1, { flex: 1 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+        Providers
+      </Text>
+      {isEditor ? (
+        <Pressable hitSlop={8} onPress={() => nav.navigate("PdaAddProvider")}>
+          <Plus size={24} color={t.colors.primary} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+
+  if (perm === "none") {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <EmptyState
+          icon={<ShieldOff size={32} color={t.colors.textSecondary} />}
+          title="No access to providers"
+          subtitle={`${patient.name} hasn't granted you access to manage their providers. Ask them to update your permissions from their account settings.`}
+        />
+      </Screen>
+    );
+  }
+
+  if (empty) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <EmptyState
+          icon={<Stethoscope size={32} color={t.colors.primary} />}
+          iconBg={t.colors.primaryBg}
+          title="No providers yet"
+          subtitle={`Add ${firstName}'s hospitals, clinics, and insurers to keep their health records connected.`}
+          actions={
+            isEditor
+              ? [
+                  {
+                    label: "Add Provider",
+                    icon: <Plus size={16} color="#FFFFFF" />,
+                    onPress: () => nav.navigate("PdaAddProvider"),
+                  },
+                ]
+              : []
+          }
+        />
+      </Screen>
+    );
+  }
 
   return (
     <Screen safeTop contentContainerStyle={{ gap: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text style={[t.type.h1, { flex: 1 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-          Providers
-        </Text>
-        {isEditor ? (
-          <Pressable hitSlop={8} onPress={() => nav.navigate("PdaAddProvider")}>
-            <Plus size={24} color={t.colors.primary} />
-          </Pressable>
-        ) : null}
-      </View>
+      {headerRow}
 
       <View
         style={{
@@ -50,7 +96,7 @@ export default function PdaProviders() {
         </Text>
       </View>
 
-      {mockProviders.slice(0, 2).map((p) => (
+      {items.map((p) => (
         <Pressable key={p.id} onPress={() => nav.navigate("PdaProviderDetail", { providerId: p.id })}>
           <View
             style={{

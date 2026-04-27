@@ -46,7 +46,13 @@ export default function PdaEditProfile() {
         <Input label="First Name" defaultValue="Sarah" />
         <Input label="Middle Name" placeholder="Optional" />
         <Input label="Last Name" defaultValue="Johnson" />
-        <Input label="Email" defaultValue={mockPda.email} autoCapitalize="none" keyboardType="email-address" />
+        <Input
+          label="Email"
+          defaultValue={mockPda.email}
+          editable={false}
+          helpText="Email cannot be changed"
+          style={{ backgroundColor: t.colors.surfaceSubtle, color: t.colors.textSecondary }}
+        />
         <Input label="Phone Number" defaultValue="(617) 555-0234" keyboardType="phone-pad" />
         <Input label="Date of Birth" defaultValue="May 8, 1982" />
         <Input label="Address" defaultValue="42 Beacon St, Boston, MA 02108" />

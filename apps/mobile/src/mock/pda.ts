@@ -19,6 +19,7 @@ export type RepresentedPatient = {
 };
 
 export const representedPatients: RepresentedPatient[] = [
+  // Mixed permissions — demos providers viewer + editor for records & releases
   {
     id: "marcus",
     initials: "MJ",
@@ -29,6 +30,7 @@ export const representedPatients: RepresentedPatient[] = [
     startedOn: "Jan 2024",
     permissions: { records: "editor", providers: "viewer", releases: "editor" },
   },
+  // Demos releases viewer
   {
     id: "margaret",
     initials: "MC",
@@ -37,8 +39,9 @@ export const representedPatients: RepresentedPatient[] = [
     relationship: "Healthcare Proxy",
     status: "active",
     startedOn: "Aug 2023",
-    permissions: { records: "editor", providers: "editor", releases: "editor" },
+    permissions: { records: "editor", providers: "editor", releases: "viewer" },
   },
+  // Demos all 3 no-access screens — patient hasn't granted any permissions
   {
     id: "james",
     initials: "JT",
@@ -47,7 +50,7 @@ export const representedPatients: RepresentedPatient[] = [
     relationship: "Legal Guardian",
     status: "active",
     startedOn: "Sep 2022",
-    permissions: { records: "editor", providers: "editor", releases: "viewer" },
+    permissions: { records: "none", providers: "none", releases: "none" },
   },
 ];
 

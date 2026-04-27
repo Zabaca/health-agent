@@ -44,27 +44,27 @@ export type ReleasesParamList = {
   ExportPDF: { releaseId: string };
 };
 
-export type AccessParamList = {
-  AccessList: undefined;
-  InviteRepresentative: undefined;
-  RepresentativeDetail: { agentId: string };
+export type ProvidersParamList = {
+  MyProviders: undefined;
+  AddProvider: undefined;
+  ProviderDetail: { providerId: string };
 };
 
 export type ProfileParamList = {
   Profile: undefined;
-  AddProvider: undefined;
   ConnectAppleHealth: undefined;
   AccountSettings: undefined;
   EditProfile: undefined;
-  MyProviders: undefined;
-  ProviderDetail: { providerId: string };
+  DesignatedAgents: undefined;
+  InviteRepresentative: undefined;
+  RepresentativeDetail: { agentId: string };
 };
 
 export type TabsParamList = {
   HomeTab: undefined;
   RecordsTab: undefined;
   ReleasesTab: undefined;
-  AccessTab: undefined;
+  ProvidersTab: undefined;
   ProfileTab: undefined;
 };
 

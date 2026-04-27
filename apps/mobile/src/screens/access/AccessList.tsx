@@ -1,14 +1,14 @@
 import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Plus } from "lucide-react-native";
+import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { useTheme } from "@/theme/ThemeProvider";
 import { mockAgents } from "@/mock/agents";
-import type { AccessParamList } from "@/navigation/types";
+import type { ProfileParamList } from "@/navigation/types";
 
-type Nav = NativeStackNavigationProp<AccessParamList>;
+type Nav = NativeStackNavigationProp<ProfileParamList>;
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const permissionLabel = (key: string, value: string) => `${cap(key)}: ${cap(value)}`;
@@ -18,34 +18,9 @@ export default function AccessList() {
   const nav = useNavigation<Nav>();
 
   return (
-    <Screen safeTop contentContainerStyle={{ gap: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <Text
-          style={[t.type.h1, { flex: 1 }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.6}
-        >
-          My Designated Agents
-        </Text>
-        <Pressable
-          onPress={() => nav.navigate("InviteRepresentative")}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            backgroundColor: t.colors.primary,
-            paddingVertical: 8,
-            paddingHorizontal: 14,
-            borderRadius: t.radius.pill,
-          }}
-        >
-          <Plus size={16} color="#FFFFFF" />
-          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Invite</Text>
-        </Pressable>
-      </View>
-
-      <View style={{ gap: 12 }}>
+    <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
+      <Header title="My Designated Agents" onBack={() => nav.goBack()} />
+      <Screen contentContainerStyle={{ gap: 12 }}>
         {mockAgents.slice(0, 2).map((a) => (
           <Pressable key={a.id} onPress={() => nav.navigate("RepresentativeDetail", { agentId: a.id })}>
             <View
@@ -104,8 +79,8 @@ export default function AccessList() {
             </View>
           </Pressable>
         ))}
-      </View>
-    </Screen>
+      </Screen>
+    </View>
   );
 }
 

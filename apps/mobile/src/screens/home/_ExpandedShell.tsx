@@ -1,8 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bell, X } from "lucide-react-native";
+import { X } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { MetricCard } from "@/components/MetricCard";
 import { useTheme } from "@/theme/ThemeProvider";
@@ -45,112 +44,72 @@ export function ExpandedShell({
 }) {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const insets = useSafeAreaInsets();
   const others = otherMetrics(focus);
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
-      <Pressable onPress={() => nav.navigate("Notifications")}>
-        <View
-          style={{
-            backgroundColor: t.colors.primaryBg,
-            paddingHorizontal: t.spacing.gutter,
-            paddingTop: insets.top + 10,
-            paddingBottom: 10,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.colors.primary }} />
-          <Text style={[t.type.caption, { color: t.colors.primary, fontWeight: "500" }]}>
-            New lab results available — tap to view
-          </Text>
-        </View>
-      </Pressable>
+    <Screen safeTop contentContainerStyle={{ gap: 16 }}>
+      <View>
+        <Text style={t.type.caption}>Good morning</Text>
+        <Text style={t.type.h1}>{mockUser.firstName}</Text>
+      </View>
 
-      <Screen contentContainerStyle={{ gap: 16 }}>
+      <View
+        style={{
+          backgroundColor: t.colors.primaryBg,
+          borderRadius: t.radius.pill,
+          paddingVertical: 8,
+          paddingHorizontal: 14,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.colors.primary }} />
+        <Text style={[t.type.caption, { color: t.colors.primary, fontWeight: "500" }]}>
+          Apple Health connected · Last synced 2 min ago
+        </Text>
+      </View>
+
+      <Text style={[t.type.h3, { marginTop: 4 }]}>Today's Overview</Text>
+
+      <View
+        style={{
+          backgroundColor: t.colors.surface,
+          borderRadius: t.radius.card,
+          borderWidth: 1,
+          borderColor: t.colors.border,
+          padding: 16,
+          gap: 12,
+        }}
+      >
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <View>
-            <Text style={t.type.caption}>Good morning</Text>
-            <Text style={t.type.h1}>{mockUser.firstName}</Text>
-          </View>
-          <Pressable onPress={() => nav.navigate("Notifications")}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: t.colors.surface,
-                borderWidth: 1,
-                borderColor: t.colors.border,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Bell size={20} color={t.colors.textPrimary} />
-            </View>
+          <Text style={[t.type.sectionLabel, { color: t.colors.textSecondary }]}>{labelMap[focus]}</Text>
+          <Pressable onPress={() => nav.goBack()}>
+            <X size={18} color={t.colors.textSecondary} />
           </Pressable>
         </View>
+        {expandedCard}
+      </View>
 
-        <View
-          style={{
-            backgroundColor: t.colors.primaryBg,
-            borderRadius: t.radius.pill,
-            paddingVertical: 8,
-            paddingHorizontal: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.colors.primary }} />
-          <Text style={[t.type.caption, { color: t.colors.primary, fontWeight: "500" }]}>
-            Apple Health connected · Last synced 2 min ago
-          </Text>
-        </View>
-
-        <Text style={[t.type.h3, { marginTop: 4 }]}>Today's Overview</Text>
-
-        <View
-          style={{
-            backgroundColor: t.colors.surface,
-            borderRadius: t.radius.card,
-            borderWidth: 1,
-            borderColor: t.colors.border,
-            padding: 16,
-            gap: 12,
-          }}
-        >
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={[t.type.sectionLabel, { color: t.colors.textSecondary }]}>{labelMap[focus]}</Text>
-            <Pressable onPress={() => nav.goBack()}>
-              <X size={18} color={t.colors.textSecondary} />
-            </Pressable>
-          </View>
-          {expandedCard}
-        </View>
-
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          {others.map((m) => (
-            <MetricCard
-              key={m}
-              compact
-              label={labelMap[m]}
-              value={valueLine[m]}
-              status={statusFor[m].text}
-              statusTone={statusFor[m].tone}
-              onPress={() => {
-                if (m === "heartRate") nav.navigate("CardExpanded", { cardId: "heartRate" });
-                else if (m === "sleep") nav.navigate("SleepExpanded");
-                else if (m === "glucose") nav.navigate("GlucoseExpanded");
-                else nav.navigate("StepsExpanded");
-              }}
-            />
-          ))}
-        </View>
-      </Screen>
-    </View>
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        {others.map((m) => (
+          <MetricCard
+            key={m}
+            compact
+            label={labelMap[m]}
+            value={valueLine[m]}
+            status={statusFor[m].text}
+            statusTone={statusFor[m].tone}
+            onPress={() => {
+              if (m === "heartRate") nav.navigate("CardExpanded", { cardId: "heartRate" });
+              else if (m === "sleep") nav.navigate("SleepExpanded");
+              else if (m === "glucose") nav.navigate("GlucoseExpanded");
+              else nav.navigate("StepsExpanded");
+            }}
+          />
+        ))}
+      </View>
+    </Screen>
   );
 }
 
@@ -182,8 +141,4 @@ export function TabSelector() {
       ))}
     </View>
   );
-}
-
-export function _useDashboardMetrics() {
-  return dashboardMetrics;
 }

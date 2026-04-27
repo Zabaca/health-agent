@@ -1,9 +1,12 @@
 import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Upload, ChevronRight, FlaskConical, Scan, FileText } from "lucide-react-native";
+import { Upload, ChevronRight, FlaskConical, Scan, FileText, FolderHeart, ShieldOff, Eye } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
+import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/theme/ThemeProvider";
+import { useRole } from "@/hooks/useRole";
+import { findPatient } from "@/mock/pda";
 import { mockRecords, type RecordKind } from "@/mock/records";
 import type { PdaRecordsParamList } from "@/navigation/types";
 
@@ -24,19 +27,87 @@ const labelFor: Record<RecordKind, string> = {
 export default function PdaRecords() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
+  const { representing } = useRole();
+  const patient = findPatient(representing);
+  const perm = patient.permissions.records;
+  const firstName = patient.name.split(" ")[0];
+  const items = mockRecords;
+  const empty = items.length === 0;
 
-  return (
-    <Screen safeTop contentContainerStyle={{ gap: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text style={[t.type.h1, { flex: 1 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-          Health Records
-        </Text>
+  const headerRow = (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+      <Text style={[t.type.h1, { flex: 1 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+        Health Records
+      </Text>
+      {perm === "editor" ? (
         <Pressable hitSlop={8}>
           <Upload size={22} color={t.colors.primary} />
         </Pressable>
-      </View>
+      ) : null}
+    </View>
+  );
 
-      {mockRecords.map((r) => (
+  if (perm === "none") {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <EmptyState
+          icon={<ShieldOff size={32} color={t.colors.textSecondary} />}
+          title="No access to records"
+          subtitle={`${patient.name} hasn't granted you access to their health records. Ask them to update your permissions from their account settings.`}
+        />
+      </Screen>
+    );
+  }
+
+  if (empty) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <EmptyState
+          icon={<FolderHeart size={32} color={t.colors.primary} />}
+          iconBg={t.colors.primaryBg}
+          title="No records yet"
+          subtitle={`Upload ${firstName}'s medical records or wait for providers to send them in via HIPAA release.`}
+          actions={
+            perm === "editor"
+              ? [
+                  {
+                    label: "Upload Record",
+                    icon: <Upload size={16} color="#FFFFFF" />,
+                    onPress: () => {},
+                  },
+                ]
+              : []
+          }
+        />
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen safeTop contentContainerStyle={{ gap: 16 }}>
+      {headerRow}
+
+      {perm === "viewer" ? (
+        <View
+          style={{
+            backgroundColor: t.colors.primaryBg,
+            borderRadius: t.radius.card,
+            padding: 14,
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: 8,
+          }}
+        >
+          <Eye size={16} color={t.colors.primary} />
+          <Text style={[t.type.caption, { color: t.colors.primary, flex: 1 }]}>
+            Viewer access — you can view {firstName}'s records but cannot upload or delete.
+          </Text>
+        </View>
+      ) : null}
+
+      {items.map((r) => (
         <Pressable key={r.id} onPress={() => nav.navigate("PdaRecordDetail", { recordId: r.id })}>
           <View
             style={{

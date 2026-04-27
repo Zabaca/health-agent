@@ -6,7 +6,7 @@ import { Screen } from "@/components/Screen";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRole } from "@/hooks/useRole";
 import { mockUser } from "@/mock/user";
-import { mockProviders } from "@/mock/providers";
+import { mockAgents } from "@/mock/agents";
 import type { ProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
@@ -104,7 +104,7 @@ export default function Profile() {
           overflow: "hidden",
         }}
       >
-        <Pressable onPress={() => nav.navigate("MyProviders")}>
+        <Pressable onPress={() => nav.navigate("DesignatedAgents")}>
           <View
             style={{
               paddingHorizontal: 14,
@@ -115,34 +115,31 @@ export default function Profile() {
               alignItems: "center",
             }}
           >
-            <Text style={[t.type.sectionLabel, { textTransform: "uppercase", flex: 1 }]}>MY PROVIDERS</Text>
+            <Text style={[t.type.sectionLabel, { textTransform: "uppercase", flex: 1 }]}>MY DESIGNATED AGENTS</Text>
             <ChevronRight size={16} color={t.colors.textSecondary} />
           </View>
         </Pressable>
-        {mockProviders
-          .filter((p) => p.physician && p.specialty)
-          .slice(0, 2)
-          .map((p, i) => (
-            <Pressable key={p.id} onPress={() => nav.navigate("ProviderDetail", { providerId: p.id })}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingHorizontal: 14,
-                  paddingVertical: 14,
-                  borderTopWidth: i === 0 ? 0 : 1,
-                  borderTopColor: t.colors.divider,
-                  gap: 8,
-                }}
-              >
-                <Text style={[t.type.body, { flex: 1 }]}>
-                  <Text style={{ fontWeight: "600" }}>{p.physician}</Text>
-                  <Text style={{ color: t.colors.textSecondary }}> — {p.specialty}</Text>
-                </Text>
-                <ChevronRight size={16} color={t.colors.textSecondary} />
-              </View>
-            </Pressable>
-          ))}
+        {mockAgents.slice(0, 2).map((a, i) => (
+          <Pressable key={a.id} onPress={() => nav.navigate("RepresentativeDetail", { agentId: a.id })}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 14,
+                paddingVertical: 14,
+                borderTopWidth: i === 0 ? 0 : 1,
+                borderTopColor: t.colors.divider,
+                gap: 8,
+              }}
+            >
+              <Text style={[t.type.body, { flex: 1 }]}>
+                <Text style={{ fontWeight: "600" }}>{a.name}</Text>
+                <Text style={{ color: t.colors.textSecondary }}> — {a.role}</Text>
+              </Text>
+              <ChevronRight size={16} color={t.colors.textSecondary} />
+            </View>
+          </Pressable>
+        ))}
       </View>
 
       <Pressable
