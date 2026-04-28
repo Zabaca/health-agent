@@ -25,10 +25,14 @@ health-agent/
 
 ```bash
 bun install                                    # Install all workspace deps
-cp apps/web/.env.example apps/web/.env         # Copy env template (then fill in AUTH_SECRET, etc.)
+sops --decrypt secrets.yaml | grep -v '^sops:' > .env   # Decrypt repo secrets into .env
 bun db:migrate                                 # Create SQLite DB and run migrations (proxies into apps/web)
 bun dev                                        # Start dev server at http://localhost:3000
 ```
+
+> **First time?** You need an age keypair and your public key added to `.sops.yaml` before you can decrypt.
+> Run `age-keygen -o ~/Library/Application\ Support/sops/age/keys.txt` and share the printed public key with the team.
+> See the **Secrets Management** section in `README.md` for full details.
 
 Or use the Claude Code command: `/dev/start`
 
