@@ -124,6 +124,7 @@ export async function POST(req: NextRequest) {
     console.error('[invite] email failed:', err);
   }
 
+  revalidatePath('/my-designated-agents');
   revalidatePath('/dashboard');
   return NextResponse.json({ id }, { status: 201 });
 }

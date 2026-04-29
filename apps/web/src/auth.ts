@@ -2,11 +2,22 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
+import { headers } from "next/headers";
 import { authConfig } from "./auth.config";
 import { db } from "@/lib/db";
-import { users, zabacaAgentRoles, patientDesignatedAgents, patientAssignments } from "@/lib/db/schema";
+import {
+  users,
+  sessions,
+  zabacaAgentRoles,
+  patientDesignatedAgents,
+  patientAssignments,
+} from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth-helpers";
+import { parseDeviceName } from "@/lib/device-name";
+import { extractRequestGeo } from "@/lib/request-geo";
+
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * Builds the role flags + session payload that we attach to the JWT.
@@ -41,8 +52,83 @@ export async function buildUserSessionPayload(user: typeof users.$inferSelect) {
   };
 }
 
+/**
+ * Upserts a web Session row keyed by the JWT's jti claim. Called from the
+ * session callback (the only callback that sees the encode-time jti — Auth.js
+ * overrides any jti set in the jwt callback via `setJti()` at encode time).
+ *
+ * Runs on every authenticated request; the upsert keeps lastSeenAt fresh and
+ * is a no-op INSERT after the first call.
+ */
+async function recordWebSession(jti: string, userId: string) {
+  const h = await headers();
+  const userAgent = h.get("user-agent") ?? null;
+  const ip =
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? null;
+  const deviceName = parseDeviceName(userAgent);
+  const geo = extractRequestGeo((name) => h.get(name));
+  const now = new Date().toISOString();
+
+  await db
+    .insert(sessions)
+    .values({
+      sessionToken: jti,
+      userId,
+      expires: new Date(Date.now() + SESSION_TTL_MS),
+      platform: "web",
+      deviceName,
+      userAgent,
+      ip,
+      ...geo,
+      lastSeenAt: now,
+    })
+    .onConflictDoUpdate({
+      target: sessions.sessionToken,
+      // Don't refresh geo on every request — pin it to first-seen so
+      // location changes (VPN flips, traveling) show as a separate session
+      // when the user signs in again. The lastSeenAt bump still happens.
+      set: { lastSeenAt: now, userAgent, ip, deviceName },
+    });
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    /**
+     * Wraps the lite session callback (in auth.config.ts) to upsert a Session
+     * row keyed by `persistentJti`. The standard `jti` claim rotates on every
+     * encode (Auth.js calls setJti(randomUUID) each time), so we use our own
+     * stable id minted once in the jwt callback at sign-in.
+     */
+    async session(opts) {
+      const session = await authConfig.callbacks!.session!(opts);
+      const persistentJti = (opts.token as Record<string, unknown> | undefined)?.persistentJti as string | undefined;
+      const userId = session?.user?.id;
+      if (persistentJti && userId) {
+        // Fire-and-forget — failure shouldn't break the request. The next
+        // authenticated request will retry.
+        recordWebSession(persistentJti, userId).catch(() => {});
+      }
+      return session;
+    },
+  },
+  events: {
+    /**
+     * Soft-revoke the session row on sign-out. The JWT cookie is also cleared
+     * by Auth.js; this is for "Active devices" UI bookkeeping + to invalidate
+     * any leaked copy of the cookie.
+     */
+    async signOut(message) {
+      const token = "token" in message ? message.token : null;
+      const persistentJti = (token as Record<string, unknown> | null)?.persistentJti as string | undefined;
+      if (!persistentJti) return;
+      await db
+        .update(sessions)
+        .set({ revokedAt: new Date().toISOString() })
+        .where(eq(sessions.sessionToken, persistentJti));
+    },
+  },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,

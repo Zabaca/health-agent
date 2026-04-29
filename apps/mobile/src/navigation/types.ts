@@ -58,6 +58,7 @@ export type ProfileParamList = {
   DesignatedAgents: undefined;
   InviteRepresentative: undefined;
   RepresentativeDetail: { agentId: string };
+  ActiveDevices: undefined;
 };
 
 export type TabsParamList = {

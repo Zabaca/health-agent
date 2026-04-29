@@ -26,3 +26,12 @@ export const db: DrizzleDB = new Proxy({} as DrizzleDB, {
     return getDbState().db[prop as keyof DrizzleDB];
   },
 });
+
+/**
+ * Returns the underlying drizzle instance (not the Proxy). Use only when a
+ * library does runtime `instanceof` / drizzle `is()` checks that the Proxy
+ * can't satisfy — e.g. @auth/drizzle-adapter.
+ */
+export function getRawDb(): DrizzleDB {
+  return getDbState().db;
+}

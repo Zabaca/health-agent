@@ -5,6 +5,7 @@ import { buildUserSessionPayload } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { parseDeviceFromBody, recordMobileSession } from "@/lib/mobile-session";
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -16,6 +17,14 @@ export async function POST(req: Request) {
   const identityToken = (body as { identityToken?: unknown })?.identityToken;
   if (typeof identityToken !== "string" || !identityToken) {
     return NextResponse.json({ error: "identityToken is required" }, { status: 400 });
+  }
+
+  const device = parseDeviceFromBody(body);
+  if (!device) {
+    return NextResponse.json(
+      { error: "Missing or invalid device info (platform must be 'ios' or 'android')" },
+      { status: 400 },
+    );
   }
 
   let verified;
@@ -33,7 +42,14 @@ export async function POST(req: Request) {
   if (!fresh) return NextResponse.json({ error: "User not found after upsert" }, { status: 500 });
 
   const payload = await buildUserSessionPayload(fresh);
-  const sessionToken = await signMobileSessionToken({ sub: payload.id, ...payload });
+  const jti = crypto.randomUUID();
+  const sessionToken = await signMobileSessionToken({
+    sub: payload.id,
+    jti,
+    ...payload,
+  });
+
+  await recordMobileSession({ jti, userId: payload.id, device, request: req });
 
   return NextResponse.json({ user: payload, sessionToken });
 }

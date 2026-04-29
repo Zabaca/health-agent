@@ -84,5 +84,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|_next/static|_next/image|uploads|.*\\.png|.*\\.ico|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.webp|.*\\.gif|.*\\.woff2?).*)"],
+  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|api/me|_next/static|_next/image|uploads|.*\\.png|.*\\.ico|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.webp|.*\\.gif|.*\\.woff2?).*)"],
 };

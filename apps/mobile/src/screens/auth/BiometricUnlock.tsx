@@ -6,7 +6,6 @@ import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/theme/ThemeProvider";
-import { useAuth } from "@/hooks/useAuth";
 import type { AuthParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<AuthParamList>;
@@ -14,7 +13,6 @@ type Nav = NativeStackNavigationProp<AuthParamList>;
 export default function BiometricUnlock() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { signIn } = useAuth();
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
@@ -29,8 +27,8 @@ export default function BiometricUnlock() {
         </View>
 
         <View style={{ width: "100%", alignItems: "center", gap: 16, marginTop: 16 }}>
-          <Button label="Enable Face ID" onPress={signIn} fullWidth />
-          <Pressable onPress={signIn}>
+          <Button label="Enable Face ID" onPress={() => nav.goBack()} fullWidth />
+          <Pressable onPress={() => nav.goBack()}>
             <Text style={[t.type.caption, { fontWeight: "500" }]}>Skip</Text>
           </Pressable>
         </View>

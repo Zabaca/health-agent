@@ -8,6 +8,7 @@ import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { useTheme } from "@/theme/ThemeProvider";
+import { useAuth } from "@/hooks/useAuth";
 import type { AuthParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<AuthParamList>;
@@ -15,7 +16,23 @@ type Nav = NativeStackNavigationProp<AuthParamList>;
 export default function ForgotPassword() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
+  const { requestPasswordReset } = useAuth();
   const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = async () => {
+    if (submitting) return;
+    setError(null);
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    setSubmitting(true);
+    const result = await requestPasswordReset(email.trim());
+    setSubmitting(false);
+    if (!result.ok) setError(result.error);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
@@ -41,7 +58,15 @@ export default function ForgotPassword() {
         </View>
 
         <Input label="Email address" placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-        <Button label="Send Reset Link" onPress={() => nav.navigate("ResetPassword")} fullWidth />
+        {error ? (
+          <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
+        ) : null}
+        <Button
+          label={submitting ? "Sending…" : "Send Reset Link"}
+          onPress={onSubmit}
+          disabled={submitting}
+          fullWidth
+        />
 
         <View
           style={{

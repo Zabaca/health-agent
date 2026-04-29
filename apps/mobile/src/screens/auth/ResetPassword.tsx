@@ -8,7 +8,6 @@ import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { useTheme } from "@/theme/ThemeProvider";
-import { useAuth } from "@/hooks/useAuth";
 import type { AuthParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<AuthParamList>;
@@ -16,7 +15,6 @@ type Nav = NativeStackNavigationProp<AuthParamList>;
 export default function ResetPassword() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { signIn } = useAuth();
   const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
 
@@ -26,7 +24,7 @@ export default function ResetPassword() {
       <Screen
         bottom={
           <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16 }}>
-            <Button label="Update Password" onPress={signIn} fullWidth />
+            <Button label="Update Password" onPress={() => nav.goBack()} fullWidth />
           </View>
         }
         contentContainerStyle={{ gap: 16 }}

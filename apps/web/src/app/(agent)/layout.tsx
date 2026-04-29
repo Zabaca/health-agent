@@ -1,27 +1,16 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 import AppShell from "@/components/layout/AppShell";
 import { IconUsers, IconUser, IconCalendar, IconSearch } from "@tabler/icons-react";
+import { requirePageSession } from "@/lib/page-auth";
 
 export default async function AgentLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-  if (!session) {
-    redirect("/login");
-  }
+  const session = await requirePageSession();
   if (!session.user.isAgent) {
     redirect("/dashboard");
-  }
-
-  const user = await db.select({ disabled: users.disabled }).from(users).where(eq(users.id, session.user.id)).get();
-  if (user?.disabled) {
-    redirect("/suspended");
   }
 
   const navItems = [

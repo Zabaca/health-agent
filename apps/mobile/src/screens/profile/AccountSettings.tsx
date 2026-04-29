@@ -32,6 +32,9 @@ export default function AccountSettings() {
           <Row label="Email" value={mockUser.email} />
           <Row label="Change Password" chevron />
           <ToggleRow label="Face ID / Touch ID" value={faceId} onChange={setFaceId} />
+          <Pressable onPress={() => nav.navigate("ActiveDevices")}>
+            <Row label="Active Devices" chevron />
+          </Pressable>
         </Group>
 
         <Group>

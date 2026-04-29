@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Accordion, Alert, Button, Group, Paper, Stack, Text } from "@mantine/core";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -92,6 +93,7 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, red
     name: "providers",
   });
 
+  const router = useRouter();
   const [openItems, setOpenItems] = useState<string[]>([]);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -144,6 +146,7 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, red
         await onSave(data.providers);
         setSuccess(true);
         methods.reset(data);
+        router.refresh();
       } else {
         const result = await apiClient.myProviders.replace({ body: { providers: data.providers } });
         if (result.status !== 200) throw new Error("Failed to save providers");
@@ -154,6 +157,9 @@ export default function MyProvidersForm({ defaultValues, onComplete, onSave, red
         } else {
           setSuccess(true);
           methods.reset(data);
+          // Invalidate the client Router Cache so navigating away and back
+          // shows fresh data from the server (which was just revalidated).
+          router.refresh();
         }
       }
     } catch {

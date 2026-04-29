@@ -65,6 +65,7 @@ export const PUT = contractRoute(contract.profile.update, async ({ body }) => {
     .set({ ...encryptPii(normalized), profileComplete: true, avatarUrl: avatarUrl || null })
     .where(eq(users.id, session.user.id));
 
+  revalidatePath('/profile');
   revalidatePath('/dashboard');
 
   return NextResponse.json({ success: true });

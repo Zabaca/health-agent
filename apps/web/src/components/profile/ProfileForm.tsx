@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   TextInput,
   Button,
@@ -17,6 +18,7 @@ import { apiClient } from "@/lib/api/client";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import PageHeader from "@/components/shared/PageHeader";
 import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
+import ActiveDevicesSection from "@/components/shared/ActiveDevicesSection";
 
 interface ProfileFormProps {
   defaultValues: ProfileFormData;
@@ -26,6 +28,7 @@ interface ProfileFormProps {
 }
 
 export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw = 700 }: ProfileFormProps) {
+  const router = useRouter();
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -63,6 +66,9 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
       } else {
         setSuccess(true);
         reset(data);
+        // Invalidate the client Router Cache so navigating away and back
+        // shows fresh data (server cache was just revalidated).
+        router.refresh();
       }
     } catch {
       setServerError("Unexpected error. Please try again.");
@@ -173,6 +179,7 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
       </Stack>
     </form>
     {!onComplete && <ChangePasswordSection />}
+    {!onComplete && <ActiveDevicesSection />}
     </div>
   );
 }

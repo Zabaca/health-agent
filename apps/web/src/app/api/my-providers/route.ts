@@ -42,6 +42,7 @@ export const PUT = contractRoute(contract.myProviders.replace, async ({ body }) 
     }
   });
 
+  revalidatePath('/my-providers');
   revalidatePath('/dashboard');
   return NextResponse.json({ success: true });
 });

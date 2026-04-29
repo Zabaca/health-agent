@@ -16,10 +16,33 @@ type Nav = NativeStackNavigationProp<AuthParamList>;
 export default function CreateAccount() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { signIn } = useAuth();
+  const { register } = useAuth();
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = async () => {
+    if (submitting) return;
+    setError(null);
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (pw.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+    if (pw !== confirm) {
+      setError("Passwords do not match");
+      return;
+    }
+    setSubmitting(true);
+    const result = await register(email.trim(), pw);
+    setSubmitting(false);
+    if (!result.ok) setError(result.error);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
@@ -49,7 +72,16 @@ export default function CreateAccount() {
         <Input label="Password" placeholder="Min 8 characters" secureTextEntry value={pw} onChangeText={setPw} />
         <Input label="Confirm Password" placeholder="Repeat password" secureTextEntry value={confirm} onChangeText={setConfirm} />
 
-        <Button label="Create Account" onPress={signIn} fullWidth />
+        {error ? (
+          <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
+        ) : null}
+
+        <Button
+          label={submitting ? "Creating account…" : "Create Account"}
+          onPress={onSubmit}
+          disabled={submitting}
+          fullWidth
+        />
 
         <View style={{ flexDirection: "row", justifyContent: "center" }}>
           <Pressable onPress={() => nav.goBack()}>
