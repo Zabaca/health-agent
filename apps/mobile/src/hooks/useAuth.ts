@@ -50,8 +50,12 @@ type AuthState = {
 const AuthContext = createContext<AuthState | null>(null);
 
 const BIO_ENABLED_KEY = "bio_enabled";
-/** Auto-lock after this much time in background. */
-const FOREGROUND_LOCK_THRESHOLD_MS = 30_000;
+/**
+ * Auto-lock after this much time in background. Short enough that a real
+ * app-swap re-locks (matches typical banking / health app behavior); long
+ * enough that double-taps and momentary focus losses don't.
+ */
+const FOREGROUND_LOCK_THRESHOLD_MS = 1_000;
 
 function decodeJwtPayload(token: string): SessionUser | null {
   const parts = token.split(".");
