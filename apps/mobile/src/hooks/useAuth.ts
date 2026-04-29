@@ -116,6 +116,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   // - Track only `background` (not `inactive`, which fires for transient
   //   things like pulling down notification center).
   // - On return to active, fire listSessions() to detect server-side revocation.
+  // - Re-check biometric support — the user may have enrolled Face ID / Touch ID
+  //   between launches. Without this, the toggle + setup prompt stay hidden.
   // - If background time exceeded threshold AND biometric enabled, re-lock.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
@@ -127,6 +129,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
       // Server revalidation (fire-and-forget).
       listSessions().catch(() => {});
+
+      // Refresh biometric support status.
+      isBiometricSupported().then(setBioSupported).catch(() => {});
 
       // Auto-lock only if we actually went to background long enough.
       if (
@@ -140,6 +145,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
     });
     return () => sub.remove();
   }, [bioPref]);
+
+  // Re-check biometric support when the user signs in (the setup prompt is
+  // gated on it). Covers the case where the user enrolled Face ID after the
+  // app launched but without ever backgrounding it.
+  const signedIn = user !== null;
+  useEffect(() => {
+    if (!signedIn) return;
+    isBiometricSupported().then(setBioSupported).catch(() => {});
+  }, [signedIn]);
 
   const persistSession = useCallback(async (token: string, nextUser: SessionUser) => {
     await SecureStore.setItemAsync(SESSION_TOKEN_KEY, token);
@@ -218,7 +232,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { ok: true };
   }, []);
 
-  const signedIn = user !== null;
   const bioEnabled = bioPref === true;
   const needsBioSetup = signedIn && bioPref === null && bioSupported;
 
