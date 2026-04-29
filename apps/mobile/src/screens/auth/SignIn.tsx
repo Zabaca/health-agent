@@ -83,9 +83,6 @@ export default function SignIn() {
       <Button label={submitting ? "Signing in…" : "Sign In"} onPress={onSubmit} disabled={submitting} fullWidth />
 
       <View style={{ alignItems: "center", gap: 12, paddingTop: 4 }}>
-        <Pressable onPress={() => nav.navigate("BiometricUnlock")}>
-          <Text style={{ color: t.colors.primary, fontWeight: "600" }}>Use Face ID instead</Text>
-        </Pressable>
         <Pressable onPress={() => nav.navigate("ForgotPassword")}>
           <Text style={t.type.caption}>Forgot password?</Text>
         </Pressable>

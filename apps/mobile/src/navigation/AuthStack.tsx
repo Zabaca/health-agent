@@ -2,7 +2,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import SignIn from "@/screens/auth/SignIn";
 import CreateAccount from "@/screens/auth/CreateAccount";
 import ForgotPassword from "@/screens/auth/ForgotPassword";
-import BiometricUnlock from "@/screens/auth/BiometricUnlock";
 import ResetPassword from "@/screens/auth/ResetPassword";
 import type { AuthParamList } from "./types";
 
@@ -18,7 +17,6 @@ export function AuthStack() {
       <Stack.Screen name="CreateAccount" component={CreateAccount} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="ResetPassword" component={ResetPassword} />
-      <Stack.Screen name="BiometricUnlock" component={BiometricUnlock} />
     </Stack.Navigator>
   );
 }

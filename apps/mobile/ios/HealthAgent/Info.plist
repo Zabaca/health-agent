@@ -44,6 +44,8 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Use Face ID to quickly and securely unlock HealthAgent.</string>
     <key>NSHealthShareUsageDescription</key>
     <string>HealthAgent reads your health data to display vitals, activity, sleep, and lab results on your dashboard.</string>
     <key>NSHealthUpdateUsageDescription</key>

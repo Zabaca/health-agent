@@ -16,13 +16,22 @@ type Nav = NativeStackNavigationProp<ProfileParamList>;
 export default function AccountSettings() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { signOut } = useAuth();
-  const [faceId, setFaceId] = useState(true);
+  const { signOut, bioEnabled, bioSupported, enableBiometric, disableBiometric } = useAuth();
   const [push, setPush] = useState(true);
   const [labAlerts, setLabAlerts] = useState(true);
   const [sigReq, setSigReq] = useState(true);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const onBioToggle = async (next: boolean) => {
+    if (next) {
+      // Enabling requires the user to actually authenticate, so we don't
+      // strand them behind a lock they can't open. Cancel/fail leaves it off.
+      await enableBiometric();
+    } else {
+      await disableBiometric();
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
@@ -31,7 +40,9 @@ export default function AccountSettings() {
         <Group>
           <Row label="Email" value={mockUser.email} />
           <Row label="Change Password" chevron />
-          <ToggleRow label="Face ID / Touch ID" value={faceId} onChange={setFaceId} />
+          {bioSupported ? (
+            <ToggleRow label="Face ID / Touch ID" value={bioEnabled} onChange={onBioToggle} />
+          ) : null}
           <Pressable onPress={() => nav.navigate("ActiveDevices")}>
             <Row label="Active Devices" chevron />
           </Pressable>

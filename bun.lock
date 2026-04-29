@@ -15,6 +15,7 @@
         "@react-navigation/native-stack": "^7.14.12",
         "expo": "~52.0.0",
         "expo-asset": "~11.0.0",
+        "expo-local-authentication": "~15.0.0",
         "expo-secure-store": "~14.0.0",
         "expo-status-bar": "~2.0.0",
         "expo-updates": "~0.26.0",
@@ -1252,6 +1253,8 @@
     "expo-json-utils": ["expo-json-utils@0.14.0", "", {}, "sha512-xjGfK9dL0B1wLnOqNkX0jM9p48Y0I5xEPzHude28LY67UmamUyAACkqhZGaPClyPNfdzczk7Ej6WaRMT3HfXvw=="],
 
     "expo-keep-awake": ["expo-keep-awake@14.0.3", "", { "peerDependencies": { "expo": "*", "react": "*" } }, "sha512-6Jh94G6NvTZfuLnm2vwIpKe3GdOiVBuISl7FI8GqN0/9UOg9E0WXXp5cDcfAG8bn80RfgLJS8P7EPUGTZyOvhg=="],
+
+    "expo-local-authentication": ["expo-local-authentication@15.0.2", "", { "dependencies": { "invariant": "^2.2.4" }, "peerDependencies": { "expo": "*" } }, "sha512-v7TOfovuivGWffA8B0FudEas+njMKTrjhaPpJYLASiTLTP3zUYqtumNgZ9pkaDB6Cagq0+DeNH39AI8tdEBUkQ=="],
 
     "expo-manifests": ["expo-manifests@0.15.8", "", { "dependencies": { "@expo/config": "~10.0.11", "expo-json-utils": "~0.14.0" }, "peerDependencies": { "expo": "*" } }, "sha512-VuIyaMfRfLZeETNsRohqhy1l7iZ7I+HKMPfZXVL2Yn17TT0WkOhZoq1DzYwPbOHPgp1Uk6phNa86EyaHrD2DLw=="],
 

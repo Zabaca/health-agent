@@ -7,7 +7,6 @@ export type AuthParamList = {
   CreateAccount: undefined;
   ForgotPassword: undefined;
   ResetPassword: undefined;
-  BiometricUnlock: undefined;
 };
 
 export type HomeParamList = {
