@@ -1,0 +1,93 @@
+import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
+import { auth } from "@/auth";
+import { db } from "@/lib/db";
+import { sessions, users } from "@/lib/db/schema";
+import { requireMobileSession } from "@/lib/mobile-auth";
+
+export type ResolvedSession = {
+  userId: string;
+  currentJti: string | null;
+  source: "web" | "mobile";
+  type: "admin" | "user";
+  isAgent: boolean;
+  isPda: boolean;
+  isPatient: boolean;
+};
+
+/**
+ * Unified session resolver for endpoints that serve both web (NextAuth cookie)
+ * and mobile (Authorization: Bearer) callers — e.g. /api/me/sessions.
+ *
+ * Mobile takes precedence: if an Authorization header is present, we trust
+ * it exclusively (don't fall back to cookies). Otherwise we use the NextAuth
+ * session cookie.
+ */
+export async function resolveUserSession(req: Request): Promise<
+  { result: ResolvedSession; error: null } | { result: null; error: NextResponse }
+> {
+  const hasBearer = !!req.headers.get("authorization");
+
+  if (hasBearer) {
+    const r = await requireMobileSession(req);
+    if (!r.ok) {
+      return { result: null, error: NextResponse.json({ error: r.error }, { status: r.status }) };
+    }
+    return {
+      result: {
+        userId: r.userId,
+        currentJti: r.jti,
+        source: "mobile",
+        type: r.type,
+        isAgent: r.isAgent,
+        isPda: r.isPda,
+        isPatient: r.isPatient,
+      },
+      error: null,
+    };
+  }
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { result: null, error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  const jti = (session as unknown as Record<string, unknown>).jti as string | undefined;
+
+  // Same enforcement as requireActiveSession: cookies without a jti, or whose
+  // jti has no/revoked/expired Session row, are rejected. Plus the
+  // account-suspension check so a disabled user can't keep using a still-valid
+  // cookie until expiry.
+  if (!jti) {
+    return { result: null, error: NextResponse.json({ error: "Session expired" }, { status: 401 }) };
+  }
+  const row = await db
+    .select({ revokedAt: sessions.revokedAt, expires: sessions.expires })
+    .from(sessions)
+    .where(eq(sessions.sessionToken, jti))
+    .get();
+  if (!row || row.revokedAt || row.expires < new Date()) {
+    return { result: null, error: NextResponse.json({ error: "Session revoked" }, { status: 401 }) };
+  }
+
+  const userRow = await db
+    .select({ disabled: users.disabled })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .get();
+  if (userRow?.disabled) {
+    return { result: null, error: NextResponse.json({ error: "Account suspended" }, { status: 403 }) };
+  }
+
+  return {
+    result: {
+      userId: session.user.id,
+      currentJti: jti,
+      source: "web",
+      type: session.user.type,
+      isAgent: session.user.isAgent,
+      isPda: session.user.isPda,
+      isPatient: session.user.isPatient,
+    },
+    error: null,
+  };
+}

@@ -1,5 +1,3 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -7,19 +5,15 @@ import AppShell from "@/components/layout/AppShell";
 import { IconUser, IconUsers, IconFileText, IconBuildingHospital, IconFolder, IconArrowsLeftRight } from "@tabler/icons-react";
 import PdaOnboardingModal from "@/components/designated-agents/PdaOnboardingModal";
 import RevokedAccessModal from "@/components/designated-agents/RevokedAccessModal";
+import { requirePageSession } from "@/lib/page-auth";
 
 export default async function PatientDesignatedAgentLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-
+  const session = await requirePageSession();
   const userId = session.user.id;
-
-  const userRow = await db.select({ disabled: users.disabled }).from(users).where(eq(users.id, userId)).get();
-  if (userRow?.disabled) redirect("/suspended");
   const isOnboarded = session.user.onboarded;
 
   const currentUser = isOnboarded ? null : await db.query.users.findFirst({

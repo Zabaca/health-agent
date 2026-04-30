@@ -60,6 +60,8 @@ EAS Build is reserved for store releases to preserve the free tier. TestFlight b
 
 See `.env.example`. Mobile-specific — nothing from `apps/web/.env` is needed here.
 
+`EXPO_PUBLIC_API_URL` — base URL of the web API. Defaults to `http://localhost:3000` (works for iOS simulator). Android emulator users should set `EXPO_PUBLIC_API_URL=http://10.0.2.2:3000`. For physical devices, use the Mac's LAN IP.
+
 ## Project structure
 
 - `App.js` · `index.js` — entry points

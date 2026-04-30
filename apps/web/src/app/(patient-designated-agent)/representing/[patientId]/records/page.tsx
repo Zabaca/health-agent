@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, incomingFiles, releases, users } from "@/lib/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, inArray } from "drizzle-orm";
 import { Breadcrumbs, Anchor, Text } from "@mantine/core";
 import Link from "next/link";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
@@ -83,6 +83,44 @@ export default async function RepresentingRecordsPage({
       : null,
   }));
 
+  // Provider chips: derived from any release tagged on the patient's records
+  // (broader than `allReleases` above, which is restricted to auth-agent
+  // releases). Same dedup-then-union semantics as the patient `/my-records`
+  // page so the PDA sees the same filter affordance.
+  const taggedReleaseCodes = Array.from(
+    new Set(files.map(f => f.releaseCode).filter((c): c is string => !!c)),
+  );
+  const taggedReleases = taggedReleaseCodes.length > 0
+    ? await db.query.releases.findMany({
+        where: and(
+          eq(releases.userId, patientId),
+          inArray(releases.releaseCode, taggedReleaseCodes),
+        ),
+        with: {
+          providers: {
+            columns: { providerName: true, insurance: true, providerType: true },
+          },
+        },
+      })
+    : [];
+  const providerMap = new Map<string, Set<string>>();
+  for (const r of taggedReleases) {
+    if (!r.releaseCode) continue;
+    for (const p of r.providers) {
+      const name = p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName;
+      if (!name) continue;
+      let codes = providerMap.get(name);
+      if (!codes) {
+        codes = new Set();
+        providerMap.set(name, codes);
+      }
+      codes.add(r.releaseCode);
+    }
+  }
+  const providerOptions = Array.from(providerMap.entries())
+    .map(([name, codes]) => ({ name, releaseCodes: Array.from(codes).sort() }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <>
       <BreadcrumbHeader
@@ -97,7 +135,12 @@ export default async function RepresentingRecordsPage({
           : undefined}
         mb="lg"
       />
-      <MyRecordsTable rows={rows} releases={releaseOptions} readOnly={relation.healthRecordsPermission !== 'editor'} />
+      <MyRecordsTable
+        rows={rows}
+        releases={releaseOptions}
+        providers={providerOptions}
+        readOnly={relation.healthRecordsPermission !== 'editor'}
+      />
     </>
   );
 }

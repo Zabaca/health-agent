@@ -15,10 +15,25 @@ type Nav = NativeStackNavigationProp<AuthParamList>;
 export default function SignIn() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { signIn } = useAuth();
+  const { signInEmail } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = async () => {
+    if (submitting) return;
+    setError(null);
+    if (!email.trim() || !password) {
+      setError("Email and password are required");
+      return;
+    }
+    setSubmitting(true);
+    const result = await signInEmail(email.trim(), password);
+    setSubmitting(false);
+    if (!result.ok) setError(result.error);
+  };
 
   return (
     <Screen safeTop contentContainerStyle={{ paddingTop: 60, gap: 16, alignItems: "stretch" }}>
@@ -61,12 +76,13 @@ export default function SignIn() {
         </Pressable>
       </View>
 
-      <Button label="Sign In" onPress={signIn} fullWidth />
+      {error ? (
+        <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
+      ) : null}
+
+      <Button label={submitting ? "Signing in…" : "Sign In"} onPress={onSubmit} disabled={submitting} fullWidth />
 
       <View style={{ alignItems: "center", gap: 12, paddingTop: 4 }}>
-        <Pressable onPress={() => nav.navigate("BiometricUnlock")}>
-          <Text style={{ color: t.colors.primary, fontWeight: "600" }}>Use Face ID instead</Text>
-        </Pressable>
         <Pressable onPress={() => nav.navigate("ForgotPassword")}>
           <Text style={t.type.caption}>Forgot password?</Text>
         </Pressable>

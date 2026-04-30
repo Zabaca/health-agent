@@ -27,9 +27,18 @@ interface ReleaseOption {
   providerNames: string[];
 }
 
+export interface ProviderOption {
+  /** Display name (insurance/insurance plan or provider name). */
+  name: string;
+  /** Release codes that include this provider — selecting the option matches
+      records tagged with any of these codes. */
+  releaseCodes: string[];
+}
+
 interface Props {
   rows: MyRecordRow[];
   releases?: ReleaseOption[];
+  providers?: ProviderOption[];
   readOnly?: boolean;
 }
 
@@ -114,12 +123,13 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
   );
 }
 
-export default function MyRecordsTable({ rows, releases = [], readOnly = false }: Props) {
+export default function MyRecordsTable({ rows, releases = [], providers = [], readOnly = false }: Props) {
   const router = useRouter();
 
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [fileTypeFilter, setFileTypeFilter] = useState<string[]>([]);
+  const [providerFilter, setProviderFilter] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
@@ -127,6 +137,21 @@ export default function MyRecordsTable({ rows, releases = [], readOnly = false }
     Array.from(new Set(rows.map(r => r.fileType.toUpperCase()))).sort().map(t => ({ value: t, label: t })),
     [rows],
   );
+
+  // Provider name → set of releaseCodes. A provider may appear across multiple
+  // releases; selecting one option matches files tagged with any of those
+  // codes (mirrors the mobile filter).
+  const providerReleaseCodes = useMemo(() => {
+    if (providerFilter.length === 0) return null;
+    const selected = new Set(providerFilter);
+    const codes = new Set<string>();
+    for (const p of providers) {
+      if (selected.has(p.name)) {
+        for (const c of p.releaseCodes) codes.add(c);
+      }
+    }
+    return codes;
+  }, [providerFilter, providers]);
 
   const filtered = useMemo(() => {
     const [from, to] = dateRange;
@@ -139,9 +164,11 @@ export default function MyRecordsTable({ rows, releases = [], readOnly = false }
 
       if (fileTypeFilter.length > 0 && !fileTypeFilter.includes(r.fileType.toUpperCase())) return false;
 
+      if (providerReleaseCodes && (!r.releaseCode || !providerReleaseCodes.has(r.releaseCode))) return false;
+
       return true;
     });
-  }, [rows, search, dateRange, fileTypeFilter]);
+  }, [rows, search, dateRange, fileTypeFilter, providerReleaseCodes]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -212,6 +239,16 @@ export default function MyRecordsTable({ rows, releases = [], readOnly = false }
           value={search}
           onChange={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
         />
+        {providers.length > 0 ? (
+          <MultiSelect
+            placeholder="Filter by provider"
+            data={providers.map(p => ({ value: p.name, label: p.name }))}
+            value={providerFilter}
+            onChange={(val) => { setProviderFilter(val); setPage(1); }}
+            clearable
+            searchable
+          />
+        ) : null}
         <Group gap="sm" grow>
           <DatePickerInput
             type="range"

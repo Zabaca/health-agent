@@ -19,6 +19,7 @@ import { z } from "zod";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api/client";
+import OAuthButtons from "./OAuthButtons";
 
 const schema = z
   .object({
@@ -87,6 +88,10 @@ export default function RegisterForm() {
             {serverError}
           </Alert>
         )}
+
+        <Stack mb="md">
+          <OAuthButtons />
+        </Stack>
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack>

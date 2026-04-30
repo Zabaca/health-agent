@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { uploadToR2 } from "@/lib/r2";
 
 const ALLOWED_MIME_TYPES = [
@@ -10,7 +10,7 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireActiveSession();
+  const { error } = await resolveUserSession(req);
   if (error) return error;
 
   const contentType = req.headers.get("content-type") ?? "";

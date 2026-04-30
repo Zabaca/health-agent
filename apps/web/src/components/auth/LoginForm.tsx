@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import OAuthButtons from "./OAuthButtons";
 
 const schema = z.object({
   email: z.string().email("Invalid email address"),
@@ -77,6 +78,10 @@ export default function LoginForm() {
             {serverError}
           </Alert>
         )}
+
+        <Stack mb="md">
+          <OAuthButtons />
+        </Stack>
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stack>

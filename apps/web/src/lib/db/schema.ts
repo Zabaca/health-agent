@@ -4,7 +4,15 @@ import { relations } from 'drizzle-orm';
 export const users = sqliteTable('User', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
-  password: text('password').notNull(),
+  /**
+   * Nullable so OAuth-only users (Apple / Google) don't carry a password row.
+   * Email/password users still set this on register.
+   */
+  password: text('password'),
+  /** Apple `sub` claim — set when the user signs in with Apple. */
+  appleId: text('appleId').unique(),
+  /** Google `sub` claim — set when the user signs in with Google. */
+  googleId: text('googleId').unique(),
   /**
    * All non-admin users are 'user'. Role elevation is handled via relationship tables:
    *   - Zabaca agent privilege → zabacaAgentRoles table
@@ -25,6 +33,30 @@ export const users = sqliteTable('User', {
   onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
   avatarUrl: text('avatarUrl'),
   disabled: integer('disabled', { mode: 'boolean' }).notNull().default(false),
+});
+
+/**
+ * Sessions — one row per signed-in browser/device. Drives revocation + the
+ * "Active devices" UI. Web sessions are managed by Auth.js's DB session
+ * strategy; mobile sessions are inserted manually with sessionToken = JWT jti.
+ */
+export const sessions = sqliteTable('Session', {
+  sessionToken: text('sessionToken').primaryKey(),
+  userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expires: integer('expires', { mode: 'timestamp_ms' }).notNull(),
+  platform: text('platform', { enum: ['web', 'ios', 'android'] }).notNull().default('web'),
+  deviceName: text('deviceName'),
+  userAgent: text('userAgent'),
+  ip: text('ip'),
+  /** Resolved from Vercel `x-vercel-ip-*` headers at session write time. */
+  country: text('country'),
+  region: text('region'),
+  city: text('city'),
+  latitude: text('latitude'),
+  longitude: text('longitude'),
+  createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+  lastSeenAt: text('lastSeenAt'),
+  revokedAt: text('revokedAt'),
 });
 
 export const releases = sqliteTable('Release', {
@@ -203,6 +235,11 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   designatedAgentsAsAgent: many(patientDesignatedAgents, { relationName: 'pdaAgent' }),
   agentRole: one(zabacaAgentRoles, { fields: [users.id], references: [zabacaAgentRoles.userId] }),
   sentStaffInvites: many(staffInvites),
+  sessions: many(sessions),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 
 export const zabacaAgentRolesRelations = relations(zabacaAgentRoles, ({ one }) => ({
