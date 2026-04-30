@@ -30,6 +30,12 @@
           <string>com.zabaca.healthagent</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>zabaca</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>
@@ -44,12 +50,16 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSCameraUsageDescription</key>
+    <string>HealthAgent uses the camera to capture photos of your health documents for upload.</string>
     <key>NSFaceIDUsageDescription</key>
     <string>Use Face ID to quickly and securely unlock HealthAgent.</string>
     <key>NSHealthShareUsageDescription</key>
     <string>HealthAgent reads your health data to display vitals, activity, sleep, and lab results on your dashboard.</string>
     <key>NSHealthUpdateUsageDescription</key>
     <string>HealthAgent writes health data to keep your records in sync.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>HealthAgent accesses your photo library so you can upload existing photos of health documents.</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
