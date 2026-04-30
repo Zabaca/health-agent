@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { requireSameOrigin } from "@/lib/csrf";
 
 /**
  * Clears all Auth.js session-token cookies and redirects. Bounced to from
@@ -10,8 +11,14 @@ import { NextResponse } from "next/server";
  * Without this round-trip, the user would loop: layout sees invalid session
  * → redirects to /login → middleware sees the cookie → bounces back to
  * /dashboard.
+ *
+ * Same-origin enforcement: prevents a malicious site from triggering a forced
+ * logout via `<img src="/api/auth/clear-session">`.
  */
 export async function GET(req: Request) {
+  const csrf = requireSameOrigin(req);
+  if (csrf) return csrf;
+
   const url = new URL(req.url);
   const next = url.searchParams.get("next") ?? "/login";
   // Only allow same-origin paths to prevent open-redirect.

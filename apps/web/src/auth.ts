@@ -96,19 +96,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     /**
-     * Wraps the lite session callback (in auth.config.ts) to upsert a Session
-     * row keyed by `persistentJti`. The standard `jti` claim rotates on every
-     * encode (Auth.js calls setJti(randomUUID) each time), so we use our own
-     * stable id minted once in the jwt callback at sign-in.
+     * Wraps the base jwt callback to await the *first* Session row insert
+     * synchronously at sign-in (when `user` is present). If the insert fails
+     * here, Auth.js treats it as a sign-in error — better than the previous
+     * fire-and-forget, which would let the user "sign in" but then loop on
+     * the next request because guards reject sessions with no row.
+     */
+    async jwt(opts) {
+      const token = await authConfig.callbacks!.jwt!(opts);
+      if (opts.user && token) {
+        const persistentJti = (token as Record<string, unknown>).persistentJti as string | undefined;
+        const userId = (token as Record<string, unknown>).id as string | undefined;
+        if (persistentJti && userId) {
+          await recordWebSession(persistentJti, userId);
+        }
+      }
+      return token;
+    },
+    /**
+     * Wraps the lite session callback (in auth.config.ts) to keep `lastSeenAt`
+     * fresh. The first row was already inserted in the jwt callback above, so
+     * here we only update — failures are logged but don't break the request.
      */
     async session(opts) {
       const session = await authConfig.callbacks!.session!(opts);
       const persistentJti = (opts.token as Record<string, unknown> | undefined)?.persistentJti as string | undefined;
       const userId = session?.user?.id;
       if (persistentJti && userId) {
-        // Fire-and-forget — failure shouldn't break the request. The next
-        // authenticated request will retry.
-        recordWebSession(persistentJti, userId).catch(() => {});
+        recordWebSession(persistentJti, userId).catch((err) => {
+          console.error("[auth] recordWebSession failed", { jti: persistentJti, userId, err });
+        });
       }
       return session;
     },
