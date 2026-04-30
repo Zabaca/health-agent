@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Linking, Pressable, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -17,11 +17,17 @@ export default function CameraCapture() {
   const [capturing, setCapturing] = useState(false);
   const cameraRef = useRef<CameraView | null>(null);
 
-  useEffect(() => {
-    if (permission && !permission.granted && permission.canAskAgain) {
-      requestPermission();
-    }
-  }, [permission, requestPermission]);
+  // Re-request on every focus so the deny → "Open Settings" → grant → return
+  // path picks up the new permission without forcing the user to back out and
+  // retry. Calling requestPermission() with `granted=true` is a no-op; with
+  // `canAskAgain=false` it returns the cached deny state.
+  useFocusEffect(
+    useCallback(() => {
+      if (permission && !permission.granted && permission.canAskAgain) {
+        requestPermission();
+      }
+    }, [permission, requestPermission]),
+  );
 
   const openSettings = () => {
     Linking.openSettings().catch(() => {});

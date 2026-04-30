@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { sessions } from "@/lib/db/schema";
+import { sessions, users } from "@/lib/db/schema";
 import { requireMobileSession } from "@/lib/mobile-auth";
 
 export type ResolvedSession = {
@@ -54,7 +54,9 @@ export async function resolveUserSession(req: Request): Promise<
   const jti = (session as unknown as Record<string, unknown>).jti as string | undefined;
 
   // Same enforcement as requireActiveSession: cookies without a jti, or whose
-  // jti has no/revoked/expired Session row, are rejected.
+  // jti has no/revoked/expired Session row, are rejected. Plus the
+  // account-suspension check so a disabled user can't keep using a still-valid
+  // cookie until expiry.
   if (!jti) {
     return { result: null, error: NextResponse.json({ error: "Session expired" }, { status: 401 }) };
   }
@@ -65,6 +67,15 @@ export async function resolveUserSession(req: Request): Promise<
     .get();
   if (!row || row.revokedAt || row.expires < new Date()) {
     return { result: null, error: NextResponse.json({ error: "Session revoked" }, { status: 401 }) };
+  }
+
+  const userRow = await db
+    .select({ disabled: users.disabled })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .get();
+  if (userRow?.disabled) {
+    return { result: null, error: NextResponse.json({ error: "Account suspended" }, { status: 403 }) };
   }
 
   return {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -12,9 +12,11 @@ type Nav = NativeStackNavigationProp<RecordsParamList>;
 type R = RouteProp<RecordsParamList, "UploadPreview">;
 
 function extFromMime(mime: string): string {
-  const slash = mime.indexOf("/");
+  // Strip RFC 2045 parameters (e.g. "image/jpeg;charset=utf-8") before parsing.
+  const base = mime.split(";")[0].trim();
+  const slash = base.indexOf("/");
   if (slash === -1) return "bin";
-  const sub = mime.slice(slash + 1).toLowerCase();
+  const sub = base.slice(slash + 1).toLowerCase();
   if (sub === "jpeg") return "jpg";
   return sub;
 }
@@ -27,6 +29,19 @@ export default function UploadPreview() {
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Block any dismissal while an upload is in flight — Android hardware back,
+  // programmatic goBack, gesture (none on fullScreenModal but defense in
+  // depth). The in-screen Retake/Cancel buttons are already `disabled` while
+  // uploading; this catches every other dismissal path so the XHR isn't
+  // orphaned and the success-path popToTop has a screen to pop from.
+  useEffect(() => {
+    if (!uploading) return;
+    const sub = nav.addListener("beforeRemove", (e) => {
+      e.preventDefault();
+    });
+    return sub;
+  }, [uploading, nav]);
 
   const onConfirm = async () => {
     setUploading(true);
