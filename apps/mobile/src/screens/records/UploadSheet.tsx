@@ -48,11 +48,22 @@ export default function UploadSheet() {
       );
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.9,
-      allowsMultipleSelection: false,
-    });
+    let result;
+    try {
+      result = await ImagePicker.launchImageLibraryAsync({
+        // expo-image-picker 16 deprecated `MediaTypeOptions`; use the
+        // string-array form documented at
+        // https://docs.expo.dev/versions/v52.0.0/sdk/imagepicker/.
+        mediaTypes: ["images"],
+        quality: 0.9,
+        allowsMultipleSelection: false,
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("[UploadSheet] launchImageLibraryAsync threw:", e);
+      Alert.alert("Photo library", e instanceof Error ? e.message : "Failed to open photo library");
+      return;
+    }
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
     const mime = asset.mimeType ?? inferMime(asset.uri);
