@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { sessions } from "@/lib/db/schema";
+import { sessions, users } from "@/lib/db/schema";
 import { requireMobileSession } from "@/lib/mobile-auth";
 
 export type ResolvedSession = {
   userId: string;
   currentJti: string | null;
   source: "web" | "mobile";
+  type: "admin" | "user";
+  isAgent: boolean;
+  isPda: boolean;
+  isPatient: boolean;
 };
 
 /**
@@ -29,7 +33,18 @@ export async function resolveUserSession(req: Request): Promise<
     if (!r.ok) {
       return { result: null, error: NextResponse.json({ error: r.error }, { status: r.status }) };
     }
-    return { result: { userId: r.userId, currentJti: r.jti, source: "mobile" }, error: null };
+    return {
+      result: {
+        userId: r.userId,
+        currentJti: r.jti,
+        source: "mobile",
+        type: r.type,
+        isAgent: r.isAgent,
+        isPda: r.isPda,
+        isPatient: r.isPatient,
+      },
+      error: null,
+    };
   }
 
   const session = await auth();
@@ -39,7 +54,9 @@ export async function resolveUserSession(req: Request): Promise<
   const jti = (session as unknown as Record<string, unknown>).jti as string | undefined;
 
   // Same enforcement as requireActiveSession: cookies without a jti, or whose
-  // jti has no/revoked/expired Session row, are rejected.
+  // jti has no/revoked/expired Session row, are rejected. Plus the
+  // account-suspension check so a disabled user can't keep using a still-valid
+  // cookie until expiry.
   if (!jti) {
     return { result: null, error: NextResponse.json({ error: "Session expired" }, { status: 401 }) };
   }
@@ -52,5 +69,25 @@ export async function resolveUserSession(req: Request): Promise<
     return { result: null, error: NextResponse.json({ error: "Session revoked" }, { status: 401 }) };
   }
 
-  return { result: { userId: session.user.id, currentJti: jti, source: "web" }, error: null };
+  const userRow = await db
+    .select({ disabled: users.disabled })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .get();
+  if (userRow?.disabled) {
+    return { result: null, error: NextResponse.json({ error: "Account suspended" }, { status: 403 }) };
+  }
+
+  return {
+    result: {
+      userId: session.user.id,
+      currentJti: jti,
+      source: "web",
+      type: session.user.type,
+      isAgent: session.user.isAgent,
+      isPda: session.user.isPda,
+      isPatient: session.user.isPatient,
+    },
+    error: null,
+  };
 }
