@@ -19,14 +19,44 @@ export type HomeParamList = {
   AccountSetup: undefined;
 };
 
+export type RecordsFilters = {
+  /** ISO yyyy-mm-dd; null = no lower bound. */
+  dateFrom: string | null;
+  /** ISO yyyy-mm-dd; null = no upper bound. */
+  dateTo: string | null;
+  fileTypes: string[]; // lowercase extensions, empty = no filter
+  providers: string[]; // selected provider names, empty = no filter
+};
+
+/** Provider chip data: name displayed + release codes the name corresponds to. */
+export type AvailableProvider = { name: string; releaseCodes: string[] };
+
 export type RecordsParamList = {
-  RecordsList: undefined;
+  RecordsList: { filters?: RecordsFilters } | undefined;
   RecordDetailLabs: { recordId: string };
   RecordDetailImaging: { recordId: string };
   RecordDetailNotes: { recordId: string };
   UploadSheet: undefined;
-  FilterSheet: undefined;
-  DocumentViewer: { recordId: string };
+  FilterSheet:
+    | {
+        current?: RecordsFilters;
+        availableProviders?: AvailableProvider[];
+      }
+    | undefined;
+  DocumentViewer: {
+    fileURL: string;
+    fileType: string;
+    title: string;
+    createdAt: string;
+  };
+  CameraCapture: { source: "camera" } | { source: "library" };
+  UploadPreview: {
+    uri: string;
+    mimeType: string;
+    name: string;
+    width?: number;
+    height?: number;
+  };
 };
 
 export type ReleasesParamList = {

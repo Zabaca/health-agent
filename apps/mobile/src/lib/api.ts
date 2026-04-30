@@ -1,8 +1,12 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 export const SESSION_TOKEN_KEY = "session_token";
+
+export async function getSessionToken(): Promise<string | null> {
+  return SecureStore.getItemAsync(SESSION_TOKEN_KEY);
+}
 
 /**
  * Device metadata sent with every login. Surfaces in the user's "Active
@@ -138,4 +142,109 @@ export async function revokeSession(id: string): Promise<{ success: boolean; rev
     success: boolean;
     revokedSelf: boolean;
   };
+}
+
+// ─── Records ──────────────────────────────────────────────────────────────────
+
+export type IncomingFile = {
+  id: string;
+  fileURL: string;
+  fileType: string;
+  source: string;
+  incomingFaxLogId: string | null;
+  patientId: string | null;
+  releaseCode: string | null;
+  createdAt: string;
+  deletedAt: string | null;
+  deletedById: string | null;
+  faxLog?: { pagecount?: number | null } | null;
+  uploadLog?: { originalName: string } | null;
+};
+
+export type RecordsPage = { items: IncomingFile[]; nextCursor: string | null };
+
+export async function listMyRecords(opts?: { cursor?: string | null; limit?: number }): Promise<RecordsPage> {
+  const params = new URLSearchParams();
+  if (opts?.cursor) params.set("cursor", opts.cursor);
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return (await apiFetch(`/api/my-records${qs ? `?${qs}` : ""}`, {}, { auth: true })) as RecordsPage;
+}
+
+export type RecordProvider = { name: string; releaseCodes: string[] };
+
+export async function listMyRecordProviders(): Promise<RecordProvider[]> {
+  const res = (await apiFetch("/api/my-records/providers", {}, { auth: true })) as {
+    providers: RecordProvider[];
+  };
+  return res.providers;
+}
+
+export async function registerRecord(input: {
+  fileURL: string;
+  fileType: string;
+  originalName: string;
+  patientId?: string;
+  releaseCode?: string;
+}): Promise<{ id: string }> {
+  return (await apiFetch("/api/records/upload", {
+    method: "POST",
+    body: JSON.stringify(input),
+  }, { auth: true })) as { id: string };
+}
+
+/**
+ * Uploads a local file (camera capture or photo-library asset) to /api/upload
+ * via XHR so we get progress events. Returns the stored file URL the records
+ * endpoint expects. Mirrors the web flow in
+ * apps/web/src/components/records/UploadFileButton.tsx.
+ */
+export async function uploadFile(opts: {
+  uri: string;
+  mimeType: string;
+  name: string;
+  onProgress?: (pct: number) => void;
+}): Promise<{ url: string }> {
+  const token = await getSessionToken();
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const form = new FormData();
+    // RN's FormData accepts the {uri,name,type} file shape — TS lacks the
+    // overload, so cast at the call site.
+    form.append("file", { uri: opts.uri, name: opts.name, type: opts.mimeType } as unknown as Blob);
+
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable && opts.onProgress) {
+        opts.onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    });
+    xhr.addEventListener("load", async () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject(new ApiError(xhr.status, "Invalid upload response"));
+        }
+        return;
+      }
+      // Match apiFetch: signal auth failure to the AuthProvider.
+      if (xhr.status === 401 || xhr.status === 403) {
+        await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY);
+        unauthorizedHandler?.();
+      }
+      let message = `Upload failed (${xhr.status})`;
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (data && typeof data.error === "string") message = data.error;
+      } catch {}
+      reject(new ApiError(xhr.status, message));
+    });
+    xhr.addEventListener("error", () => reject(new ApiError(0, "Network error")));
+    xhr.addEventListener("abort", () => reject(new ApiError(0, "Upload aborted")));
+
+    xhr.open("POST", `${API_URL}/api/upload`);
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.send(form);
+  });
 }

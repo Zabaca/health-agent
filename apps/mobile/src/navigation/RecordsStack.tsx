@@ -6,6 +6,8 @@ import RecordDetailNotes from "@/screens/records/RecordDetailNotes";
 import UploadSheet from "@/screens/records/UploadSheet";
 import FilterSheet from "@/screens/records/FilterSheet";
 import DocumentViewer from "@/screens/records/DocumentViewer";
+import CameraCapture from "@/screens/records/CameraCapture";
+import UploadPreview from "@/screens/records/UploadPreview";
 import type { RecordsParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RecordsParamList>();
@@ -23,6 +25,8 @@ export function RecordsStack() {
       <Stack.Screen name="UploadSheet" component={UploadSheet} options={{ presentation: "modal" }} />
       <Stack.Screen name="FilterSheet" component={FilterSheet} options={{ presentation: "modal" }} />
       <Stack.Screen name="DocumentViewer" component={DocumentViewer} options={{ presentation: "fullScreenModal" }} />
+      <Stack.Screen name="CameraCapture" component={CameraCapture} options={{ presentation: "fullScreenModal" }} />
+      <Stack.Screen name="UploadPreview" component={UploadPreview} options={{ presentation: "fullScreenModal" }} />
     </Stack.Navigator>
   );
 }

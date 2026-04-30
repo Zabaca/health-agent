@@ -6,6 +6,20 @@ const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { nextUrl, auth: session } = req;
+
+  // Mobile clients authenticate via `Authorization: Bearer <jwt>`. NextAuth's
+  // `auth()` only validates cookies, so without this short-circuit the
+  // middleware's cookie-only `isLoggedIn` check would 401 every mobile API
+  // call before the route handler's `resolveUserSession` ever runs. Defer to
+  // the route handler when a bearer is present — same precedence rule as
+  // session-resolver.ts.
+  if (
+    nextUrl.pathname.startsWith("/api/") &&
+    req.headers.get("authorization")?.toLowerCase().startsWith("bearer ")
+  ) {
+    return NextResponse.next();
+  }
+
   const isLoggedIn = !!session;
   const userType = session?.user?.type;
   const isAgent = session?.user?.isAgent;

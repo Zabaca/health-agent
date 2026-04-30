@@ -50,6 +50,30 @@ export default async function MyRecordsPage() {
       providerNames: providersByRelease.get(r.id) ?? [],
     }));
 
+  // Provider chips: only releases that are actually tagged on a record count.
+  // A provider name appearing across multiple releases is deduped — selecting
+  // it filters records tagged with any of those release codes.
+  const taggedReleaseCodes = new Set<string>();
+  for (const f of files) {
+    if (f.releaseCode) taggedReleaseCodes.add(f.releaseCode);
+  }
+  const providerMap = new Map<string, Set<string>>();
+  for (const release of releases) {
+    if (!release.releaseCode || !taggedReleaseCodes.has(release.releaseCode)) continue;
+    const names = providersByRelease.get(release.id) ?? [];
+    for (const name of names) {
+      let codes = providerMap.get(name);
+      if (!codes) {
+        codes = new Set();
+        providerMap.set(name, codes);
+      }
+      codes.add(release.releaseCode);
+    }
+  }
+  const providerOptions = Array.from(providerMap.entries())
+    .map(([name, codes]) => ({ name, releaseCodes: Array.from(codes).sort() }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   const rows = files.map(f => {
     const uploader = f.uploadLog?.uploadedBy;
     return {
@@ -69,7 +93,7 @@ export default async function MyRecordsPage() {
   return (
     <>
       <PageHeader title="My Health Records" action={<UploadFileButton releases={releaseOptions} />} />
-      <MyRecordsTable rows={rows} releases={releaseOptions} />
+      <MyRecordsTable rows={rows} releases={releaseOptions} providers={providerOptions} />
     </>
   );
 }

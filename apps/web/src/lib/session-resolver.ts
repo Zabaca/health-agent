@@ -9,6 +9,10 @@ export type ResolvedSession = {
   userId: string;
   currentJti: string | null;
   source: "web" | "mobile";
+  type: "admin" | "user";
+  isAgent: boolean;
+  isPda: boolean;
+  isPatient: boolean;
 };
 
 /**
@@ -29,7 +33,18 @@ export async function resolveUserSession(req: Request): Promise<
     if (!r.ok) {
       return { result: null, error: NextResponse.json({ error: r.error }, { status: r.status }) };
     }
-    return { result: { userId: r.userId, currentJti: r.jti, source: "mobile" }, error: null };
+    return {
+      result: {
+        userId: r.userId,
+        currentJti: r.jti,
+        source: "mobile",
+        type: r.type,
+        isAgent: r.isAgent,
+        isPda: r.isPda,
+        isPatient: r.isPatient,
+      },
+      error: null,
+    };
   }
 
   const session = await auth();
@@ -52,5 +67,16 @@ export async function resolveUserSession(req: Request): Promise<
     return { result: null, error: NextResponse.json({ error: "Session revoked" }, { status: 401 }) };
   }
 
-  return { result: { userId: session.user.id, currentJti: jti, source: "web" }, error: null };
+  return {
+    result: {
+      userId: session.user.id,
+      currentJti: jti,
+      source: "web",
+      type: session.user.type,
+      isAgent: session.user.isAgent,
+      isPda: session.user.isPda,
+      isPatient: session.user.isPatient,
+    },
+    error: null,
+  };
 }

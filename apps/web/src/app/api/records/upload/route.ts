@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireActiveSession } from '@/lib/auth-guards';
+import { resolveUserSession } from '@/lib/session-resolver';
 import { db } from '@/lib/db';
 import { incomingFiles, fileUploadLog, patientDesignatedAgents, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid';
 import { sendNewRecordUploadEmail, getSiteBaseUrl } from '@/lib/email';
 
 export async function POST(req: Request) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const { fileURL, fileType, originalName, patientId, releaseCode } = await req.json();
@@ -18,15 +18,15 @@ export async function POST(req: Request) {
 
   let assignedPatientId: string | null;
 
-  if (session.user.type === 'admin' || session.user.isAgent) {
+  if (result.type === 'admin' || result.isAgent) {
     assignedPatientId = patientId ?? null;
-  } else if (!patientId || patientId === session.user.id) {
-    assignedPatientId = session.user.id;
-  } else if (session.user.isPda) {
+  } else if (!patientId || patientId === result.userId) {
+    assignedPatientId = result.userId;
+  } else if (result.isPda) {
     // Verify PDA has editor permission for this patient
     const relation = await db.query.patientDesignatedAgents.findFirst({
       where: and(
-        eq(patientDesignatedAgents.agentUserId, session.user.id),
+        eq(patientDesignatedAgents.agentUserId, result.userId),
         eq(patientDesignatedAgents.patientId, patientId),
         eq(patientDesignatedAgents.status, 'accepted'),
       ),
@@ -53,21 +53,21 @@ export async function POST(req: Request) {
   await db.insert(fileUploadLog).values({
     id: nanoid(),
     incomingFileId: id,
-    uploadedById: session.user.id,
+    uploadedById: result.userId,
     originalName,
   });
 
   // Notify patient when an agent, admin, or PDA uploads a record on their behalf
   try {
-    const isUploadForPatient = (session.user.isAgent || session.user.type === 'admin' || session.user.isPda) &&
-      assignedPatientId && assignedPatientId !== session.user.id;
+    const isUploadForPatient = (result.isAgent || result.type === 'admin' || result.isPda) &&
+      assignedPatientId && assignedPatientId !== result.userId;
     if (isUploadForPatient) {
       const patient = await db.query.users.findFirst({
         where: eq(users.id, assignedPatientId!),
         columns: { email: true, firstName: true, lastName: true },
       });
       const uploader = await db.query.users.findFirst({
-        where: eq(users.id, session.user.id),
+        where: eq(users.id, result.userId),
         columns: { firstName: true, lastName: true, email: true },
       });
       if (patient) {

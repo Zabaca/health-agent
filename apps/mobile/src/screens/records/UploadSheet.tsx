@@ -1,25 +1,74 @@
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Linking, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Camera, Image as ImageIcon, Folder, ChevronRight } from "lucide-react-native";
+import { Camera, Image as ImageIcon, ChevronRight } from "lucide-react-native";
+import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "@/theme/ThemeProvider";
 import type { RecordsParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<RecordsParamList>;
 
-const sources = [
-  { id: "camera", label: "Take Photo", icon: Camera, tile: "primaryBg" as const, fg: "primary" as const },
-  { id: "library", label: "Photo Library", icon: ImageIcon, tile: "surfaceSubtle" as const, fg: "textSecondary" as const },
-  { id: "files", label: "Browse Files", icon: Folder, tile: "destructiveBg" as const, fg: "accent" as const },
-];
+function inferMime(uri: string, fallback = "image/jpeg"): string {
+  const ext = uri.split("?")[0].split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "png") return "image/png";
+  if (ext === "gif") return "image/gif";
+  if (ext === "webp") return "image/webp";
+  if (ext === "heic" || ext === "heif") return "image/heic";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  if (ext === "pdf") return "application/pdf";
+  return fallback;
+}
 
-const types = ["Labs", "Imaging", "Notes", "Other"];
+function fileNameFromUri(uri: string, mime: string): string {
+  const last = uri.split("?")[0].split("/").pop() ?? "upload";
+  if (last.includes(".")) return last;
+  const ext = mime.split("/")[1] ?? "jpg";
+  return `${last}.${ext}`;
+}
 
 export default function UploadSheet() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const [type, setType] = useState(0);
+
+  const openSettings = () => {
+    Linking.openSettings().catch(() => {});
+  };
+
+  const goCamera = () => {
+    nav.replace("CameraCapture", { source: "camera" });
+  };
+
+  const goLibrary = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(
+        "Photo library access needed",
+        "Enable Photos access in Settings to choose an existing image.",
+        [{ text: "Cancel", style: "cancel" }, { text: "Open Settings", onPress: openSettings }],
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+      allowsMultipleSelection: false,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    const mime = asset.mimeType ?? inferMime(asset.uri);
+    nav.replace("UploadPreview", {
+      uri: asset.uri,
+      mimeType: mime,
+      name: asset.fileName ?? fileNameFromUri(asset.uri, mime),
+      width: asset.width,
+      height: asset.height,
+    });
+  };
+
+  const sources = [
+    { id: "camera", label: "Take Photo", icon: Camera, tile: t.colors.primaryBg, fg: t.colors.primary, onPress: goCamera },
+    { id: "library", label: "Photo Library", icon: ImageIcon, tile: t.colors.surfaceSubtle, fg: t.colors.textSecondary, onPress: goLibrary },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.surface }}>
@@ -30,12 +79,10 @@ export default function UploadSheet() {
       <View>
         {sources.map((s, i) => {
           const Icon = s.icon;
-          const tileColor = (t.colors as any)[s.tile];
-          const fgColor = (t.colors as any)[s.fg];
           return (
             <Pressable
               key={s.id}
-              onPress={() => nav.goBack()}
+              onPress={s.onPress}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -46,33 +93,14 @@ export default function UploadSheet() {
                 borderTopColor: t.colors.divider,
               }}
             >
-              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: tileColor, alignItems: "center", justifyContent: "center" }}>
-                <Icon size={18} color={fgColor} />
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: s.tile, alignItems: "center", justifyContent: "center" }}>
+                <Icon size={18} color={s.fg} />
               </View>
               <Text style={[t.type.body, { flex: 1 }]}>{s.label}</Text>
               <ChevronRight size={18} color={t.colors.textSecondary} />
             </Pressable>
           );
         })}
-      </View>
-      <Text style={[t.type.sectionLabel, { textTransform: "uppercase", paddingHorizontal: t.spacing.gutter, paddingTop: 16 }]}>RECORD TYPE</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: t.spacing.gutter, paddingTop: 8 }}>
-        {types.map((label, i) => (
-          <Pressable key={label} onPress={() => setType(i)}>
-            <View
-              style={{
-                paddingVertical: 8,
-                paddingHorizontal: 16,
-                borderRadius: t.radius.pill,
-                backgroundColor: i === type ? t.colors.primary : "transparent",
-                borderWidth: 1,
-                borderColor: i === type ? t.colors.primary : t.colors.border,
-              }}
-            >
-              <Text style={{ color: i === type ? "#FFFFFF" : t.colors.textPrimary, fontSize: 13, fontWeight: "500" }}>{label}</Text>
-            </View>
-          </Pressable>
-        ))}
       </View>
       <View style={{ flex: 1 }} />
       <Pressable onPress={() => nav.goBack()} style={{ padding: 16, alignItems: "center" }}>

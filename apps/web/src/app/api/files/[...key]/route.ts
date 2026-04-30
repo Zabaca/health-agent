@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFromR2 } from "@/lib/r2";
-import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { incomingFiles, patientAssignments, patientDesignatedAgents } from "@/lib/db/schema";
 import { eq, and, isNull } from "drizzle-orm";
 import { isZabacaAgent } from "@/lib/db/agent-role";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ key: string[] }> },
 ) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const { key: keyParts } = await params;
@@ -27,15 +27,15 @@ export async function GET(
     return streamFile(key);
   }
 
-  const userId = session.user.id;
+  const userId = result.userId;
 
   // Admin can access any file — trust signed session for this check
-  if (session.user.type === 'admin') {
+  if (result.type === 'admin') {
     return streamFile(key, file.fileType);
   }
 
   // For agents and users, verify agent status from DB (source of truth for file access)
-  const agentVerified = session.user.isAgent && await isZabacaAgent(userId);
+  const agentVerified = result.isAgent && await isZabacaAgent(userId);
 
   // File not assigned to a patient — only admin or verified agent may access
   if (!file.patientId) {
