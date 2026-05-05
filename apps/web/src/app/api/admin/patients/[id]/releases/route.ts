@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { encryptPii, decryptPii, extractLast4Ssn } from "@/lib/crypto";
@@ -23,8 +23,20 @@ export const GET = contractRoute(contract.admin.patientReleases.list, async ({ p
       createdAt: releasesTable.createdAt,
       updatedAt: releasesTable.updatedAt,
       voided: releasesTable.voided,
+      authSignatureImage: releasesTable.authSignatureImage,
+      authExpirationDate: releasesTable.authExpirationDate,
+      releaseCode: releasesTable.releaseCode,
+      releaseAuthAgent: releasesTable.releaseAuthAgent,
+      authAgentName: releasesTable.authAgentName,
+      providerName: providersTable.providerName,
+      providerType: providersTable.providerType,
+      insurance: providersTable.insurance,
     })
     .from(releasesTable)
+    .leftJoin(providersTable, and(
+      eq(providersTable.releaseId, releasesTable.id),
+      eq(providersTable.order, 0)
+    ))
     .where(eq(releasesTable.userId, params.id))
     .orderBy(desc(releasesTable.updatedAt));
 
@@ -40,7 +52,7 @@ export const POST = contractRoute(contract.admin.patientReleases.create, async (
 
   try {
     const { providers, ...releaseData } = body;
-    const normalizedReleaseData = { ...releaseData, ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : null };
+    const normalizedReleaseData = { ...releaseData, ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : "" };
     const encryptedReleaseData = encryptPii(normalizedReleaseData);
 
     const created = await db.transaction(async (tx) => {

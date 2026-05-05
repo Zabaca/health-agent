@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireActiveSession } from '@/lib/auth-guards';
+import { resolveUserSession } from '@/lib/session-resolver';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { hashPassword, verifyPassword } from '@/lib/auth-helpers';
 
 export async function PUT(req: NextRequest) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const { currentPassword, newPassword } = await req.json();
@@ -19,7 +19,7 @@ export async function PUT(req: NextRequest) {
   }
 
   const user = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
+    where: eq(users.id, result.userId),
     columns: { password: true },
   });
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -38,7 +38,7 @@ export async function PUT(req: NextRequest) {
   const hashed = await hashPassword(newPassword);
   await db.update(users)
     .set({ password: hashed, mustChangePassword: false })
-    .where(eq(users.id, session.user.id));
+    .where(eq(users.id, result.userId));
 
   return NextResponse.json({ ok: true });
 }

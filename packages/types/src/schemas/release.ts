@@ -182,13 +182,15 @@ const releaseBaseObject = z.object({
   authAgentPhone: z.string().optional(),
   authAgentEmail: z.string().email("Please enter a valid email address").optional().or(z.literal("")),
   authExpirationDate: z.string().min(1, "Expiration date is required")
+    .regex(/^\d{4}-\d{2}-\d{2}/, "Please enter a valid date (YYYY-MM-DD)")
     .refine((val) => !isNaN(new Date(val).getTime()), "Please enter a valid date")
     .refine((val) => {
-      const date = new Date(val);
-      const minDate = new Date();
-      minDate.setHours(0, 0, 0, 0);
-      minDate.setDate(minDate.getDate() + 90);
-      return date >= minDate;
+      // Compare as YYYY-MM-DD strings to avoid UTC-parse vs local-minDate mismatch.
+      const inputDate = val.slice(0, 10);
+      const min = new Date();
+      min.setDate(min.getDate() + 90);
+      const minStr = `${min.getFullYear()}-${String(min.getMonth() + 1).padStart(2, "0")}-${String(min.getDate()).padStart(2, "0")}`;
+      return inputDate >= minStr;
     }, "Expiration date must be at least 90 days from today"),
   authExpirationEvent: z.string().optional(),
   authPrintedName: z.string().trim().min(1, "Printed name is required"),

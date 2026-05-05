@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
+import RoleSwitchSection from "@/components/shared/RoleSwitchSection";
 
 const schema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -23,9 +24,10 @@ type FormData = z.infer<typeof schema>;
 
 interface Props {
   defaultValues: FormData;
+  isPatient?: boolean;
 }
 
-export default function PdaAccountForm({ defaultValues }: Props) {
+export default function PdaAccountForm({ defaultValues, isPatient }: Props) {
   const router = useRouter();
   const { update } = useSession();
   const [loading, setLoading] = useState(false);
@@ -122,6 +124,9 @@ export default function PdaAccountForm({ defaultValues }: Props) {
       </Paper>
     </form>
     <ChangePasswordSection />
+    {isPatient && (
+      <RoleSwitchSection href="/dashboard" label="Switch to My Account View" />
+    )}
     </>
   );
 }

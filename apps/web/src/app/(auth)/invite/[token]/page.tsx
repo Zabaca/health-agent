@@ -3,6 +3,7 @@ import InviteAcceptForm from "@/components/auth/InviteAcceptForm";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { auth } from "@/auth";
 
 export const metadata = { title: "Accept Invitation" };
 
@@ -34,9 +35,13 @@ export default async function InvitePage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const invite = await getInvite(token);
+  const [invite, session] = await Promise.all([getInvite(token), auth()]);
 
   if (!invite) notFound();
 
-  return <InviteAcceptForm token={token} invite={invite} />;
+  const currentUser = session?.user
+    ? { email: session.user.email ?? null }
+    : null;
+
+  return <InviteAcceptForm token={token} invite={invite} currentUser={currentUser} />;
 }

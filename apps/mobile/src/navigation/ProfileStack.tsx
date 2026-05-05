@@ -3,6 +3,7 @@ import Profile from "@/screens/profile/Profile";
 import ConnectAppleHealth from "@/screens/profile/ConnectAppleHealth";
 import AccountSettings from "@/screens/profile/AccountSettings";
 import EditProfile from "@/screens/profile/EditProfile";
+import ChangePassword from "@/screens/profile/ChangePassword";
 import DesignatedAgents from "@/screens/access/AccessList";
 import InviteRepresentative from "@/screens/access/InviteRepresentative";
 import RepresentativeDetail from "@/screens/access/RepresentativeDetail";
@@ -21,6 +22,7 @@ export function ProfileStack() {
       <Stack.Screen name="ConnectAppleHealth" component={ConnectAppleHealth} />
       <Stack.Screen name="AccountSettings" component={AccountSettings} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
+      <Stack.Screen name="ChangePassword" component={ChangePassword} />
       <Stack.Screen name="DesignatedAgents" component={DesignatedAgents} />
       <Stack.Screen name="InviteRepresentative" component={InviteRepresentative} />
       <Stack.Screen name="RepresentativeDetail" component={RepresentativeDetail} />

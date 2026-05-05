@@ -1,5 +1,6 @@
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { patientDesignatedAgents, users } from "@/lib/db/schema";
+import { patientDesignatedAgents, patientAssignments, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import AppShell from "@/components/layout/AppShell";
 import { IconUser, IconUsers, IconFileText, IconBuildingHospital, IconFolder, IconArrowsLeftRight } from "@tabler/icons-react";
@@ -21,14 +22,31 @@ export default async function PatientDesignatedAgentLayout({
     columns: { firstName: true, lastName: true },
   });
 
-  const relations = await db.query.patientDesignatedAgents.findMany({
-    where: and(
-      eq(patientDesignatedAgents.agentUserId, userId),
-      eq(patientDesignatedAgents.status, 'accepted'),
-    ),
-    with: { patient: true },
-    orderBy: (t, { asc }) => [asc(t.createdAt)],
-  });
+  const [relations, patientAssignment] = await Promise.all([
+    db.query.patientDesignatedAgents.findMany({
+      where: and(
+        eq(patientDesignatedAgents.agentUserId, userId),
+        eq(patientDesignatedAgents.status, "accepted"),
+      ),
+      with: { patient: true },
+      orderBy: (t, { asc }) => [asc(t.createdAt)],
+    }),
+    // Re-query from DB — isPatient in the JWT can be stale if the user was
+    // assigned as a patient after their current session was minted.
+    db.query.patientAssignments.findFirst({
+      where: eq(patientAssignments.patientId, userId),
+      columns: { id: true },
+    }),
+  ]);
+  const isPatient = !!patientAssignment;
+
+  // Access was revoked (or all relations removed) and the user has already
+  // completed PDA onboarding — they shouldn't be stuck here.
+  // Patients auto-redirect to their own dashboard; PDA-only users see a
+  // sign-out prompt (can't server-redirect them without a destination).
+  if (isOnboarded && relations.length === 0) {
+    if (isPatient) redirect("/dashboard");
+  }
 
   const navItems = relations.map(r => {
     const patientName =
@@ -53,8 +71,6 @@ export default async function PatientDesignatedAgentLayout({
     };
   });
 
-  const isPatient = session.user.isPatient;
-
   const bottomNavItems = [
     { href: "/account", label: "My Account", icon: <IconUser size={16} /> },
     ...(isPatient
@@ -69,8 +85,8 @@ export default async function PatientDesignatedAgentLayout({
       primaryColor="teal"
       title="Representing"
     >
-      {session.user.isPda && relations.length === 0 && (
-        <RevokedAccessModal isPatient={!!session.user.isPatient} />
+      {isOnboarded && relations.length === 0 && (
+        <RevokedAccessModal isPatient={isPatient} />
       )}
       {!isOnboarded && (
         <PdaOnboardingModal

@@ -365,21 +365,21 @@ export default function RecordsList() {
                 key={c.key}
                 onPress={c.onPress}
                 style={{
-                  height: 34,
+                  paddingVertical: 8,
                   paddingHorizontal: 14,
-                  borderRadius: 10,
+                  borderRadius: t.radius.pill,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: c.active ? t.colors.primary : t.colors.surface,
-                  borderWidth: c.active ? 0 : 1,
-                  borderColor: t.colors.border,
+                  backgroundColor: c.active ? t.colors.primary : "transparent",
+                  borderWidth: 1,
+                  borderColor: c.active ? t.colors.primary : t.colors.border,
                 }}
               >
                 <Text
                   style={{
                     fontSize: 13,
-                    fontWeight: c.active ? "600" : "500",
-                    color: c.active ? "#FFFFFF" : t.colors.textSecondary,
+                    fontWeight: "600",
+                    color: c.active ? "#FFFFFF" : t.colors.textPrimary,
                   }}
                 >
                   {c.label}

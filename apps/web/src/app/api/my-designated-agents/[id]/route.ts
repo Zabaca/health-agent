@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -9,16 +9,16 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
-  if (session.user.type === 'admin' || session.user.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (result.type === 'admin' || result.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
 
   const record = await db.query.patientDesignatedAgents.findFirst({
     where: and(
       eq(patientDesignatedAgents.id, id),
-      eq(patientDesignatedAgents.patientId, session.user.id)
+      eq(patientDesignatedAgents.patientId, result.userId)
     ),
   });
   if (!record) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -46,19 +46,19 @@ export async function PATCH(
 
 // DELETE /api/my-designated-agents/[id] — revoke access
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
-  if (session.user.type === 'admin' || session.user.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (result.type === 'admin' || result.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
 
   const record = await db.query.patientDesignatedAgents.findFirst({
     where: and(
       eq(patientDesignatedAgents.id, id),
-      eq(patientDesignatedAgents.patientId, session.user.id)
+      eq(patientDesignatedAgents.patientId, result.userId)
     ),
   });
   if (!record) return NextResponse.json({ error: "Not found" }, { status: 404 });

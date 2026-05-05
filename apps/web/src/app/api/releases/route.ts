@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable, users, userProviders } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import { type ProviderFormData } from "@/lib/schemas/release";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
@@ -10,8 +10,8 @@ import { encrypt, encryptPii, decryptPii, extractLast4Ssn } from "@/lib/crypto";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
 import { sendNewReleaseNotificationEmail } from "@/lib/email";
 
-export const GET = contractRoute(contract.releases.list, async () => {
-  const { session, error } = await requireActiveSession();
+export const GET = contractRoute(contract.releases.list, async ({ req }) => {
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const releases = await db
@@ -22,23 +22,35 @@ export const GET = contractRoute(contract.releases.list, async () => {
       createdAt: releasesTable.createdAt,
       updatedAt: releasesTable.updatedAt,
       voided: releasesTable.voided,
+      authSignatureImage: releasesTable.authSignatureImage,
+      authExpirationDate: releasesTable.authExpirationDate,
+      releaseCode: releasesTable.releaseCode,
+      releaseAuthAgent: releasesTable.releaseAuthAgent,
+      authAgentName: releasesTable.authAgentName,
+      providerName: providersTable.providerName,
+      providerType: providersTable.providerType,
+      insurance: providersTable.insurance,
     })
     .from(releasesTable)
-    .where(eq(releasesTable.userId, session.user.id))
+    .leftJoin(providersTable, and(
+      eq(providersTable.releaseId, releasesTable.id),
+      eq(providersTable.order, 0)
+    ))
+    .where(eq(releasesTable.userId, result.userId))
     .orderBy(desc(releasesTable.updatedAt));
 
   return NextResponse.json(releases);
 });
 
-export const POST = contractRoute(contract.releases.create, async ({ body }) => {
-  const { session, error } = await requireActiveSession();
+export const POST = contractRoute(contract.releases.create, async ({ req, body }) => {
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   try {
     const { providers, ...releaseData } = body;
     const normalizedReleaseData = {
       ...releaseData,
-      ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : null,
+      ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : "",
     };
     const encryptedReleaseData = encryptPii(normalizedReleaseData);
 
@@ -51,7 +63,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
           .insert(releasesTable)
           .values({
             id: releaseId,
-            userId: session.user.id,
+            userId: result.userId,
             ...encryptedReleaseData,
             createdAt: now,
             updatedAt: now,
@@ -71,7 +83,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
 
     // Silently backfill empty profile fields from submitted release data (plaintext)
     try {
-      const userId = session.user.id;
+      const userId = result.userId;
       const existingUser = await db.query.users.findFirst({ where: eq(users.id, userId) });
       const patch: Partial<typeof users.$inferInsert> = {};
       if (!existingUser?.firstName)   patch.firstName   = releaseData.firstName;
@@ -90,27 +102,24 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
       // swallow — do not block the release response
     }
 
-    // Silently backfill userProviders from submitted release providers
+    // Silently backfill userProviders — add new providers without removing existing ones
     try {
-      const userId = session.user.id;
-      await db.transaction(async (tx) => {
-        await tx.delete(userProviders).where(eq(userProviders.userId, userId));
-        if (providers.length > 0) {
-          await tx.insert(userProviders).values(
-            providers.map((p: ProviderFormData, i: number) => {
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const { historyPhysical, diagnosticResults, treatmentProcedure, prescriptionMedication, imagingRadiology, dischargeSummaries, specificRecords, specificRecordsDesc, dateRangeFrom, dateRangeTo, allAvailableDates, purpose, purposeOther, ...providerInfo } = p;
-              return {
-                id: crypto.randomUUID(),
-                userId,
-                ...providerInfo,
-                providerName: providerInfo.providerName ?? "",
-                order: i,
-              };
-            })
-          );
-        }
-      });
+      const userId = result.userId;
+      const existing = await db.query.userProviders.findMany({ where: eq(userProviders.userId, userId) });
+      const existingKeys = new Set(existing.map((p) => `${p.providerType}::${p.insurance || p.providerName}`));
+      const toInsert = providers
+        .map((p: ProviderFormData) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { historyPhysical, diagnosticResults, treatmentProcedure, prescriptionMedication, imagingRadiology, dischargeSummaries, specificRecords, specificRecordsDesc, dateRangeFrom, dateRangeTo, allAvailableDates, purpose, purposeOther, ...providerInfo } = p;
+          return { ...providerInfo, providerName: providerInfo.providerName ?? "" };
+        })
+        .filter((p) => !existingKeys.has(`${p.providerType}::${p.insurance || p.providerName}`));
+      if (toInsert.length > 0) {
+        const nextOrder = existing.length;
+        await db.insert(userProviders).values(
+          toInsert.map((p, i) => ({ id: crypto.randomUUID(), userId, ...p, order: nextOrder + i }))
+        );
+      }
     } catch {
       // swallow — do not block the release response
     }
@@ -120,7 +129,7 @@ export const POST = contractRoute(contract.releases.create, async ({ body }) => 
       const firstRelease = created[0];
       if (firstRelease?.releaseAuthAgent && firstRelease?.authAgentEmail) {
         const patient = await db.query.users.findFirst({
-          where: eq(users.id, session.user.id),
+          where: eq(users.id, result.userId),
           columns: { firstName: true, lastName: true },
         });
         const patientName = [patient?.firstName, patient?.lastName].filter(Boolean).join(' ') || releaseData.firstName;

@@ -15,15 +15,15 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   const { id } = await ctx.params;
   if (!id) return NextResponse.json({ error: "Missing session id" }, { status: 400 });
 
-  // Scoped delete by both userId and sessionToken so users can't revoke
-  // someone else's session.
-  const updated = await db
-    .update(sessions)
-    .set({ revokedAt: new Date().toISOString() })
+  // Hard-delete scoped by userId so users can't remove someone else's session.
+  // resolveUserSession treats a missing row as revoked, so deletion is
+  // equivalent to marking revokedAt but leaves no orphaned rows.
+  const deleted = await db
+    .delete(sessions)
     .where(and(eq(sessions.sessionToken, id), eq(sessions.userId, result.userId)))
     .returning({ id: sessions.sessionToken });
 
-  if (updated.length === 0) {
+  if (deleted.length === 0) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 

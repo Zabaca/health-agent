@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
+import type { ProviderFormData, ReleaseFormData } from "@health-agent/types";
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 export const SESSION_TOKEN_KEY = "session_token";
@@ -142,6 +143,389 @@ export async function revokeSession(id: string): Promise<{ success: boolean; rev
     success: boolean;
     revokedSelf: boolean;
   };
+}
+
+export async function revokeCurrentSession(): Promise<void> {
+  await apiFetch("/api/me/sessions/current", { method: "DELETE" }, { auth: true });
+}
+
+// ─── Setup Status ─────────────────────────────────────────────────────────────
+
+export type SetupStatus = {
+  firstName: string | null;
+  profileComplete: boolean;
+  providerAdded: boolean;
+  pdaAdded: boolean;
+  releaseCreated: boolean;
+};
+
+export async function getSetupStatus(): Promise<SetupStatus> {
+  return (await apiFetch("/api/me/setup-status", {}, { auth: true })) as SetupStatus;
+}
+
+// ─── Profile ──────────────────────────────────────────────────────────────────
+
+export type ProfileData = {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  dateOfBirth: string;
+  address: string;
+  phoneNumber: string;
+  ssn: string;
+  avatarUrl: string | null;
+};
+
+export async function getProfile(): Promise<ProfileData> {
+  return (await apiFetch("/api/profile", {}, { auth: true })) as ProfileData;
+}
+
+export type UpdateProfileInput = {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  dateOfBirth: string;
+  address: string;
+  phoneNumber: string;
+  ssn?: string;
+  avatarUrl?: string;
+};
+
+export async function updateProfile(data: UpdateProfileInput): Promise<{ success: boolean }> {
+  return (await apiFetch("/api/profile", { method: "PUT", body: JSON.stringify(data) }, { auth: true })) as { success: boolean };
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: boolean }> {
+  return (await apiFetch(
+    "/api/password/change",
+    { method: "PUT", body: JSON.stringify({ currentPassword, newPassword }) },
+    { auth: true }
+  )) as { ok: boolean };
+}
+
+// ─── Providers ────────────────────────────────────────────────────────────────
+
+export type UserProvider = {
+  id: string;
+  userId: string;
+  order: number;
+  providerName: string;
+  providerType: string;
+  physicianName: string | null;
+  patientId: string | null;
+  insurance: string | null;
+  patientMemberId: string | null;
+  groupId: string | null;
+  planName: string | null;
+  phone: string | null;
+  fax: string | null;
+  providerEmail: string | null;
+  address: string | null;
+  membershipIdFront: string | null;
+  membershipIdBack: string | null;
+};
+
+export type MyProviderInput = {
+  providerName?: string;
+  providerType: "Insurance" | "Hospital" | "Facility";
+  physicianName?: string;
+  patientId?: string;
+  insurance?: string;
+  patientMemberId?: string;
+  groupId?: string;
+  planName?: string;
+  phone?: string;
+  fax?: string;
+  providerEmail?: string;
+  address?: string;
+  membershipIdFront?: string;
+  membershipIdBack?: string;
+};
+
+export async function listMyProviders(): Promise<UserProvider[]> {
+  return (await apiFetch("/api/my-providers", {}, { auth: true })) as UserProvider[];
+}
+
+export async function replaceMyProviders(providers: MyProviderInput[]): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    "/api/my-providers",
+    { method: "PUT", body: JSON.stringify({ providers }) },
+    { auth: true }
+  )) as { success: boolean };
+}
+
+// ─── Designated Agents ────────────────────────────────────────────────────────
+
+export type DesignatedAgentUser = {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
+};
+
+export type DesignatedAgent = {
+  id: string;
+  inviteeEmail: string;
+  relationship: string | null;
+  status: string;
+  healthRecordsPermission: string | null;
+  manageProvidersPermission: string | null;
+  releasePermission: string | null;
+  createdAt: string;
+  tokenExpiresAt: string | null;
+  agentUser: DesignatedAgentUser | null;
+};
+
+export type AssignedAgent = {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+export type DesignatedAgentsResponse = {
+  assignedAgent: AssignedAgent | null;
+  designatedAgents: DesignatedAgent[];
+};
+
+export async function listMyDesignatedAgents(): Promise<DesignatedAgentsResponse> {
+  return (await apiFetch("/api/my-designated-agents", {}, { auth: true })) as DesignatedAgentsResponse;
+}
+
+export type InviteAgentInput = {
+  inviteeEmail: string;
+  relationship?: string;
+  healthRecordsPermission?: 'viewer' | 'editor' | null;
+  manageProvidersPermission?: 'viewer' | 'editor' | null;
+  releasePermission?: 'viewer' | 'editor' | null;
+};
+
+export async function inviteDesignatedAgent(data: InviteAgentInput): Promise<{ id: string }> {
+  return (await apiFetch(
+    "/api/my-designated-agents",
+    { method: "POST", body: JSON.stringify(data) },
+    { auth: true }
+  )) as { id: string };
+}
+
+export type UpdateAgentInput = {
+  relationship?: string | null;
+  healthRecordsPermission?: 'viewer' | 'editor' | null;
+  manageProvidersPermission?: 'viewer' | 'editor' | null;
+  releasePermission?: 'viewer' | 'editor' | null;
+};
+
+export async function updateDesignatedAgent(id: string, data: UpdateAgentInput): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/my-designated-agents/${encodeURIComponent(id)}`,
+    { method: "PATCH", body: JSON.stringify(data) },
+    { auth: true }
+  )) as { success: boolean };
+}
+
+export async function revokeDesignatedAgent(id: string): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/my-designated-agents/${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+    { auth: true }
+  )) as { success: boolean };
+}
+
+// ─── Releases ─────────────────────────────────────────────────────────────────
+
+export type ReleaseSummary = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+  updatedAt: string;
+  voided: boolean;
+  authSignatureImage: string | null;
+  authExpirationDate: string | null;
+  releaseCode: string | null;
+  releaseAuthAgent: boolean;
+  authAgentName: string | null;
+  providerName: string | null;
+  providerType: string | null;
+  insurance: string | null;
+};
+
+export type ReleaseProvider = {
+  id: string;
+  releaseId: string;
+  order: number;
+  providerName: string;
+  providerType: string;
+  physicianName: string | null;
+  patientId: string | null;
+  insurance: string | null;
+  patientMemberId: string | null;
+  groupId: string | null;
+  planName: string | null;
+  phone: string | null;
+  fax: string | null;
+  providerEmail: string | null;
+  address: string | null;
+  membershipIdFront: string | null;
+  membershipIdBack: string | null;
+  historyPhysical: boolean;
+  diagnosticResults: boolean;
+  treatmentProcedure: boolean;
+  prescriptionMedication: boolean;
+  imagingRadiology: boolean;
+  dischargeSummaries: boolean;
+  specificRecords: boolean;
+  specificRecordsDesc: string | null;
+  dateRangeFrom: string | null;
+  dateRangeTo: string | null;
+  allAvailableDates: boolean;
+  purpose: string | null;
+  purposeOther: string | null;
+};
+
+export type ReleaseDetail = {
+  id: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  dateOfBirth: string;
+  mailingAddress: string;
+  phoneNumber: string;
+  email: string;
+  ssn: string | null;
+  releaseAuthAgent: boolean;
+  releaseAuthZabaca: boolean;
+  authAgentFirstName: string | null;
+  authAgentLastName: string | null;
+  authAgentOrganization: string | null;
+  authAgentAddress: string | null;
+  authAgentPhone: string | null;
+  authAgentEmail: string | null;
+  authExpirationDate: string | null;
+  authExpirationEvent: string | null;
+  authPrintedName: string;
+  authSignatureImage: string | null;
+  authDate: string;
+  authAgentName: string | null;
+  voided: boolean;
+  releaseCode: string | null;
+  providers: ReleaseProvider[];
+};
+
+// Derived from @health-agent/types so mobile and web share the same schema source.
+export type ReleaseProviderInput = ProviderFormData;
+export type CreateReleaseInput = ReleaseFormData;
+
+export type SignReleaseInput = {
+  signatureImage: string;
+  printedName: string;
+  authDate: string;
+  expirationDate: string;
+  expirationEvent?: string;
+};
+
+export async function listReleases(): Promise<ReleaseSummary[]> {
+  return (await apiFetch("/api/releases", {}, { auth: true })) as ReleaseSummary[];
+}
+
+export async function getRelease(id: string): Promise<ReleaseDetail> {
+  return (await apiFetch(`/api/releases/${encodeURIComponent(id)}`, {}, { auth: true })) as ReleaseDetail;
+}
+
+export async function createRelease(input: CreateReleaseInput): Promise<ReleaseDetail[]> {
+  return (await apiFetch(
+    "/api/releases",
+    { method: "POST", body: JSON.stringify(input) },
+    { auth: true }
+  )) as ReleaseDetail[];
+}
+
+export async function voidRelease(id: string): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/releases/${encodeURIComponent(id)}`,
+    { method: "PATCH" },
+    { auth: true }
+  )) as { success: boolean };
+}
+
+export async function signRelease(id: string, input: SignReleaseInput): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/releases/${encodeURIComponent(id)}/sign`,
+    { method: "POST", body: JSON.stringify(input) },
+    { auth: true }
+  )) as { success: boolean };
+}
+
+// ─── Representing (PDA) ───────────────────────────────────────────────────────
+
+export type RepresentingReleaseSummary = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  createdAt: string;
+  updatedAt: string;
+  voided: boolean;
+  authSignatureImage: string | null;
+  releaseCode: string | null;
+  releaseAuthAgent: boolean;
+  authAgentFirstName: string | null;
+  authAgentLastName: string | null;
+  providerNames: (string | null | undefined)[];
+};
+
+export type CreateRepresentingReleaseInput = Omit<CreateReleaseInput, "authSignatureImage" | "authPrintedName" | "authDate" | "authExpirationDate"> & {
+  authSignatureImage?: string;
+  authPrintedName?: string;
+  authDate?: string;
+  authExpirationDate?: string;
+};
+
+export async function listRepresentingProviders(patientId: string): Promise<UserProvider[]> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/providers`,
+    {},
+    { auth: true }
+  )) as UserProvider[];
+}
+
+export async function listRepresentingReleases(patientId: string): Promise<RepresentingReleaseSummary[]> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/releases`,
+    {},
+    { auth: true }
+  )) as RepresentingReleaseSummary[];
+}
+
+export async function createRepresentingRelease(
+  patientId: string,
+  input: CreateRepresentingReleaseInput
+): Promise<{ id: string }> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/releases`,
+    { method: "POST", body: JSON.stringify(input) },
+    { auth: true }
+  )) as { id: string };
+}
+
+export type RepresentedPatient = {
+  patientId: string;
+  relationship: string | null;
+  healthRecordsPermission: "viewer" | "editor" | null;
+  manageProvidersPermission: "viewer" | "editor" | null;
+  releasePermission: "viewer" | "editor" | null;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+export async function listRepresentedPatients(): Promise<RepresentedPatient[]> {
+  const res = (await apiFetch("/api/representing", {}, { auth: true })) as {
+    patients: RepresentedPatient[];
+  };
+  return res.patients;
 }
 
 // ─── Records ──────────────────────────────────────────────────────────────────

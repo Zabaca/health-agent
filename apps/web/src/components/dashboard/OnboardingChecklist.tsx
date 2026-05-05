@@ -25,6 +25,7 @@ interface ChecklistItem {
 
 export default function OnboardingChecklist({ profileComplete, providerAdded, pdaAdded, releaseCreated }: Props) {
   const releasePrereqsMet = profileComplete && providerAdded;
+  const invitePrereqsMet = profileComplete && providerAdded;
 
   const items: ChecklistItem[] = [
     {
@@ -50,6 +51,8 @@ export default function OnboardingChecklist({ profileComplete, providerAdded, pd
       done: pdaAdded,
       href: '/my-designated-agents?redirect=/dashboard',
       action: 'Invite',
+      disabled: !invitePrereqsMet,
+      disabledReason: 'Complete your personal information and add a provider first',
     },
     {
       icon: <IconFileDescription size={20} />,

@@ -7,7 +7,6 @@ import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { useTheme } from "@/theme/ThemeProvider";
-import { mockUser } from "@/mock/user";
 import { useAuth } from "@/hooks/useAuth";
 import type { ProfileParamList } from "@/navigation/types";
 
@@ -16,17 +15,12 @@ type Nav = NativeStackNavigationProp<ProfileParamList>;
 export default function AccountSettings() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { signOut, bioEnabled, bioSupported, enableBiometric, disableBiometric } = useAuth();
-  const [push, setPush] = useState(true);
-  const [labAlerts, setLabAlerts] = useState(true);
-  const [sigReq, setSigReq] = useState(true);
+  const { user, signOut, bioEnabled, bioSupported, enableBiometric, disableBiometric } = useAuth();
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const onBioToggle = async (next: boolean) => {
     if (next) {
-      // Enabling requires the user to actually authenticate, so we don't
-      // strand them behind a lock they can't open. Cancel/fail leaves it off.
       await enableBiometric();
     } else {
       await disableBiometric();
@@ -38,20 +32,16 @@ export default function AccountSettings() {
       <Header title="Account Settings" onBack={() => nav.goBack()} />
       <Screen contentContainerStyle={{ gap: 16 }}>
         <Group>
-          <Row label="Email" value={mockUser.email} />
-          <Row label="Change Password" chevron />
+          <Row label="Email" value={user?.email ?? ""} />
+          <Pressable onPress={() => nav.navigate("ChangePassword")}>
+            <Row label="Change Password" chevron />
+          </Pressable>
           {bioSupported ? (
             <ToggleRow label="Face ID / Touch ID" value={bioEnabled} onChange={onBioToggle} />
           ) : null}
           <Pressable onPress={() => nav.navigate("ActiveDevices")}>
             <Row label="Active Devices" chevron />
           </Pressable>
-        </Group>
-
-        <Group>
-          <ToggleRow label="Push Notifications" value={push} onChange={setPush} />
-          <ToggleRow label="Lab Result Alerts" value={labAlerts} onChange={setLabAlerts} />
-          <ToggleRow label="Release Signature Requests" value={sigReq} onChange={setSigReq} />
         </Group>
 
         <Group>

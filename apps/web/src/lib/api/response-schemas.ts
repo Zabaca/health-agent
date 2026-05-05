@@ -73,6 +73,13 @@ export const releaseSummarySchema = z.object({
   updatedAt: z.string(),
   voided: z.boolean(),
   authSignatureImage: z.string().nullable(),
+  authExpirationDate: z.string().nullable(),
+  releaseCode: z.string().nullable(),
+  releaseAuthAgent: z.boolean(),
+  authAgentName: z.string().nullable(),
+  providerName: z.string().nullable(),
+  providerType: z.string().nullable(),
+  insurance: z.string().nullable(),
 });
 
 export const userProviderRowSchema = z.object({

@@ -19,15 +19,17 @@ import AvatarUpload from "@/components/shared/AvatarUpload";
 import PageHeader from "@/components/shared/PageHeader";
 import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
 import ActiveDevicesSection from "@/components/shared/ActiveDevicesSection";
+import RoleSwitchSection from "@/components/shared/RoleSwitchSection";
 
 interface ProfileFormProps {
   defaultValues: ProfileFormData;
   onComplete?: (data: ProfileFormData) => void;
   redirectTo?: string;
   maw?: number | string;
+  isPda?: boolean;
 }
 
-export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw = 700 }: ProfileFormProps) {
+export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw = 700, isPda }: ProfileFormProps) {
   const router = useRouter();
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -180,6 +182,9 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
     </form>
     {!onComplete && <ChangePasswordSection />}
     {!onComplete && <ActiveDevicesSection />}
+    {!onComplete && isPda && (
+      <RoleSwitchSection href="/representing" label="Switch to Representative View" />
+    )}
     </div>
   );
 }

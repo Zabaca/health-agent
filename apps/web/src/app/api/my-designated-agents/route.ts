@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, patientAssignments, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -8,12 +8,12 @@ import { randomUUID } from "crypto";
 import { sendInviteEmail, getSiteBaseUrl } from "@/lib/email";
 
 // GET /api/my-designated-agents — list patient's PDAs + assigned agent
-export async function GET() {
-  const { session, error } = await requireActiveSession();
+export async function GET(req: NextRequest) {
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
-  if (session.user.type === 'admin' || session.user.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (result.type === 'admin' || result.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const patientId = session.user.id;
+  const patientId = result.userId;
 
   const [pdas, assignment] = await Promise.all([
     db.query.patientDesignatedAgents.findMany({
@@ -61,11 +61,11 @@ export async function GET() {
 
 // POST /api/my-designated-agents — send invite
 export async function POST(req: NextRequest) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
-  if (session.user.type === 'admin' || session.user.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (result.type === 'admin' || result.isAgent) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const patientId = session.user.id;
+  const patientId = result.userId;
   const body = await req.json() as {
     inviteeEmail: string;
     relationship?: string;

@@ -34,7 +34,7 @@ export function Header({ title, variant = "back", onBack, rightAction }: Props) 
       <Pressable
         onPress={rightAction.onPress}
         accessibilityRole="button"
-        style={{ width: t.dims.iconBox, height: t.dims.iconBox, paddingRight: 16, justifyContent: "center", alignItems: "flex-end" }}
+        style={{ minWidth: t.dims.iconBox, height: t.dims.iconBox, paddingRight: 16, paddingLeft: 8, justifyContent: "center", alignItems: "flex-end" }}
       >
         {rightAction.icon ?? (
           <Text style={{ fontSize: 17, color: t.colors.primary, fontWeight: "600" }}>
