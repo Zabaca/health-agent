@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -9,12 +9,12 @@ import { contract } from "@/lib/api/contract";
 import { decrypt, encryptPii, extractLast4Ssn } from "@/lib/crypto";
 import { z } from "zod";
 
-export const GET = contractRoute(contract.profile.get, async () => {
-  const { session, error } = await requireActiveSession();
+export const GET = contractRoute(contract.profile.get, async ({ req }) => {
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const user = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
+    where: eq(users.id, result.userId),
   });
 
   return NextResponse.json({
@@ -39,7 +39,7 @@ const partialProfileSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const body = partialProfileSchema.safeParse(await req.json());
@@ -49,13 +49,13 @@ export async function PATCH(req: NextRequest) {
   await db.update(users).set({
     ...rest,
     ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl || null } : {}),
-  }).where(eq(users.id, session.user.id));
+  }).where(eq(users.id, result.userId));
 
   return NextResponse.json({ success: true });
 }
 
-export const PUT = contractRoute(contract.profile.update, async ({ body }) => {
-  const { session, error } = await requireActiveSession();
+export const PUT = contractRoute(contract.profile.update, async ({ req, body }) => {
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const { avatarUrl, ssn, ...rest } = body;
@@ -63,7 +63,7 @@ export const PUT = contractRoute(contract.profile.update, async ({ body }) => {
   await db
     .update(users)
     .set({ ...encryptPii(normalized), profileComplete: true, avatarUrl: avatarUrl || null })
-    .where(eq(users.id, session.user.id));
+    .where(eq(users.id, result.userId));
 
   revalidatePath('/profile');
   revalidatePath('/dashboard');

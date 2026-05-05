@@ -75,8 +75,7 @@ export default function ActiveDevicesSection() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to revoke session");
       if (data.revokedSelf) {
-        // We just revoked our own session — kick to login on next request.
-        window.location.href = "/login";
+        window.location.href = "/api/auth/clear-session";
         return;
       }
       await load();

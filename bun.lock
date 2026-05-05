@@ -19,7 +19,9 @@
         "expo-camera": "~16.0.18",
         "expo-image-picker": "~16.0.6",
         "expo-local-authentication": "~15.0.0",
+        "expo-print": "14.0.3",
         "expo-secure-store": "~14.0.0",
+        "expo-sharing": "13.0.1",
         "expo-status-bar": "~2.0.0",
         "expo-updates": "~0.26.0",
         "lucide-react-native": "^1.11.0",
@@ -1275,7 +1277,11 @@
 
     "expo-modules-core": ["expo-modules-core@2.2.3", "", { "dependencies": { "invariant": "^2.2.4" } }, "sha512-01QqZzpP/wWlxnNly4G06MsOBUTbMDj02DQigZoXfDh80vd/rk3/uVXqnZgOdLSggTs6DnvOgAUy0H2q30XdUg=="],
 
+    "expo-print": ["expo-print@14.0.3", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-VEGl7SX3q2Z3ZKwvxtOBAlXm9yDX8Jodewr+kouQcg2EaV0ciAH9rqLwRWZhAtEETpVdEG53ow7IAmwJU7jInA=="],
+
     "expo-secure-store": ["expo-secure-store@14.0.1", "", { "peerDependencies": { "expo": "*" } }, "sha512-QUS+j4+UG4jRQalgnpmTvvrFnMVLqPiUZRzYPnG3+JrZ5kwVW2w6YS3WWerPoR7C6g3y/a2htRxRSylsDs+TaQ=="],
+
+    "expo-sharing": ["expo-sharing@13.0.1", "", { "peerDependencies": { "expo": "*" } }, "sha512-qych3Nw65wlFcnzE/gRrsdtvmdV0uF4U4qVMZBJYPG90vYyWh2QM9rp1gVu0KWOBc7N8CC2dSVYn4/BXqJy6Xw=="],
 
     "expo-status-bar": ["expo-status-bar@2.0.1", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-AkIPX7jWHRPp83UBZ1iXtVvyr0g+DgBVvIXTtlmPtmUsm8Vq9Bb5IGj86PW8osuFlgoTVAg7HI/+Ok7yEYwiRg=="],
 

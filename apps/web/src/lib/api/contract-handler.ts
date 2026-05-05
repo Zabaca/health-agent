@@ -54,6 +54,9 @@ export function contractRoute<T extends AppRoute>(
       const rawBody = await req.json().catch(() => null);
       const result = route.body.safeParse(rawBody);
       if (!result.success) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('[contractRoute] Body validation failed for', route.method, route.path, JSON.stringify(result.error.flatten(), null, 2));
+        }
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
       }
       body = result.data as InferBody<T>;
@@ -67,10 +70,12 @@ export function contractRoute<T extends AppRoute>(
       const rawResponseBody = await response.clone().json().catch(() => null);
       const result = responseSchema.safeParse(rawResponseBody);
       if (!result.success) {
-        console.error(
-          `[contractRoute] Response for ${route.method} ${route.path} (status ${response.status}) does not match contract schema:`,
-          result.error.flatten()
-        );
+        if (process.env.NODE_ENV !== 'production') {
+          console.error(
+            `[contractRoute] Response for ${route.method} ${route.path} (status ${response.status}) does not match contract schema:`,
+            result.error.flatten()
+          );
+        }
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
       }
       // Return the schema-parsed body to strip any extra fields

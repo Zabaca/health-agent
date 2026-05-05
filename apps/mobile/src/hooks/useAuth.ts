@@ -18,6 +18,7 @@ import {
   loginEmail,
   registerEmail,
   requestPasswordReset as apiRequestPasswordReset,
+  revokeCurrentSession,
   setUnauthorizedHandler,
   type SessionUser,
 } from "@/lib/api";
@@ -196,6 +197,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Best-effort: delete the server session row before clearing the local
+    // token so it no longer appears in the active devices list.
+    await revokeCurrentSession().catch(() => {});
     await Promise.all([
       SecureStore.deleteItemAsync(SESSION_TOKEN_KEY),
       // Clear the biometric pref on sign-out so the next user (or same user
