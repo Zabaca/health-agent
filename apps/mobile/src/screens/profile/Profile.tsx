@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { ChevronRight, Settings, Repeat } from "lucide-react-native";
+import { ChevronRight, Settings, Repeat, User } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRole } from "@/hooks/useRole";
@@ -30,7 +31,7 @@ export default function Profile() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [agentsLoading, setAgentsLoading] = useState(true);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     getProfile()
       .then(setProfile)
       .catch(() => {})
@@ -42,7 +43,7 @@ export default function Profile() {
       .catch(() => {})
       .finally(() => setAgentsLoading(false));
     listRepresentedPatients().then(setRepresentedPatients).catch(() => {});
-  }, []);
+  }, []));
 
   const initials = profile
     ? `${profile.firstName?.[0] ?? ""}${profile.lastName?.[0] ?? ""}`.toUpperCase()
@@ -89,12 +90,17 @@ export default function Profile() {
               backgroundColor: t.colors.primaryBg,
               alignItems: "center",
               justifyContent: "center",
+              overflow: "hidden",
             }}
           >
             {profileLoading ? (
               <ActivityIndicator size="small" color={t.colors.primary} />
-            ) : (
+            ) : profile?.avatarUrl ? (
+              <Image source={{ uri: profile.avatarUrl }} style={{ width: 44, height: 44 }} />
+            ) : initials ? (
               <Text style={{ color: t.colors.primary, fontWeight: "700" }}>{initials}</Text>
+            ) : (
+              <User size={22} color={t.colors.primary} />
             )}
           </View>
           <View style={{ flex: 1 }}>
