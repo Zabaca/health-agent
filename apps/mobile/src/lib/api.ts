@@ -293,6 +293,22 @@ export async function listMyDesignatedAgents(): Promise<DesignatedAgentsResponse
   return (await apiFetch("/api/my-designated-agents", {}, { auth: true })) as DesignatedAgentsResponse;
 }
 
+export type InviteAgentInput = {
+  inviteeEmail: string;
+  relationship?: string;
+  healthRecordsPermission?: 'viewer' | 'editor' | null;
+  manageProvidersPermission?: 'viewer' | 'editor' | null;
+  releasePermission?: 'viewer' | 'editor' | null;
+};
+
+export async function inviteDesignatedAgent(data: InviteAgentInput): Promise<{ id: string }> {
+  return (await apiFetch(
+    "/api/my-designated-agents",
+    { method: "POST", body: JSON.stringify(data) },
+    { auth: true }
+  )) as { id: string };
+}
+
 export type UpdateAgentInput = {
   relationship?: string | null;
   healthRecordsPermission?: 'viewer' | 'editor' | null;
