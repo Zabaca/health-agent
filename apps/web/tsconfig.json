@@ -7,6 +7,7 @@
     "strictNullChecks": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "target": "ES2022",
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
