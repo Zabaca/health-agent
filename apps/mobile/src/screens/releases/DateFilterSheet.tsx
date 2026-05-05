@@ -152,15 +152,17 @@ export default function DateFilterSheet() {
             <Pressable key={id} onPress={() => setFilters((f) => ({ ...f, status: on ? null : id }))}>
               <View
                 style={{
-                  paddingVertical: 8,
+                  height: 34,
                   paddingHorizontal: 14,
                   borderRadius: t.radius.pill,
+                  alignItems: "center",
+                  justifyContent: "center",
                   backgroundColor: on ? t.colors.primary : "transparent",
                   borderWidth: 1,
                   borderColor: on ? t.colors.primary : t.colors.border,
                 }}
               >
-                <Text style={{ color: on ? "#FFFFFF" : t.colors.textPrimary, fontSize: 13, fontWeight: "600" }}>{label}</Text>
+                <Text style={{ color: on ? "#FFFFFF" : t.colors.textPrimary, fontSize: 13, fontWeight: on ? "600" : "500" }}>{label}</Text>
               </View>
             </Pressable>
           );

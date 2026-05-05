@@ -38,45 +38,64 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function SetupBanner({ onProfile, onProviders }: { onProfile: () => void; onProviders: () => void }) {
+function SetupBanner({
+  profileComplete,
+  providerAdded,
+  onProfile,
+  onProviders,
+}: {
+  profileComplete: boolean;
+  providerAdded: boolean;
+  onProfile: () => void;
+  onProviders: () => void;
+}) {
   const t = useTheme();
+  const subtitle = !profileComplete && !providerAdded
+    ? "Finish your profile and add a health provider first."
+    : !profileComplete
+    ? "Finish your profile before creating releases."
+    : "Add a health provider before creating releases.";
   return (
     <View
       style={{
-        backgroundColor: "#FEF3C7",
+        backgroundColor: t.colors.primaryBg,
         borderRadius: t.radius.card,
         borderWidth: 1,
-        borderColor: "#D97706",
+        borderColor: t.colors.primary,
         padding: 14,
         gap: 10,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
-        <ListChecks size={18} color="#B45309" style={{ marginTop: 1 }} />
+        <ListChecks size={18} color={t.colors.primary} style={{ marginTop: 1 }} />
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ color: "#92400E", fontWeight: "600", fontSize: 14 }}>Complete setup to create releases</Text>
-          <Text style={{ color: "#B45309", fontSize: 13 }}>Finish your profile and add a health provider first.</Text>
+          <Text style={{ color: t.colors.primary, fontWeight: "600", fontSize: 14 }}>Complete setup to create releases</Text>
+          <Text style={{ color: t.colors.primary, fontSize: 13 }}>{subtitle}</Text>
         </View>
       </View>
       <View style={{ flexDirection: "row", gap: 8 }}>
-        <Pressable
-          onPress={onProfile}
-          style={{
-            flex: 1, paddingVertical: 8, borderRadius: 8,
-            backgroundColor: "#D97706", alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 13 }}>Complete Profile</Text>
-        </Pressable>
-        <Pressable
-          onPress={onProviders}
-          style={{
-            flex: 1, paddingVertical: 8, borderRadius: 8,
-            borderWidth: 1, borderColor: "#D97706", alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#92400E", fontWeight: "600", fontSize: 13 }}>Add Provider</Text>
-        </Pressable>
+        {!profileComplete && (
+          <Pressable
+            onPress={onProfile}
+            style={{
+              flex: 1, paddingVertical: 8, borderRadius: 8,
+              backgroundColor: t.colors.primary, alignItems: "center",
+            }}
+          >
+            <Text style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 13 }}>Complete Profile</Text>
+          </Pressable>
+        )}
+        {!providerAdded && (
+          <Pressable
+            onPress={onProviders}
+            style={{
+              flex: 1, paddingVertical: 8, borderRadius: 8,
+              borderWidth: 1, borderColor: t.colors.primary, alignItems: "center",
+            }}
+          >
+            <Text style={{ color: t.colors.primary, fontWeight: "600", fontSize: 13 }}>Add Provider</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -217,10 +236,32 @@ export default function ReleasesList() {
     return (
       <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
         {headerRow}
-        {setupIncomplete && (
-          <SetupBanner onProfile={goToProfileEdit} onProviders={goToProvidersTab} />
-        )}
-        {!setupIncomplete && (
+        {setupIncomplete ? (
+          <EmptyState
+            icon={<ClipboardList size={32} color={t.colors.primary} />}
+            iconBg={t.colors.primaryBg}
+            title="Complete setup to create releases"
+            subtitle={
+              !setupStatus?.profileComplete && !setupStatus?.providerAdded
+                ? "Finish your profile and add a health provider before creating your first HIPAA release."
+                : !setupStatus?.profileComplete
+                ? "Finish your profile before creating releases."
+                : "Add a health provider before creating releases."
+            }
+            actions={[
+              ...(!setupStatus?.profileComplete ? [{
+                label: "Complete Profile",
+                icon: <Plus size={16} color="#FFFFFF" />,
+                onPress: goToProfileEdit,
+              }] : []),
+              ...(!setupStatus?.providerAdded ? [{
+                label: "Add Provider",
+                variant: "secondary" as const,
+                onPress: goToProvidersTab,
+              }] : []),
+            ]}
+          />
+        ) : (
           <EmptyState
             icon={<ClipboardList size={32} color={t.colors.textSecondary} />}
             title="No releases yet"
@@ -243,7 +284,12 @@ export default function ReleasesList() {
       {headerRow}
 
       {setupIncomplete && (
-        <SetupBanner onProfile={goToProfileEdit} onProviders={goToProvidersTab} />
+        <SetupBanner
+          profileComplete={setupStatus?.profileComplete ?? false}
+          providerAdded={setupStatus?.providerAdded ?? false}
+          onProfile={goToProfileEdit}
+          onProviders={goToProvidersTab}
+        />
       )}
 
       <View style={{ flexDirection: "row", gap: 10 }}>
