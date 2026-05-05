@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ChevronRight, Plus, Eye, Pencil, ShieldOff, Stethoscope } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
+import { ProviderAvatar } from "@/components/ProviderAvatar";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
 import { listRepresentingProviders, type UserProvider } from "@/lib/api";
@@ -12,13 +13,22 @@ import type { PdaProvidersParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaProvidersParamList>;
 
-function providerTitle(p: UserProvider) {
-  return p.physicianName ?? p.providerName;
+function providerDisplayName(p: UserProvider): string {
+  return p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName;
 }
 
-function providerSubtitle(p: UserProvider) {
-  if (p.physicianName) return `${p.providerType} · ${p.providerName}`;
-  return p.providerType;
+function providerSubtitle(p: UserProvider): string {
+  if (p.providerType === "Insurance") {
+    return p.patientMemberId ? `Member #${p.patientMemberId}` : "Insurance";
+  }
+  return p.physicianName ? p.physicianName : p.providerType;
+}
+
+function providerDetail(p: UserProvider): string | null {
+  if (p.providerType === "Insurance") return p.planName || null;
+  if (p.phone) return p.phone;
+  if (p.address) return p.address.split(",")[0].trim();
+  return null;
 }
 
 export default function PdaProviders() {
@@ -150,28 +160,35 @@ export default function PdaProviders() {
         </Text>
       </View>
 
-      {providers.map((p) => (
-        <Pressable key={p.id} onPress={() => nav.navigate("PdaProviderDetail", { providerId: p.id })}>
-          <View
-            style={{
-              backgroundColor: t.colors.surface,
-              borderRadius: t.radius.card,
-              borderWidth: 1,
-              borderColor: t.colors.border,
-              padding: 14,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={t.type.bodyStrong}>{providerTitle(p)}</Text>
-              <Text style={t.type.caption}>{providerSubtitle(p)}</Text>
+      {providers.map((p) => {
+        const detail = providerDetail(p);
+        return (
+          <Pressable key={p.id} onPress={() => nav.navigate("PdaProviderDetail", { providerId: p.id })}>
+            <View
+              style={{
+                backgroundColor: t.colors.surface,
+                borderRadius: t.radius.card,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                padding: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <ProviderAvatar type={p.providerType} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={t.type.bodyStrong} numberOfLines={1}>{providerDisplayName(p)}</Text>
+                <Text style={t.type.caption} numberOfLines={1}>{providerSubtitle(p)}</Text>
+                {detail ? (
+                  <Text style={[t.type.caption, { marginTop: 2 }]} numberOfLines={1}>{detail}</Text>
+                ) : null}
+              </View>
+              <ChevronRight size={18} color={t.colors.textSecondary} />
             </View>
-            <ChevronRight size={16} color={t.colors.textSecondary} />
-          </View>
-        </Pressable>
-      ))}
+          </Pressable>
+        );
+      })}
     </Screen>
   );
 }
