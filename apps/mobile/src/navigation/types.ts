@@ -113,7 +113,15 @@ export type PdaHomeParamList = {
 
 export type PdaRecordsParamList = {
   PdaRecords: undefined;
-  PdaRecordDetail: { recordId: string };
+  PdaRecordDetail: {
+    fileId: string;
+    fileURL: string;
+    fileType: string;
+    source: string;
+    createdAt: string;
+    pagecount: number | null;
+    originalName: string | null;
+  };
 };
 
 export type PdaProvidersParamList = {

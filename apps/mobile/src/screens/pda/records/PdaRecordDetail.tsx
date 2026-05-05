@@ -1,15 +1,10 @@
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Download, FileText, Info } from "lucide-react-native";
+import { ExternalLink, FileText } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
-import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { useTheme } from "@/theme/ThemeProvider";
-import { useRole } from "@/hooks/useRole";
-import { findPatient } from "@/mock/pda";
-import { mockRecords } from "@/mock/records";
 import type { PdaRecordsParamList } from "@/navigation/types";
 
 type R = RouteProp<PdaRecordsParamList, "PdaRecordDetail">;
@@ -19,37 +14,62 @@ export default function PdaRecordDetail() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const { params } = useRoute<R>();
-  const { representing } = useRole();
-  const patient = findPatient(representing);
-  const record = mockRecords.find((r) => r.id === params.recordId) ?? mockRecords[0];
-  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const title = params.originalName ?? params.fileType.toUpperCase();
+  const date = new Date(params.createdAt).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
   const rows = [
-    { label: "Type", value: record.kind === "labs" ? "Labs" : record.kind === "imaging" ? "Imaging" : "Notes" },
-    { label: "Provider", value: record.provider },
-    { label: "Date", value: record.date },
+    { label: "File name", value: params.originalName ?? "—" },
+    { label: "Type", value: params.fileType },
+    { label: "Source", value: params.source },
+    { label: "Date", value: date },
+    ...(params.pagecount != null ? [{ label: "Pages", value: String(params.pagecount) }] : []),
   ];
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
-      <Header
-        title={record.title}
-        onBack={() => nav.goBack()}
-        rightAction={{ icon: <Download size={20} color={t.colors.primary} />, onPress: () => {} }}
-      />
+      <Header title={title} onBack={() => nav.goBack()} />
       <Screen
         bottom={
           <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16 }}>
             <Pressable
-              onPress={() => setDeleteOpen(true)}
-              style={{ height: 52, borderRadius: t.radius.button, backgroundColor: t.colors.destructive, alignItems: "center", justifyContent: "center" }}
+              onPress={() => Linking.openURL(params.fileURL)}
+              style={{
+                height: 52,
+                borderRadius: t.radius.button,
+                backgroundColor: t.colors.primary,
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 8,
+              }}
             >
-              <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 16 }}>Delete Record</Text>
+              <ExternalLink size={16} color="#FFFFFF" />
+              <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 16 }}>View Document</Text>
             </Pressable>
           </View>
         }
         contentContainerStyle={{ gap: 16 }}
       >
+        <View
+          style={{
+            backgroundColor: t.colors.primaryBg,
+            borderRadius: t.radius.card,
+            padding: 24,
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <FileText size={32} color={t.colors.primary} />
+          <Text style={{ color: t.colors.primary, fontWeight: "600", textAlign: "center" }} numberOfLines={2}>
+            {title}
+          </Text>
+        </View>
+
         <View
           style={{
             backgroundColor: t.colors.surface,
@@ -72,51 +92,13 @@ export default function PdaRecordDetail() {
               }}
             >
               <Text style={[t.type.caption, { flex: 1 }]}>{row.label}</Text>
-              <Text style={[t.type.body, { fontWeight: "600" }]}>{row.value}</Text>
+              <Text style={[t.type.body, { fontWeight: "600" }]} numberOfLines={1}>
+                {row.value}
+              </Text>
             </View>
           ))}
         </View>
-
-        <View
-          style={{
-            backgroundColor: t.colors.primaryBg,
-            borderRadius: t.radius.card,
-            padding: 18,
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
-          <FileText size={28} color={t.colors.primary} />
-          <Text style={{ color: t.colors.primary, fontWeight: "600" }}>
-            {record.title.replace(/[^A-Za-z]/g, "_")}.pdf
-          </Text>
-        </View>
-
-        <View
-          style={{
-            backgroundColor: t.colors.primaryBg,
-            borderRadius: t.radius.card,
-            padding: 14,
-            flexDirection: "row",
-            alignItems: "flex-start",
-            gap: 8,
-          }}
-        >
-          <Info size={16} color={t.colors.primary} />
-          <Text style={[t.type.caption, { color: t.colors.primary, flex: 1 }]}>
-            As an Editor, you can upload new records or delete this record on behalf of {patient.name}.
-          </Text>
-        </View>
       </Screen>
-
-      <ConfirmDrawer
-        visible={deleteOpen}
-        title="Delete Record?"
-        message={`This will permanently remove this record from ${patient.name}'s shared health data. This action cannot be undone.`}
-        confirmLabel="Delete Record"
-        onCancel={() => setDeleteOpen(false)}
-        onConfirm={() => { setDeleteOpen(false); nav.goBack(); }}
-      />
     </View>
   );
 }

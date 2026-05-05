@@ -528,6 +528,31 @@ export async function listRepresentedPatients(): Promise<RepresentedPatient[]> {
   return res.patients;
 }
 
+export type RepresentingRecord = {
+  id: string;
+  fileURL: string;
+  fileType: string;
+  source: string;
+  createdAt: string;
+  pagecount: number | null;
+  originalName: string | null;
+  uploadedBy: { id: string; firstName: string | null; lastName: string | null } | null;
+};
+
+export type RepresentingRecordsResponse = {
+  files: RepresentingRecord[];
+  permission: "viewer" | "editor" | null;
+  canUpload: boolean;
+};
+
+export async function listRepresentingRecords(patientId: string): Promise<RepresentingRecordsResponse> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/records`,
+    {},
+    { auth: true }
+  )) as RepresentingRecordsResponse;
+}
+
 // ─── Records ──────────────────────────────────────────────────────────────────
 
 export type IncomingFile = {

@@ -1,66 +1,104 @@
-import { Pressable, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Upload, ChevronRight, FlaskConical, Scan, FileText, FolderHeart, ShieldOff, Eye } from "lucide-react-native";
+import { FileText, FolderHeart, ShieldOff, Eye } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/theme/ThemeProvider";
-import { useRole } from "@/hooks/useRole";
-import { findPatient } from "@/mock/pda";
-import { mockRecords, type RecordKind } from "@/mock/records";
+import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
+import { listRepresentingRecords, type RepresentingRecord } from "@/lib/api";
 import type { PdaRecordsParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaRecordsParamList>;
 
-const iconFor: Record<RecordKind, (color: string) => React.ReactNode> = {
-  labs: (c) => <FlaskConical size={20} color={c} />,
-  imaging: (c) => <Scan size={20} color={c} />,
-  notes: (c) => <FileText size={20} color={c} />,
-};
+function fileLabel(r: RepresentingRecord) {
+  return r.originalName ?? r.fileType.toUpperCase();
+}
 
-const labelFor: Record<RecordKind, string> = {
-  labs: "Labs",
-  imaging: "Imaging",
-  notes: "Notes",
-};
+function fileDate(r: RepresentingRecord) {
+  return new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 export default function PdaRecords() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { representing } = useRole();
-  const patient = findPatient(representing);
-  const perm = patient.permissions.records;
-  const firstName = patient.name.split(" ")[0];
-  const items = mockRecords;
-  const empty = items.length === 0;
+  const { currentPatient } = useRepresentedPatients();
+
+  const [files, setFiles] = useState<RepresentingRecord[]>([]);
+  const [perm, setPerm] = useState<"viewer" | "editor" | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!currentPatient) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await listRepresentingRecords(currentPatient.patientId);
+      setFiles(res.files);
+      setPerm(res.permission);
+    } catch {
+      setError("Could not load records.");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPatient]);
+
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  const firstName = currentPatient
+    ? (currentPatient.firstName ?? "the patient")
+    : "the patient";
+
+  const patientName = currentPatient
+    ? `${currentPatient.firstName ?? ""} ${currentPatient.lastName ?? ""}`.trim()
+    : "";
 
   const headerRow = (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
       <Text style={[t.type.h1, { flex: 1 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
         Health Records
       </Text>
-      {perm === "editor" ? (
-        <Pressable hitSlop={8}>
-          <Upload size={22} color={t.colors.primary} />
-        </Pressable>
-      ) : null}
     </View>
   );
 
-  if (perm === "none") {
+  if (loading) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color={t.colors.primary} />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!perm) {
     return (
       <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
         {headerRow}
         <EmptyState
           icon={<ShieldOff size={32} color={t.colors.textSecondary} />}
           title="No access to records"
-          subtitle={`${patient.name} hasn't granted you access to their health records. Ask them to update your permissions from their account settings.`}
+          subtitle={`${patientName || "This patient"} hasn't granted you access to their health records. Ask them to update your permissions from their account settings.`}
         />
       </Screen>
     );
   }
 
-  if (empty) {
+  if (error) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <View style={{ paddingVertical: 40, alignItems: "center" }}>
+          <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (files.length === 0) {
     return (
       <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
         {headerRow}
@@ -69,17 +107,6 @@ export default function PdaRecords() {
           iconBg={t.colors.primaryBg}
           title="No records yet"
           subtitle={`Upload ${firstName}'s medical records or wait for providers to send them in via HIPAA release.`}
-          actions={
-            perm === "editor"
-              ? [
-                  {
-                    label: "Upload Record",
-                    icon: <Upload size={16} color="#FFFFFF" />,
-                    onPress: () => {},
-                  },
-                ]
-              : []
-          }
         />
       </Screen>
     );
@@ -107,8 +134,21 @@ export default function PdaRecords() {
         </View>
       ) : null}
 
-      {items.map((r) => (
-        <Pressable key={r.id} onPress={() => nav.navigate("PdaRecordDetail", { recordId: r.id })}>
+      {files.map((r) => (
+        <Pressable
+          key={r.id}
+          onPress={() =>
+            nav.navigate("PdaRecordDetail", {
+              fileId: r.id,
+              fileURL: r.fileURL,
+              fileType: r.fileType,
+              source: r.source,
+              createdAt: r.createdAt,
+              pagecount: r.pagecount,
+              originalName: r.originalName,
+            })
+          }
+        >
           <View
             style={{
               backgroundColor: t.colors.surface,
@@ -131,13 +171,14 @@ export default function PdaRecords() {
                 justifyContent: "center",
               }}
             >
-              {iconFor[r.kind](t.colors.primary)}
+              <FileText size={20} color={t.colors.primary} />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={t.type.bodyStrong}>{r.title}</Text>
-              <Text style={t.type.caption}>{labelFor[r.kind]} · {r.date}</Text>
+              <Text style={t.type.bodyStrong} numberOfLines={1}>
+                {fileLabel(r)}
+              </Text>
+              <Text style={t.type.caption}>{r.source} · {fileDate(r)}</Text>
             </View>
-            <ChevronRight size={16} color={t.colors.textSecondary} />
           </View>
         </Pressable>
       ))}

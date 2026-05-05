@@ -1,32 +1,66 @@
-import { Pressable, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Plus, ChevronRight, Info, ShieldOff, ClipboardList, Eye } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/theme/ThemeProvider";
-import { useRole } from "@/hooks/useRole";
-import { findPatient } from "@/mock/pda";
+import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
+import { listRepresentingReleases, type RepresentingReleaseSummary } from "@/lib/api";
 import type { PdaReleasesParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaReleasesParamList>;
 
-const releases = [
-  { id: "rel1", provider: "Valley Medical Center", types: "Labs, Imaging", expiry: "Dec 31, 2026", status: "active" as const },
-  { id: "rel2", provider: "Heart Care Clinic", types: "All Records", expiry: "Jun 30, 2026", status: "pending" as const },
-];
+function releaseStatus(r: RepresentingReleaseSummary): "active" | "pending" | "voided" {
+  if (r.voided) return "voided";
+  return r.authSignatureImage ? "active" : "pending";
+}
+
+function releaseProviderLabel(r: RepresentingReleaseSummary) {
+  const names = r.providerNames.filter(Boolean) as string[];
+  if (names.length === 0) return "Unknown provider";
+  return names.length === 1 ? names[0] : `${names[0]} +${names.length - 1} more`;
+}
+
+function releaseDate(r: RepresentingReleaseSummary) {
+  return new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 export default function PdaReleases() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { representing } = useRole();
-  const patient = findPatient(representing);
-  const perm = patient.permissions.releases;
+  const { currentPatient, loading: patientsLoading } = useRepresentedPatients();
+  const perm = currentPatient?.releasePermission ?? null;
   const isEditor = perm === "editor";
-  const firstName = patient.name.split(" ")[0];
-  const items = releases;
-  const empty = items.length === 0;
+  const firstName = currentPatient?.firstName ?? "the patient";
+  const patientName = currentPatient
+    ? `${currentPatient.firstName ?? ""} ${currentPatient.lastName ?? ""}`.trim()
+    : "";
+
+  const [releases, setReleases] = useState<RepresentingReleaseSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!currentPatient || !perm) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await listRepresentingReleases(currentPatient.patientId);
+      setReleases(list);
+    } catch {
+      setError("Could not load releases.");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPatient, perm]);
+
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const headerRow = (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -41,20 +75,42 @@ export default function PdaReleases() {
     </View>
   );
 
-  if (perm === "none") {
+  if (patientsLoading || loading) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color={t.colors.primary} />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!perm) {
     return (
       <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
         {headerRow}
         <EmptyState
           icon={<ShieldOff size={32} color={t.colors.textSecondary} />}
           title="No access to releases"
-          subtitle={`${patient.name} hasn't granted you access to HIPAA releases. Ask them to update your permissions from their account settings.`}
+          subtitle={`${patientName || "This patient"} hasn't granted you access to HIPAA releases. Ask them to update your permissions from their account settings.`}
         />
       </Screen>
     );
   }
 
-  if (empty) {
+  if (error) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <View style={{ paddingVertical: 40, alignItems: "center" }}>
+          <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (releases.length === 0) {
     return (
       <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
         {headerRow}
@@ -101,29 +157,37 @@ export default function PdaReleases() {
         </Text>
       </View>
 
-      {items.map((r) => (
-        <Pressable key={r.id} onPress={() => nav.navigate("PdaReleaseDetail", { releaseId: r.id })}>
-          <View
-            style={{
-              backgroundColor: t.colors.surface,
-              borderRadius: t.radius.card,
-              borderWidth: 1,
-              borderColor: t.colors.border,
-              padding: 14,
-              gap: 6,
-            }}
-          >
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={t.type.bodyStrong}>{r.provider}</Text>
-              <Badge label={r.status === "active" ? "Active" : "Pending Signature"} variant={r.status === "active" ? "success" : "accent"} />
+      {releases.map((r) => {
+        const status = releaseStatus(r);
+        return (
+          <Pressable key={r.id} onPress={() => nav.navigate("PdaReleaseDetail", { releaseId: r.id })}>
+            <View
+              style={{
+                backgroundColor: t.colors.surface,
+                borderRadius: t.radius.card,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                padding: 14,
+                gap: 6,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <Text style={[t.type.bodyStrong, { flex: 1, marginRight: 8 }]} numberOfLines={1}>
+                  {releaseProviderLabel(r)}
+                </Text>
+                <Badge
+                  label={status === "active" ? "Active" : status === "voided" ? "Voided" : "Pending Signature"}
+                  variant={status === "active" ? "success" : "accent"}
+                />
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <Text style={t.type.caption}>{releaseDate(r)}</Text>
+                <ChevronRight size={16} color={t.colors.textSecondary} />
+              </View>
             </View>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={t.type.caption}>{r.types} · Expires {r.expiry}</Text>
-              <ChevronRight size={16} color={t.colors.textSecondary} />
-            </View>
-          </View>
-        </Pressable>
-      ))}
+          </Pressable>
+        );
+      })}
     </Screen>
   );
 }
