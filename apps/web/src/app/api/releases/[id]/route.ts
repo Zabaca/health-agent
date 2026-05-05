@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { requireActiveSession } from "@/lib/auth-guards";
 import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
@@ -28,11 +27,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json(decryptPii(release));
 }
 
-export const PUT = contractRoute(contract.releases.update, async ({ params, body }) => {
-  const { session, error } = await requireActiveSession();
+export const PUT = contractRoute(contract.releases.update, async ({ params, body, req }) => {
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
-  const existing = await getReleaseForUser(params.id, session.user.id);
+  const existing = await getReleaseForUser(params.id, result.userId);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

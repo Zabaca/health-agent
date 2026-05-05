@@ -36,8 +36,6 @@ export async function GET(
     columns: { firstName: true, lastName: true, email: true },
   });
 
-  const pdaFullName = [pda?.firstName, pda?.lastName].filter(Boolean).join(' ') || pda?.email || '';
-
   const rows = await db.query.releases.findMany({
     where: and(
       eq(releases.userId, patientId),
@@ -47,11 +45,9 @@ export async function GET(
     orderBy: [desc(releases.updatedAt)],
   });
 
-  // Filter to only releases where this PDA is the authorized agent
-  const pdaReleases = rows.filter(r => {
-    const agentName = [r.authAgentFirstName, r.authAgentLastName].filter(Boolean).join(' ');
-    return agentName === pdaFullName || r.authAgentEmail === pda?.email;
-  });
+  // Filter to only releases where this PDA is the authorized agent.
+  // Email is unique per user account so it's the reliable identifier here.
+  const pdaReleases = rows.filter(r => r.authAgentEmail === pda?.email);
 
   return NextResponse.json(pdaReleases.map(r => ({
     id: r.id,
