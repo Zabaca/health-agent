@@ -59,24 +59,30 @@ export type RecordsParamList = {
   };
 };
 
+export type ReleasesFilter = {
+  dateFrom: string | null;
+  dateTo: string | null;
+  status: "active" | "pending" | "expired" | null;
+};
+
 export type ReleasesParamList = {
-  ReleasesList: undefined;
+  ReleasesList: { filters?: ReleasesFilter } | undefined;
   WizardStep1: undefined;
-  WizardStep2: undefined;
+  WizardStep2: { providerType: string; providerId: string };
   WizardStep3: undefined;
   WizardStep4: undefined;
   WizardStep5: undefined;
   ActiveDetail: { releaseId: string };
   PendingDetail: { releaseId: string };
   FaxDialog: undefined;
-  DateFilterSheet: undefined;
+  DateFilterSheet: { current?: ReleasesFilter } | undefined;
   ExportPDF: { releaseId: string };
 };
 
 export type ProvidersParamList = {
   MyProviders: undefined;
-  AddProvider: undefined;
-  ProviderDetail: { providerId: string };
+  AddProvider: { provider?: import("@/lib/api").UserProvider } | undefined;
+  ProviderDetail: { provider: import("@/lib/api").UserProvider };
 };
 
 export type ProfileParamList = {

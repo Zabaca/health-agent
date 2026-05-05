@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, userProviders } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 
 // GET /api/representing/[patientId]/providers
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ patientId: string }> }
 ) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const { patientId } = await params;
 
   const relation = await db.query.patientDesignatedAgents.findFirst({
     where: and(
-      eq(patientDesignatedAgents.agentUserId, session.user.id),
+      eq(patientDesignatedAgents.agentUserId, result.userId),
       eq(patientDesignatedAgents.patientId, patientId),
       eq(patientDesignatedAgents.status, 'accepted'),
     ),
@@ -38,14 +38,14 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ patientId: string }> }
 ) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const { patientId } = await params;
 
   const relation = await db.query.patientDesignatedAgents.findFirst({
     where: and(
-      eq(patientDesignatedAgents.agentUserId, session.user.id),
+      eq(patientDesignatedAgents.agentUserId, result.userId),
       eq(patientDesignatedAgents.patientId, patientId),
       eq(patientDesignatedAgents.status, 'accepted'),
     ),

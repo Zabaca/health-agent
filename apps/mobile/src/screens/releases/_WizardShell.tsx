@@ -15,6 +15,7 @@ export function WizardShell({
   total = 5,
   subtitle,
   primaryLabel,
+  primaryDisabled,
   onPrimary,
   children,
 }: {
@@ -22,6 +23,7 @@ export function WizardShell({
   total?: number;
   subtitle: string;
   primaryLabel: string;
+  primaryDisabled?: boolean;
   onPrimary: () => void;
   children: React.ReactNode;
 }) {
@@ -88,7 +90,7 @@ export function WizardShell({
       <Screen
         bottom={
           <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16 }}>
-            <Button label={primaryLabel} onPress={onPrimary} fullWidth />
+            <Button label={primaryLabel} onPress={onPrimary} disabled={primaryDisabled} fullWidth />
           </View>
         }
         contentContainerStyle={{ gap: 16 }}

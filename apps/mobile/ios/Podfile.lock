@@ -52,7 +52,11 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - ExpoPrint (14.0.3):
+    - ExpoModulesCore
   - ExpoSecureStore (14.0.1):
+    - ExpoModulesCore
+  - ExpoSharing (13.0.1):
     - ExpoModulesCore
   - EXStructuredHeaders (4.0.0)
   - EXUpdates (0.26.19):
@@ -1688,7 +1692,9 @@ DEPENDENCIES:
   - ExpoKeepAwake (from `../../../node_modules/expo-keep-awake/ios`)
   - ExpoLocalAuthentication (from `../../../node_modules/expo-local-authentication/ios`)
   - ExpoModulesCore (from `../../../node_modules/expo-modules-core`)
+  - ExpoPrint (from `../node_modules/expo-print/ios`)
   - ExpoSecureStore (from `../../../node_modules/expo-secure-store/ios`)
+  - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - EXStructuredHeaders (from `../../../node_modules/expo-structured-headers/ios`)
   - EXUpdates (from `../../../node_modules/expo-updates/ios`)
   - EXUpdatesInterface (from `../../../node_modules/expo-updates-interface/ios`)
@@ -1801,8 +1807,12 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/expo-local-authentication/ios"
   ExpoModulesCore:
     :path: "../../../node_modules/expo-modules-core"
+  ExpoPrint:
+    :path: "../node_modules/expo-print/ios"
   ExpoSecureStore:
     :path: "../../../node_modules/expo-secure-store/ios"
+  ExpoSharing:
+    :path: "../node_modules/expo-sharing/ios"
   EXStructuredHeaders:
     :path: "../../../node_modules/expo-structured-headers/ios"
   EXUpdates:
@@ -1962,7 +1972,9 @@ SPEC CHECKSUMS:
   ExpoKeepAwake: b0171a73665bfcefcfcc311742a72a956e6aa680
   ExpoLocalAuthentication: eb2be9c7bcdc68e9434d4be4bb5aa5cf7943e816
   ExpoModulesCore: 15f60d00e33ca0cea27147543877ca6e70c42ef5
+  ExpoPrint: 13208d67f48c190ccfeb9b97aa3394ff31ec606b
   ExpoSecureStore: 9a3665d7161dd1031be386e278bffd623658f316
+  ExpoSharing: 849a5ce9985c22598c16ec027e32969be8062e8e
   EXStructuredHeaders: 09c70347b282e3d2507e25fb4c747b1b885f87f6
   EXUpdates: 26a2bfdfd83e73a1409bd07bac87acf1c42ecaac
   EXUpdatesInterface: 7c977640bdd8b85833c19e3959ba46145c5719db

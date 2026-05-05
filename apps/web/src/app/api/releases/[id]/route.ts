@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
 import { and, asc, eq } from "drizzle-orm";
@@ -7,30 +8,31 @@ import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { encryptPii, decryptPii } from "@/lib/crypto";
 
-async function getRelease(id: string, userId: string) {
+async function getReleaseForUser(id: string, userId: string) {
   return db.query.releases.findFirst({
     where: and(eq(releasesTable.id, id), eq(releasesTable.userId, userId)),
     with: { providers: { orderBy: [asc(providersTable.order)] } },
   });
 }
 
-export const GET = contractRoute(contract.releases.getById, async ({ params }) => {
-  const { session, error } = await requireActiveSession();
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
-  const release = await getRelease(params.id, session.user.id);
+  const { id } = await params;
+  const release = await getReleaseForUser(id, result.userId);
   if (!release) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   return NextResponse.json(decryptPii(release));
-});
+}
 
 export const PUT = contractRoute(contract.releases.update, async ({ params, body }) => {
   const { session, error } = await requireActiveSession();
   if (error) return error;
 
-  const existing = await getRelease(params.id, session.user.id);
+  const existing = await getReleaseForUser(params.id, session.user.id);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -73,11 +75,12 @@ export const PUT = contractRoute(contract.releases.update, async ({ params, body
   }
 });
 
-export const PATCH = contractRoute(contract.releases.void, async ({ params }) => {
-  const { session, error } = await requireActiveSession();
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
-  const existing = await getRelease(params.id, session.user.id);
+  const { id } = await params;
+  const existing = await getReleaseForUser(id, result.userId);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -85,7 +88,7 @@ export const PATCH = contractRoute(contract.releases.void, async ({ params }) =>
   await db
     .update(releasesTable)
     .set({ voided: true, updatedAt: new Date().toISOString() })
-    .where(eq(releasesTable.id, params.id));
+    .where(eq(releasesTable.id, id));
 
   return NextResponse.json({ success: true });
-});
+}

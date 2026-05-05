@@ -1,27 +1,52 @@
-import { Pressable, Text, View } from "react-native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Circle, ChevronRight } from "lucide-react-native";
+import { Circle, CheckCircle2, ChevronRight } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { MetricCard } from "@/components/MetricCard";
 import { useTheme } from "@/theme/ThemeProvider";
-import { mockUser } from "@/mock/user";
-import { dashboardMetrics, accountSetupSteps } from "@/mock/health";
+import { getSetupStatus, type SetupStatus } from "@/lib/api";
+import { dashboardMetrics } from "@/mock/health";
 import type { HomeParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<HomeParamList>;
 
+function buildSetupSteps(s: SetupStatus) {
+  return [
+    { id: "profile", label: "Complete your profile", complete: s.profileComplete },
+    { id: "provider", label: "Add a health provider", complete: s.providerAdded },
+    { id: "pda", label: "Invite someone to help", complete: s.pdaAdded },
+    { id: "release", label: "Create your first release", complete: s.releaseCreated },
+  ];
+}
+
 export default function Dashboard() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const completed = accountSetupSteps.filter((s) => s.complete).length;
+  const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setSetupStatus(await getSetupStatus());
+    } catch {
+      // silently ignore — stale data is fine for the dashboard
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const steps = setupStatus ? buildSetupSteps(setupStatus) : null;
+  const completed = steps ? steps.filter((s) => s.complete).length : 0;
+  const firstName = setupStatus?.firstName ?? "";
 
   return (
     <Screen safeTop contentContainerStyle={{ gap: 16 }}>
       {/* Greeting */}
       <View>
         <Text style={t.type.caption}>Good morning</Text>
-        <Text style={t.type.h1}>{mockUser.firstName}</Text>
+        <Text style={t.type.h1}>{firstName}</Text>
       </View>
 
       {/* Account Setup */}
@@ -38,9 +63,13 @@ export default function Dashboard() {
         >
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <Text style={t.type.bodyStrong}>Account Setup</Text>
-            <Text style={t.type.caption}>{completed} of {accountSetupSteps.length} complete</Text>
+            {steps ? (
+              <Text style={t.type.caption}>{completed} of {steps.length} complete</Text>
+            ) : (
+              <ActivityIndicator size="small" color={t.colors.textSecondary} />
+            )}
           </View>
-          {accountSetupSteps.map((step, i) => (
+          {(steps ?? buildSetupSteps({ firstName: null, profileComplete: false, providerAdded: false, pdaAdded: false, releaseCreated: false })).map((step, i) => (
             <View
               key={step.id}
               style={{
@@ -52,8 +81,14 @@ export default function Dashboard() {
                 borderTopColor: t.colors.divider,
               }}
             >
-              <Circle size={18} color={t.colors.borderMuted} />
-              <Text style={[t.type.body, { flex: 1 }]}>{step.label}</Text>
+              {step.complete ? (
+                <CheckCircle2 size={18} color={t.colors.primary} />
+              ) : (
+                <Circle size={18} color={t.colors.borderMuted} />
+              )}
+              <Text style={[t.type.body, { flex: 1 }, step.complete && { color: t.colors.textSecondary }]}>
+                {step.label}
+              </Text>
               <ChevronRight size={18} color={t.colors.textSecondary} />
             </View>
           ))}

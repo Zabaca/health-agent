@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, releases, users, providers as providersTable } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -11,17 +11,17 @@ import { encryptPii, extractLast4Ssn } from "@/lib/crypto";
 
 // GET /api/representing/[patientId]/releases — list releases where PDA is authorized agent
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ patientId: string }> }
 ) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const { patientId } = await params;
 
   const relation = await db.query.patientDesignatedAgents.findFirst({
     where: and(
-      eq(patientDesignatedAgents.agentUserId, session.user.id),
+      eq(patientDesignatedAgents.agentUserId, result.userId),
       eq(patientDesignatedAgents.patientId, patientId),
       eq(patientDesignatedAgents.status, 'accepted'),
     ),
@@ -32,7 +32,7 @@ export async function GET(
   }
 
   const pda = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
+    where: eq(users.id, result.userId),
     columns: { firstName: true, lastName: true, email: true },
   });
 
@@ -74,14 +74,14 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ patientId: string }> }
 ) {
-  const { session, error } = await requireActiveSession();
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const { patientId } = await params;
 
   const relation = await db.query.patientDesignatedAgents.findFirst({
     where: and(
-      eq(patientDesignatedAgents.agentUserId, session.user.id),
+      eq(patientDesignatedAgents.agentUserId, result.userId),
       eq(patientDesignatedAgents.patientId, patientId),
       eq(patientDesignatedAgents.status, 'accepted'),
     ),
@@ -92,7 +92,7 @@ export async function POST(
   }
 
   const pda = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
+    where: eq(users.id, result.userId),
   });
   if (!pda) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -114,7 +114,7 @@ export async function POST(
     mailingAddress: data.mailingAddress,
     phoneNumber: data.phoneNumber,
     email: data.email,
-    ssn: data.ssn ? extractLast4Ssn(data.ssn) : null,
+    ssn: data.ssn ? extractLast4Ssn(data.ssn) : "",
     releaseAuthAgent: true,
     releaseAuthZabaca: false,
     authAgentFirstName: pda.firstName ?? '',

@@ -38,8 +38,20 @@ export const GET = contractRoute(contract.agent.patientReleases.list, async ({ p
       createdAt: releasesTable.createdAt,
       updatedAt: releasesTable.updatedAt,
       voided: releasesTable.voided,
+      authSignatureImage: releasesTable.authSignatureImage,
+      authExpirationDate: releasesTable.authExpirationDate,
+      releaseCode: releasesTable.releaseCode,
+      releaseAuthAgent: releasesTable.releaseAuthAgent,
+      authAgentName: releasesTable.authAgentName,
+      providerName: providersTable.providerName,
+      providerType: providersTable.providerType,
+      insurance: providersTable.insurance,
     })
     .from(releasesTable)
+    .leftJoin(providersTable, and(
+      eq(providersTable.releaseId, releasesTable.id),
+      eq(providersTable.order, 0)
+    ))
     .where(eq(releasesTable.userId, params.id))
     .orderBy(desc(releasesTable.updatedAt));
 
@@ -60,7 +72,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
 
   try {
     const { providers, ...releaseData } = body;
-    const normalizedReleaseData = { ...releaseData, ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : null };
+    const normalizedReleaseData = { ...releaseData, ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : "" };
     const encryptedReleaseData = encryptPii(normalizedReleaseData);
 
     const created = await db.transaction(async (tx) => {

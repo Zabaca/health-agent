@@ -54,6 +54,7 @@ export function contractRoute<T extends AppRoute>(
       const rawBody = await req.json().catch(() => null);
       const result = route.body.safeParse(rawBody);
       if (!result.success) {
+        console.error('[contractRoute] Body validation failed for', route.method, route.path, JSON.stringify(result.error.flatten(), null, 2));
         return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
       }
       body = result.data as InferBody<T>;
