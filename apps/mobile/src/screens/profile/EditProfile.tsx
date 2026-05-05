@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
+import { User } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Input } from "@/components/Input";
@@ -26,6 +27,8 @@ export default function EditProfile() {
   const [address, setAddress] = useState("");
   const [ssn, setSsn] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,17 +47,9 @@ export default function EditProfile() {
       .finally(() => setLoading(false));
   }, []);
 
-  const onChangePhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (result.canceled) return;
-    const asset = result.assets[0];
+  const handlePickedAsset = async (asset: ImagePicker.ImagePickerAsset) => {
+    setAvatarPreview(asset.uri);
+    setUploading(true);
     try {
       const ext = asset.uri.split(".").pop() ?? "jpg";
       const { url } = await uploadFile({
@@ -64,8 +59,54 @@ export default function EditProfile() {
       });
       setAvatarUrl(url);
     } catch {
+      setAvatarPreview(null);
       Alert.alert("Error", "Could not upload photo. Please try again.");
+    } finally {
+      setUploading(false);
     }
+  };
+
+  const openLibrary = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission required", "Please allow photo library access in Settings.", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Open Settings", onPress: () => Linking.openSettings() },
+      ]);
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) await handlePickedAsset(result.assets[0]);
+  };
+
+  const openCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission required", "Please allow camera access in Settings.", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Open Settings", onPress: () => Linking.openSettings() },
+      ]);
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) await handlePickedAsset(result.assets[0]);
+  };
+
+  const onChangePhoto = () => {
+    Alert.alert("Change Photo", undefined, [
+      { text: "Take Photo", onPress: openCamera },
+      { text: "Choose from Library", onPress: openLibrary },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const onSave = async () => {
@@ -121,29 +162,49 @@ export default function EditProfile() {
           </View>
         ) : (
           <>
-            <View
-              style={{
-                alignItems: "center",
-                flexDirection: "row",
-                justifyContent: "center",
-                gap: 12,
-                marginVertical: 8,
-              }}
-            >
-              <View
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  backgroundColor: t.colors.primary,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 18 }}>{initials}</Text>
-              </View>
+            <View style={{ alignItems: "center", marginVertical: 8, gap: 8 }}>
               <Pressable onPress={onChangePhoto}>
-                <Text style={{ color: t.colors.primary, fontWeight: "600" }}>Change Photo</Text>
+                <View
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 36,
+                    backgroundColor: t.colors.primaryBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  {avatarPreview ?? avatarUrl ? (
+                    <Image
+                      source={{ uri: (avatarPreview ?? avatarUrl)! }}
+                      style={{ width: 72, height: 72 }}
+                    />
+                  ) : initials ? (
+                    <Text style={{ color: t.colors.primary, fontWeight: "700", fontSize: 22 }}>
+                      {initials}
+                    </Text>
+                  ) : (
+                    <User size={32} color={t.colors.primary} />
+                  )}
+                  {uploading && (
+                    <View
+                      style={{
+                        ...StyleSheet.absoluteFillObject,
+                        backgroundColor: "rgba(0,0,0,0.4)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <ActivityIndicator color="#fff" />
+                    </View>
+                  )}
+                </View>
+              </Pressable>
+              <Pressable onPress={onChangePhoto}>
+                <Text style={{ color: t.colors.primary, fontWeight: "600", fontSize: 14 }}>
+                  Change Photo
+                </Text>
               </Pressable>
             </View>
 
