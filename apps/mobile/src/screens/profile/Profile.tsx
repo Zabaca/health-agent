@@ -1,20 +1,54 @@
-import { Pressable, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ChevronRight, Settings, Repeat } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRole } from "@/hooks/useRole";
-import { mockUser } from "@/mock/user";
-import { mockAgents } from "@/mock/agents";
+import { useAuth } from "@/hooks/useAuth";
+import { getProfile, listMyDesignatedAgents, type ProfileData, type DesignatedAgent } from "@/lib/api";
 import type { ProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
+
+function agentDisplayName(a: DesignatedAgent): string {
+  if (a.agentUser?.firstName || a.agentUser?.lastName) {
+    return `${a.agentUser.firstName ?? ""} ${a.agentUser.lastName ?? ""}`.trim();
+  }
+  return a.inviteeEmail;
+}
 
 export default function Profile() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const { switchTo } = useRole();
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [agents, setAgents] = useState<DesignatedAgent[]>([]);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [agentsLoading, setAgentsLoading] = useState(true);
+
+  useEffect(() => {
+    getProfile()
+      .then(setProfile)
+      .catch(() => {})
+      .finally(() => setProfileLoading(false));
+    listMyDesignatedAgents()
+      .then(({ designatedAgents }) =>
+        setAgents(designatedAgents.filter((a) => a.status !== "revoked"))
+      )
+      .catch(() => {})
+      .finally(() => setAgentsLoading(false));
+  }, []);
+
+  const initials = profile
+    ? `${profile.firstName?.[0] ?? ""}${profile.lastName?.[0] ?? ""}`.toUpperCase()
+    : user?.email?.[0]?.toUpperCase() ?? "?";
+  const displayName = profile
+    ? `${profile.firstName} ${profile.lastName}`.trim()
+    : null;
+
   return (
     <Screen safeTop contentContainerStyle={{ gap: 16 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -31,6 +65,7 @@ export default function Profile() {
         </Pressable>
       </View>
 
+      {/* User card */}
       <Pressable onPress={() => nav.navigate("EditProfile")}>
         <View
           style={{
@@ -54,18 +89,23 @@ export default function Profile() {
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: t.colors.primary, fontWeight: "700" }}>
-              {mockUser.firstName[0]}{mockUser.lastName[0]}
-            </Text>
+            {profileLoading ? (
+              <ActivityIndicator size="small" color={t.colors.primary} />
+            ) : (
+              <Text style={{ color: t.colors.primary, fontWeight: "700" }}>{initials}</Text>
+            )}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={t.type.bodyStrong}>{mockUser.firstName} {mockUser.lastName}</Text>
-            <Text style={t.type.caption}>{mockUser.email}</Text>
+            <Text style={t.type.bodyStrong}>
+              {profileLoading ? "Loading…" : (displayName ?? user?.email ?? "")}
+            </Text>
+            <Text style={t.type.caption}>{user?.email}</Text>
           </View>
           <ChevronRight size={18} color={t.colors.textSecondary} />
         </View>
       </Pressable>
 
+      {/* Health Sources — static, not wired */}
       <View
         style={{
           backgroundColor: t.colors.surface,
@@ -95,6 +135,7 @@ export default function Profile() {
         </Pressable>
       </View>
 
+      {/* Designated Agents */}
       <View
         style={{
           backgroundColor: t.colors.surface,
@@ -119,29 +160,45 @@ export default function Profile() {
             <ChevronRight size={16} color={t.colors.textSecondary} />
           </View>
         </Pressable>
-        {mockAgents.slice(0, 2).map((a, i) => (
-          <Pressable key={a.id} onPress={() => nav.navigate("RepresentativeDetail", { agentId: a.id })}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingHorizontal: 14,
-                paddingVertical: 14,
-                borderTopWidth: i === 0 ? 0 : 1,
-                borderTopColor: t.colors.divider,
-                gap: 8,
-              }}
+        {agentsLoading ? (
+          <View style={{ paddingVertical: 16, alignItems: "center" }}>
+            <ActivityIndicator size="small" color={t.colors.textSecondary} />
+          </View>
+        ) : agents.length === 0 ? (
+          <View style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
+            <Text style={t.type.caption}>No designated agents yet.</Text>
+          </View>
+        ) : (
+          agents.slice(0, 2).map((a, i) => (
+            <Pressable
+              key={a.id}
+              onPress={() => nav.navigate("RepresentativeDetail", { agent: a })}
             >
-              <Text style={[t.type.body, { flex: 1 }]}>
-                <Text style={{ fontWeight: "600" }}>{a.name}</Text>
-                <Text style={{ color: t.colors.textSecondary }}> — {a.role}</Text>
-              </Text>
-              <ChevronRight size={16} color={t.colors.textSecondary} />
-            </View>
-          </Pressable>
-        ))}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  borderTopWidth: i === 0 ? 0 : 1,
+                  borderTopColor: t.colors.divider,
+                  gap: 8,
+                }}
+              >
+                <Text style={[t.type.body, { flex: 1 }]}>
+                  <Text style={{ fontWeight: "600" }}>{agentDisplayName(a)}</Text>
+                  {a.relationship ? (
+                    <Text style={{ color: t.colors.textSecondary }}> — {a.relationship}</Text>
+                  ) : null}
+                </Text>
+                <ChevronRight size={16} color={t.colors.textSecondary} />
+              </View>
+            </Pressable>
+          ))
+        )}
       </View>
 
+      {/* Switch to PDA View — static */}
       <Pressable
         onPress={() => switchTo("pda", "marcus")}
         style={{
@@ -157,7 +214,6 @@ export default function Profile() {
         <Text style={[t.type.bodyStrong, { color: "#4A78C8", flex: 1 }]}>Switch to PDA View</Text>
         <ChevronRight size={18} color="#4A78C8" />
       </Pressable>
-
     </Screen>
   );
 }

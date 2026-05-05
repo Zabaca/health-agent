@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { Alert, Text, View } from "react-native";
-import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import { useNavigation, useRoute, useFocusEffect, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
@@ -15,9 +15,13 @@ import type { ProvidersParamList } from "@/navigation/types";
 type R = RouteProp<ProvidersParamList, "ProviderDetail">;
 type Nav = NativeStackNavigationProp<ProvidersParamList>;
 
+const VALID_TYPES: ReadonlyArray<MyProviderInput["providerType"]> = ["Insurance", "Hospital", "Facility"];
+
 function toInput(p: UserProvider): MyProviderInput {
   return {
-    providerType: p.providerType as MyProviderInput["providerType"],
+    providerType: VALID_TYPES.includes(p.providerType as MyProviderInput["providerType"])
+      ? (p.providerType as MyProviderInput["providerType"])
+      : "Hospital",
     providerName: p.providerName,
     insurance: p.insurance ?? undefined,
     physicianName: p.physicianName ?? undefined,
@@ -38,9 +42,16 @@ export default function ProviderDetail() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const { params } = useRoute<R>();
-  const p = params.provider;
+  const [p, setP] = useState<UserProvider>(params.provider);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [removing, setRemoving] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    listMyProviders().then((list) => {
+      const fresh = list.find((x) => x.order === params.provider.order);
+      if (fresh) setP(fresh);
+    }).catch(() => {});
+  }, [params.provider.order]));
 
   const displayName = p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName;
 

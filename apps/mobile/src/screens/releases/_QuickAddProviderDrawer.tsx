@@ -22,7 +22,7 @@ type Props = {
 
 function toInput(p: Awaited<ReturnType<typeof listMyProviders>>[number]): MyProviderInput {
   return {
-    providerType: p.providerType as ProviderType,
+    providerType: TYPES.includes(p.providerType as ProviderType) ? (p.providerType as ProviderType) : "Hospital",
     providerName: p.providerName,
     insurance: p.insurance ?? undefined,
     physicianName: p.physicianName ?? undefined,

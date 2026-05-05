@@ -18,9 +18,13 @@ type Nav = NativeStackNavigationProp<ProvidersParamList>;
 type ProviderType = "Hospital" | "Facility" | "Insurance";
 const PROVIDER_TYPES: ProviderType[] = ["Hospital", "Facility", "Insurance"];
 
+function normalizeType(raw: string | null | undefined): ProviderType {
+  return PROVIDER_TYPES.includes(raw as ProviderType) ? (raw as ProviderType) : "Hospital";
+}
+
 function toInput(p: UserProvider): MyProviderInput {
   return {
-    providerType: p.providerType as ProviderType,
+    providerType: normalizeType(p.providerType),
     providerName: p.providerName,
     insurance: p.insurance ?? undefined,
     physicianName: p.physicianName ?? undefined,
@@ -45,7 +49,7 @@ export default function AddProvider() {
   const isEdit = !!existing;
 
   const [providerType, setProviderType] = useState<ProviderType>(
-    (existing?.providerType as ProviderType) ?? "Hospital"
+    normalizeType(existing?.providerType)
   );
   const [providerName, setProviderName] = useState(existing?.providerName ?? "");
   const [insurance, setInsurance] = useState(existing?.insurance ?? "");

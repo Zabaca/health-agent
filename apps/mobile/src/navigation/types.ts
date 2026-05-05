@@ -90,9 +90,10 @@ export type ProfileParamList = {
   ConnectAppleHealth: undefined;
   AccountSettings: undefined;
   EditProfile: undefined;
+  ChangePassword: undefined;
   DesignatedAgents: undefined;
   InviteRepresentative: undefined;
-  RepresentativeDetail: { agentId: string };
+  RepresentativeDetail: { agent: import("@/lib/api").DesignatedAgent };
   ActiveDevices: undefined;
 };
 

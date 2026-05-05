@@ -124,6 +124,7 @@ export default function ReleasesList() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const hasDateFilter = !!(routeFilters?.dateFrom || routeFilters?.dateTo);
+  const isFilterActive = tab !== "active" || hasDateFilter;
 
   function applyFilters(list: ReleaseSummary[]): ReleaseSummary[] {
     let result = list.filter(r => computeStatus(r) === tab);
@@ -287,7 +288,7 @@ export default function ReleasesList() {
           }}
         >
           <SlidersHorizontal size={18} color={t.colors.primary} />
-          {hasDateFilter && (
+          {isFilterActive && (
             <View
               style={{
                 position: "absolute",

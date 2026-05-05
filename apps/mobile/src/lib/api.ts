@@ -145,6 +145,10 @@ export async function revokeSession(id: string): Promise<{ success: boolean; rev
   };
 }
 
+export async function revokeCurrentSession(): Promise<void> {
+  await apiFetch("/api/me/sessions/current", { method: "DELETE" }, { auth: true });
+}
+
 // ─── Setup Status ─────────────────────────────────────────────────────────────
 
 export type SetupStatus = {
@@ -174,6 +178,29 @@ export type ProfileData = {
 
 export async function getProfile(): Promise<ProfileData> {
   return (await apiFetch("/api/profile", {}, { auth: true })) as ProfileData;
+}
+
+export type UpdateProfileInput = {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  dateOfBirth: string;
+  address: string;
+  phoneNumber: string;
+  ssn?: string;
+  avatarUrl?: string;
+};
+
+export async function updateProfile(data: UpdateProfileInput): Promise<{ success: boolean }> {
+  return (await apiFetch("/api/profile", { method: "PUT", body: JSON.stringify(data) }, { auth: true })) as { success: boolean };
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: boolean }> {
+  return (await apiFetch(
+    "/api/password/change",
+    { method: "PUT", body: JSON.stringify({ currentPassword, newPassword }) },
+    { auth: true }
+  )) as { ok: boolean };
 }
 
 // ─── Providers ────────────────────────────────────────────────────────────────
@@ -264,6 +291,29 @@ export type DesignatedAgentsResponse = {
 
 export async function listMyDesignatedAgents(): Promise<DesignatedAgentsResponse> {
   return (await apiFetch("/api/my-designated-agents", {}, { auth: true })) as DesignatedAgentsResponse;
+}
+
+export type UpdateAgentInput = {
+  relationship?: string | null;
+  healthRecordsPermission?: 'viewer' | 'editor' | null;
+  manageProvidersPermission?: 'viewer' | 'editor' | null;
+  releasePermission?: 'viewer' | 'editor' | null;
+};
+
+export async function updateDesignatedAgent(id: string, data: UpdateAgentInput): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/my-designated-agents/${encodeURIComponent(id)}`,
+    { method: "PATCH", body: JSON.stringify(data) },
+    { auth: true }
+  )) as { success: boolean };
+}
+
+export async function revokeDesignatedAgent(id: string): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/my-designated-agents/${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+    { auth: true }
+  )) as { success: boolean };
 }
 
 // ─── Releases ─────────────────────────────────────────────────────────────────

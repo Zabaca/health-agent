@@ -58,7 +58,7 @@ export default function ActiveDevices() {
         await signOut();
         return;
       }
-      await load();
+      setRows((prev) => prev?.filter((r) => r.id !== id) ?? prev);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to revoke session");
     } finally {
