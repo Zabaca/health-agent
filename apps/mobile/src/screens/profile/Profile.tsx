@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ChevronRight, Settings, Repeat, User } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
+import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,7 +97,7 @@ export default function Profile() {
             {profileLoading ? (
               <ActivityIndicator size="small" color={t.colors.primary} />
             ) : profile?.avatarUrl ? (
-              <Image source={{ uri: profile.avatarUrl }} style={{ width: 44, height: 44 }} />
+              <AuthenticatedImage uri={profile.avatarUrl} style={{ width: 44, height: 44 }} resizeMode="cover" />
             ) : initials ? (
               <Text style={{ color: t.colors.primary, fontWeight: "700" }}>{initials}</Text>
             ) : (

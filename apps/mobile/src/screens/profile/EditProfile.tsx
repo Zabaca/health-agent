@@ -1,18 +1,40 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
-import { User } from "lucide-react-native";
+import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { User, Calendar } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/theme/ThemeProvider";
 import { getProfile, updateProfile, uploadFile, ApiError } from "@/lib/api";
+import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import type { ProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
+
+const DEFAULT_DOB = new Date(2000, 0, 1);
+
+function dateToIso(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function parseDob(val: string): Date | null {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatDob(date: Date | null): string {
+  if (!date) return "";
+  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
 
 export default function EditProfile() {
   const t = useTheme();
@@ -22,7 +44,9 @@ export default function EditProfile() {
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [dob, setDob] = useState<Date | null>(null);
+  const [draftDob, setDraftDob] = useState<Date>(DEFAULT_DOB);
+  const [showDobPicker, setShowDobPicker] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [ssn, setSsn] = useState("");
@@ -37,7 +61,7 @@ export default function EditProfile() {
         setFirstName(p.firstName);
         setMiddleName(p.middleName ?? "");
         setLastName(p.lastName);
-        setDateOfBirth(p.dateOfBirth);
+        setDob(parseDob(p.dateOfBirth));
         setPhoneNumber(p.phoneNumber);
         setAddress(p.address);
         setSsn(p.ssn ?? "");
@@ -115,7 +139,7 @@ export default function EditProfile() {
       setError("First and last name are required.");
       return;
     }
-    if (!dateOfBirth.trim()) {
+    if (!dob) {
       setError("Date of birth is required.");
       return;
     }
@@ -129,7 +153,7 @@ export default function EditProfile() {
         firstName: firstName.trim(),
         middleName: middleName.trim() || undefined,
         lastName: lastName.trim(),
-        dateOfBirth: dateOfBirth.trim(),
+        dateOfBirth: dateToIso(dob),
         address: address.trim(),
         phoneNumber: phoneNumber.trim(),
         ssn: ssn.trim() || undefined,
@@ -176,9 +200,10 @@ export default function EditProfile() {
                   }}
                 >
                   {avatarPreview ?? avatarUrl ? (
-                    <Image
-                      source={{ uri: (avatarPreview ?? avatarUrl)! }}
+                    <AuthenticatedImage
+                      uri={avatarPreview ?? avatarUrl}
                       style={{ width: 72, height: 72 }}
+                      resizeMode="cover"
                     />
                   ) : initials ? (
                     <Text style={{ color: t.colors.primary, fontWeight: "700", fontSize: 22 }}>
@@ -215,7 +240,75 @@ export default function EditProfile() {
             <Input label="First Name" value={firstName} onChangeText={setFirstName} />
             <Input label="Middle Name" placeholder="Optional" value={middleName} onChangeText={setMiddleName} />
             <Input label="Last Name" value={lastName} onChangeText={setLastName} />
-            <Input label="Date of Birth" value={dateOfBirth} onChangeText={setDateOfBirth} />
+            <View style={{ gap: 6 }}>
+              <Text style={t.type.rowLabel}>DATE OF BIRTH</Text>
+              <Pressable
+                onPress={() => {
+                  setDraftDob(dob ?? DEFAULT_DOB);
+                  setShowDobPicker(true);
+                }}
+                style={{
+                  height: 48,
+                  paddingHorizontal: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: t.colors.surface,
+                  borderWidth: 1,
+                  borderColor: t.colors.border,
+                  borderRadius: t.radius.button,
+                }}
+              >
+                <Text style={{ flex: 1, fontSize: 16, color: dob ? t.colors.textPrimary : t.colors.textPlaceholder }}>
+                  {dob ? formatDob(dob) : "Select date"}
+                </Text>
+                <Calendar size={18} color={t.colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            {/* Android: native dialog shown directly */}
+            {showDobPicker && Platform.OS === "android" ? (
+              <DateTimePicker
+                value={draftDob}
+                mode="date"
+                display="default"
+                maximumDate={new Date()}
+                onChange={(e: DateTimePickerEvent, date?: Date) => {
+                  setShowDobPicker(false);
+                  if (e.type === "set" && date) setDob(date);
+                }}
+              />
+            ) : null}
+
+            {/* iOS: spinner inside a Cancel/Done bottom sheet */}
+            {Platform.OS === "ios" ? (
+              <Modal visible={showDobPicker} transparent animationType="fade" onRequestClose={() => setShowDobPicker(false)}>
+                <Pressable
+                  style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+                  onPress={() => setShowDobPicker(false)}
+                >
+                  <Pressable onPress={() => { /* swallow inner taps */ }}>
+                    <View style={{ backgroundColor: t.colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32 }}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: t.spacing.gutter, paddingTop: 16, paddingBottom: 8 }}>
+                        <Pressable onPress={() => setShowDobPicker(false)}>
+                          <Text style={{ color: t.colors.textSecondary, fontSize: 15 }}>Cancel</Text>
+                        </Pressable>
+                        <Text style={t.type.bodyStrong}>Date of Birth</Text>
+                        <Pressable onPress={() => { setDob(draftDob); setShowDobPicker(false); }}>
+                          <Text style={{ color: t.colors.primary, fontSize: 15, fontWeight: "600" }}>Done</Text>
+                        </Pressable>
+                      </View>
+                      <DateTimePicker
+                        value={draftDob}
+                        mode="date"
+                        display="spinner"
+                        maximumDate={new Date()}
+                        onChange={(_: DateTimePickerEvent, date?: Date) => { if (date) setDraftDob(date); }}
+                      />
+                    </View>
+                  </Pressable>
+                </Pressable>
+              </Modal>
+            ) : null}
             <Input label="Phone Number" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
             <Input label="Address" value={address} onChangeText={setAddress} />
             <Input
