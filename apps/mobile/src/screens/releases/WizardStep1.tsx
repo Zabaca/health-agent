@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Search, Check, Plus, Stethoscope } from "lucide-react-native";
+import { Check, Plus, Stethoscope } from "lucide-react-native";
 import { useTheme } from "@/theme/ThemeProvider";
 import { listMyProviders, type UserProvider } from "@/lib/api";
 import type { ReleasesParamList } from "@/navigation/types";
@@ -84,25 +84,6 @@ export default function WizardStep1() {
         primaryLabel="Next →"
         onPrimary={handleNext}
       >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            backgroundColor: t.colors.surface,
-            borderRadius: t.radius.button,
-            borderWidth: 1,
-            borderColor: t.colors.border,
-            paddingHorizontal: 14,
-            height: 44,
-          }}
-        >
-          <Search size={18} color={t.colors.textSecondary} />
-          <Text style={[t.type.body, { color: t.colors.textPlaceholder, flex: 1 }]}>Search providers...</Text>
-        </View>
-
-        <Text style={[t.type.sectionLabel, { textTransform: "uppercase" }]}>SAVED PROVIDERS</Text>
-
         {loading ? (
           <View style={{ paddingVertical: 32, alignItems: "center" }}>
             <ActivityIndicator size="large" color={t.colors.primary} />

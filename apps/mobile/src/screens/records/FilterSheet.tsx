@@ -267,7 +267,7 @@ export default function FilterSheet() {
                       style={{
                         height: 34,
                         paddingHorizontal: 14,
-                        borderRadius: 20,
+                        borderRadius: t.radius.pill,
                         alignItems: "center",
                         justifyContent: "center",
                         backgroundColor: on ? t.colors.primary : t.colors.surface,
@@ -322,7 +322,7 @@ export default function FilterSheet() {
                   style={{
                     height: 34,
                     paddingHorizontal: 14,
-                    borderRadius: 10,
+                    borderRadius: t.radius.pill,
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: on ? t.colors.primary : "transparent",

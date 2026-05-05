@@ -3,8 +3,12 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { sessions } from "@/lib/db/schema";
 import { resolveUserSession } from "@/lib/session-resolver";
+import { requireSameOrigin } from "@/lib/csrf";
 
 export async function DELETE(req: Request) {
+  const csrf = requireSameOrigin(req);
+  if (csrf) return csrf;
+
   const { result, error } = await resolveUserSession(req);
   if (error) return error;
 

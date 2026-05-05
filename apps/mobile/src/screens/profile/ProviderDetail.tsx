@@ -48,10 +48,10 @@ export default function ProviderDetail() {
 
   useFocusEffect(useCallback(() => {
     listMyProviders().then((list) => {
-      const fresh = list.find((x) => x.order === params.provider.order);
+      const fresh = list.find((x) => x.id === params.provider.id);
       if (fresh) setP(fresh);
     }).catch(() => {});
-  }, [params.provider.order]));
+  }, [params.provider.id]));
 
   const displayName = p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName;
 

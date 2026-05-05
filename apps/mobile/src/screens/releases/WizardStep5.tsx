@@ -1,7 +1,7 @@
 import {
   Alert, Platform, PanResponder, Pressable, Text, TextInput, View,
 } from "react-native";
-import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Svg, { Path } from "react-native-svg";
@@ -69,14 +69,23 @@ type SignaturePadRef = {
   getSignature: () => { image: string; printedName: string } | null;
 };
 
-const SignaturePad = forwardRef<SignaturePadRef>(function SignaturePad(_, ref) {
+type SignaturePadProps = {
+  defaultName?: string;
+};
+
+const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(function SignaturePad({ defaultName = "" }, ref) {
   const t = useTheme();
-  const [mode, setMode] = useState<SigMode>("draw");
-  const [typedName, setTypedName] = useState("");
+  const [mode, setMode] = useState<SigMode>("type");
+  const [typedName, setTypedName] = useState(defaultName);
   const [completedStrokes, setCompletedStrokes] = useState<Point[][]>([]);
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [padWidth, setPadWidth] = useState(0);
   const activeRef = useRef<Point[]>([]);
+  const userEditedRef = useRef(false);
+
+  useEffect(() => {
+    if (defaultName && !userEditedRef.current) setTypedName(defaultName);
+  }, [defaultName]);
 
   useImperativeHandle(ref, () => ({
     getSignature() {
@@ -129,7 +138,8 @@ const SignaturePad = forwardRef<SignaturePadRef>(function SignaturePad(_, ref) {
     setCompletedStrokes([]);
     setCurrentPoints([]);
     activeRef.current = [];
-    setTypedName("");
+    userEditedRef.current = false;
+    setTypedName(defaultName);
   }
 
   return (
@@ -236,7 +246,7 @@ const SignaturePad = forwardRef<SignaturePadRef>(function SignaturePad(_, ref) {
               placeholder="Type your full name"
               placeholderTextColor={AMBER_BORDER}
               value={typedName}
-              onChangeText={setTypedName}
+              onChangeText={(v) => { userEditedRef.current = true; setTypedName(v); }}
               style={{
                 borderBottomWidth: 1,
                 borderBottomColor: AMBER_BORDER,
@@ -288,10 +298,17 @@ export default function WizardStep5() {
   const { user } = useAuth();
   const signaturePadRef = useRef<SignaturePadRef>(null);
   const [creating, setCreating] = useState(false);
+  const [patientName, setPatientName] = useState("");
 
   useFocusEffect(useCallback(() => {
     setWizard(prev => ({ ...prev, isEditing: false }));
   }, [setWizard]));
+
+  useEffect(() => {
+    getProfile().then((p) => {
+      setPatientName(`${p.firstName ?? ""} ${p.lastName ?? ""}`.trim());
+    }).catch(() => {});
+  }, []);
 
   const providerDisplayName = wizard.provider ? displayName(wizard.provider) : "—";
   const validUntil = wizard.expiryDate
@@ -473,7 +490,7 @@ export default function WizardStep5() {
         {providerDisplayName} for the period stated. You may revoke this release at any time.
       </Text>
 
-      <SignaturePad ref={signaturePadRef} />
+      <SignaturePad ref={signaturePadRef} defaultName={patientName} />
     </WizardShell>
   );
 }
