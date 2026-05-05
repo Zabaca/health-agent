@@ -46,16 +46,25 @@ interface InviteInfo {
   relationship: string | null;
 }
 
+interface CurrentUser {
+  email: string | null;
+}
+
 export default function InviteAcceptForm({
   token,
   invite,
+  currentUser,
 }: {
   token: string;
   invite: InviteInfo;
+  currentUser?: CurrentUser | null;
 }) {
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>("register");
+
+  const isSignedInAsInvitee =
+    currentUser?.email?.toLowerCase() === invite.inviteeEmail.toLowerCase();
 
   const registerForm = useForm<RegisterData>({ resolver: zodResolver(registerSchema) });
   const loginForm = useForm<LoginData>({ resolver: zodResolver(loginSchema) });
@@ -112,6 +121,12 @@ export default function InviteAcceptForm({
     window.location.href = "/representing";
   };
 
+  const onAcceptAsCurrentUser = async () => {
+    const ok = await acceptInvite('login');
+    if (!ok) return;
+    window.location.href = "/representing";
+  };
+
   return (
     <Center mih="100vh">
       <Paper shadow="md" p={40} w={460} radius="md">
@@ -134,76 +149,93 @@ export default function InviteAcceptForm({
           </Alert>
         )}
 
-        <Tabs value={activeTab} onChange={setActiveTab}>
-          <Tabs.List grow mb="md">
-            <Tabs.Tab value="register">Create account</Tabs.Tab>
-            <Tabs.Tab value="login">I have an account</Tabs.Tab>
-          </Tabs.List>
+        {isSignedInAsInvitee ? (
+          <Stack>
+            <Alert color="blue" variant="light">
+              You&apos;re signed in as <strong>{currentUser?.email}</strong>.
+            </Alert>
+            <Button fullWidth loading={loading} onClick={onAcceptAsCurrentUser}>
+              Accept invitation
+            </Button>
+          </Stack>
+        ) : currentUser?.email ? (
+          <Stack>
+            <Alert color="orange" variant="light">
+              You&apos;re signed in as <strong>{currentUser.email}</strong>, but this invite is for <strong>{invite.inviteeEmail}</strong>. Please sign in with the correct account to accept.
+            </Alert>
+          </Stack>
+        ) : (
+          <Tabs value={activeTab} onChange={setActiveTab}>
+            <Tabs.List grow mb="md">
+              <Tabs.Tab value="register">Create account</Tabs.Tab>
+              <Tabs.Tab value="login">I have an account</Tabs.Tab>
+            </Tabs.List>
 
-          <Tabs.Panel value="register">
-            <form onSubmit={registerForm.handleSubmit(onRegister)}>
-              <Stack>
-                <TextInput
-                  label="Email"
-                  value={invite.inviteeEmail}
-                  readOnly
-                  disabled
-                />
-                <Group grow>
+            <Tabs.Panel value="register">
+              <form onSubmit={registerForm.handleSubmit(onRegister)}>
+                <Stack>
                   <TextInput
-                    label="First name"
-                    placeholder="Jane"
-                    error={registerForm.formState.errors.firstName?.message}
-                    {...registerForm.register("firstName")}
+                    label="Email"
+                    value={invite.inviteeEmail}
+                    readOnly
+                    disabled
                   />
-                  <TextInput
-                    label="Last name"
-                    placeholder="Doe"
-                    error={registerForm.formState.errors.lastName?.message}
-                    {...registerForm.register("lastName")}
+                  <Group grow>
+                    <TextInput
+                      label="First name"
+                      placeholder="Jane"
+                      error={registerForm.formState.errors.firstName?.message}
+                      {...registerForm.register("firstName")}
+                    />
+                    <TextInput
+                      label="Last name"
+                      placeholder="Doe"
+                      error={registerForm.formState.errors.lastName?.message}
+                      {...registerForm.register("lastName")}
+                    />
+                  </Group>
+                  <PasswordInput
+                    label="Password"
+                    placeholder="Min 8 characters"
+                    error={registerForm.formState.errors.password?.message}
+                    {...registerForm.register("password")}
                   />
-                </Group>
-                <PasswordInput
-                  label="Password"
-                  placeholder="Min 8 characters"
-                  error={registerForm.formState.errors.password?.message}
-                  {...registerForm.register("password")}
-                />
-                <PasswordInput
-                  label="Confirm password"
-                  placeholder="Repeat password"
-                  error={registerForm.formState.errors.confirmPassword?.message}
-                  {...registerForm.register("confirmPassword")}
-                />
-                <Button type="submit" fullWidth loading={loading} mt="sm">
-                  Create account &amp; accept
-                </Button>
-              </Stack>
-            </form>
-          </Tabs.Panel>
+                  <PasswordInput
+                    label="Confirm password"
+                    placeholder="Repeat password"
+                    error={registerForm.formState.errors.confirmPassword?.message}
+                    {...registerForm.register("confirmPassword")}
+                  />
+                  <Button type="submit" fullWidth loading={loading} mt="sm">
+                    Create account &amp; accept
+                  </Button>
+                </Stack>
+              </form>
+            </Tabs.Panel>
 
-          <Tabs.Panel value="login">
-            <form onSubmit={loginForm.handleSubmit(onLogin)}>
-              <Stack>
-                <TextInput
-                  label="Email"
-                  value={invite.inviteeEmail}
-                  readOnly
-                  disabled
-                />
-                <PasswordInput
-                  label="Password"
-                  placeholder="Your password"
-                  error={loginForm.formState.errors.password?.message}
-                  {...loginForm.register("password")}
-                />
-                <Button type="submit" fullWidth loading={loading} mt="sm">
-                  Sign in &amp; accept
-                </Button>
-              </Stack>
-            </form>
-          </Tabs.Panel>
-        </Tabs>
+            <Tabs.Panel value="login">
+              <form onSubmit={loginForm.handleSubmit(onLogin)}>
+                <Stack>
+                  <TextInput
+                    label="Email"
+                    value={invite.inviteeEmail}
+                    readOnly
+                    disabled
+                  />
+                  <PasswordInput
+                    label="Password"
+                    placeholder="Your password"
+                    error={loginForm.formState.errors.password?.message}
+                    {...loginForm.register("password")}
+                  />
+                  <Button type="submit" fullWidth loading={loading} mt="sm">
+                    Sign in &amp; accept
+                  </Button>
+                </Stack>
+              </form>
+            </Tabs.Panel>
+          </Tabs>
+        )}
       </Paper>
     </Center>
   );

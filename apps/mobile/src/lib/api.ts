@@ -495,6 +495,23 @@ export async function createRepresentingRelease(
   )) as { id: string };
 }
 
+export type RepresentedPatient = {
+  patientId: string;
+  relationship: string | null;
+  healthRecordsPermission: "viewer" | "editor" | null;
+  manageProvidersPermission: "viewer" | "editor" | null;
+  releasePermission: "viewer" | "editor" | null;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+export async function listRepresentedPatients(): Promise<RepresentedPatient[]> {
+  const res = (await apiFetch("/api/representing", {}, { auth: true })) as {
+    patients: RepresentedPatient[];
+  };
+  return res.patients;
+}
+
 // ─── Records ──────────────────────────────────────────────────────────────────
 
 export type IncomingFile = {
