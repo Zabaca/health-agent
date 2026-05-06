@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, releases, users, providers as providersTable } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { staffReleaseSchema } from "@/lib/schemas/release";
+import { providerSchema } from "@/lib/schemas/release";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
 import { sendReleaseSignatureRequiredEmail, getSiteBaseUrl } from "@/lib/email";
 import { encryptPii, extractLast4Ssn } from "@/lib/crypto";
+
+// Simplified schema for PDA release creation — patient personal info is fetched from DB.
+const pdaReleaseBodySchema = z.object({
+  providers: z.array(providerSchema).min(1, "At least one provider is required"),
+  authExpirationDate: z.string().optional().default(""),
+  authPrintedName: z.string().trim().optional().default(""),
+  authDate: z.string().optional().default(""),
+  releaseAuthAgent: z.boolean().optional().default(true),
+  releaseAuthZabaca: z.boolean().optional().default(false),
+});
 
 // GET /api/representing/[patientId]/releases — list releases where PDA is authorized agent
 export async function GET(
@@ -46,7 +57,6 @@ export async function GET(
   });
 
   // Filter to only releases where this PDA is the authorized agent.
-  // Email is unique per user account so it's the reliable identifier here.
   const pdaReleases = rows.filter(r => r.authAgentEmail === pda?.email);
 
   return NextResponse.json(pdaReleases.map(r => ({
@@ -92,25 +102,41 @@ export async function POST(
   });
   if (!pda) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Fetch patient profile from database — PDA does not need to submit personal info.
+  const patient = await db.query.users.findFirst({
+    where: eq(users.id, patientId),
+    columns: {
+      firstName: true,
+      lastName: true,
+      dateOfBirth: true,
+      address: true,
+      phoneNumber: true,
+      email: true,
+      ssn: true,
+    },
+  });
+  if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+
   const body = await req.json();
-  const parsed = staffReleaseSchema.safeParse(body);
+  const parsed = pdaReleaseBodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
   const data = parsed.data;
   const now = new Date().toISOString();
+  const today = now.slice(0, 10);
 
   const releaseBase = encryptPii({
     userId: patientId,
-    firstName: data.firstName,
-    middleName: data.middleName ?? null,
-    lastName: data.lastName,
-    dateOfBirth: data.dateOfBirth,
-    mailingAddress: data.mailingAddress,
-    phoneNumber: data.phoneNumber,
-    email: data.email,
-    ssn: data.ssn ? extractLast4Ssn(data.ssn) : "",
+    firstName: patient.firstName ?? '',
+    middleName: null,
+    lastName: patient.lastName ?? '',
+    dateOfBirth: patient.dateOfBirth ?? '',
+    mailingAddress: patient.address ?? '',
+    phoneNumber: patient.phoneNumber ?? '',
+    email: patient.email,
+    ssn: patient.ssn ? extractLast4Ssn(patient.ssn) : "",
     releaseAuthAgent: true,
     releaseAuthZabaca: false,
     authAgentFirstName: pda.firstName ?? '',
@@ -119,10 +145,10 @@ export async function POST(
     authAgentPhone: pda.phoneNumber ?? '',
     authAgentEmail: pda.email,
     authExpirationDate: data.authExpirationDate ?? null,
-    authExpirationEvent: data.authExpirationEvent ?? null,
-    authPrintedName: data.authPrintedName,
+    authExpirationEvent: null,
+    authPrintedName: data.authPrintedName ?? '',
     authSignatureImage: null as null, // patient must sign
-    authDate: data.authDate,
+    authDate: data.authDate ?? today,
     createdAt: now,
     updatedAt: now,
   });
@@ -187,21 +213,15 @@ export async function POST(
 
   // Notify patient that a release was created and requires their signature
   try {
-    const patient = await db.query.users.findFirst({
-      where: eq(users.id, patientId),
-      columns: { email: true, firstName: true, lastName: true },
+    const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
+    const pdaName = [pda.firstName, pda.lastName].filter(Boolean).join(' ') || pda.email;
+    await sendReleaseSignatureRequiredEmail({
+      to: patient.email,
+      patientName,
+      createdByName: pdaName,
+      releasesUrl: `${getSiteBaseUrl()}/releases`,
+      contact: { name: pdaName, email: pda.email },
     });
-    if (patient) {
-      const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
-      const pdaName = [pda.firstName, pda.lastName].filter(Boolean).join(' ') || pda.email;
-      await sendReleaseSignatureRequiredEmail({
-        to: patient.email,
-        patientName,
-        createdByName: pdaName,
-        releasesUrl: `${getSiteBaseUrl()}/releases`,
-        contact: { name: pdaName, email: pda.email },
-      });
-    }
   } catch {
     // swallow — do not block the response
   }

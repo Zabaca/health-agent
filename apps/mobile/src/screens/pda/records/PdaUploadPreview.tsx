@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -6,13 +6,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AlertTriangle, ArrowLeft, Check } from "lucide-react-native";
 import { useTheme } from "@/theme/ThemeProvider";
 import { registerRecord, uploadFile } from "@/lib/api";
-import type { RecordsParamList } from "@/navigation/types";
+import type { PdaRecordsParamList } from "@/navigation/types";
 
-type Nav = NativeStackNavigationProp<RecordsParamList>;
-type R = RouteProp<RecordsParamList, "UploadPreview">;
+type Nav = NativeStackNavigationProp<PdaRecordsParamList>;
+type R = RouteProp<PdaRecordsParamList, "PdaUploadPreview">;
 
 function extFromMime(mime: string): string {
-  // Strip RFC 2045 parameters (e.g. "image/jpeg;charset=utf-8") before parsing.
   const base = mime.split(";")[0].trim();
   const slash = base.indexOf("/");
   if (slash === -1) return "bin";
@@ -21,7 +20,7 @@ function extFromMime(mime: string): string {
   return sub;
 }
 
-export default function UploadPreview() {
+export default function PdaUploadPreview() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
@@ -29,11 +28,11 @@ export default function UploadPreview() {
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // True once upload+register succeeds — lets the beforeRemove listener
+  // allow the programmatic popToTop() through while still blocking
+  // user-initiated back gestures during an in-flight upload.
   const uploadDone = useRef(false);
 
-  // Block user-initiated dismissal (back gesture, hardware back) while an
-  // upload is in flight. The ref lets the success-path popToTop() through
-  // without being blocked by this same listener.
   useEffect(() => {
     if (!uploading) return;
     const sub = nav.addListener("beforeRemove", (e) => {
@@ -58,6 +57,7 @@ export default function UploadPreview() {
         fileURL: url,
         fileType: extFromMime(params.mimeType),
         originalName: params.name,
+        patientId: params.patientId,
       });
       uploadDone.current = true;
       nav.popToTop();
@@ -69,15 +69,7 @@ export default function UploadPreview() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#000000" }}>
-      <View
-        style={{
-          paddingTop: insets.top,
-          paddingHorizontal: 12,
-          flexDirection: "row",
-          alignItems: "center",
-          minHeight: 56,
-        }}
-      >
+      <View style={{ paddingTop: insets.top, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", minHeight: 56 }}>
         <Pressable
           onPress={() => nav.goBack()}
           disabled={uploading}
@@ -119,13 +111,7 @@ export default function UploadPreview() {
       {uploading ? (
         <View style={{ paddingHorizontal: 16, gap: 8, marginBottom: 12 }}>
           <View style={{ height: 8, borderRadius: 4, backgroundColor: "#FFFFFF22", overflow: "hidden" }}>
-            <View
-              style={{
-                height: "100%",
-                width: `${Math.max(4, progress)}%`,
-                backgroundColor: t.colors.primary,
-              }}
-            />
+            <View style={{ height: "100%", width: `${Math.max(4, progress)}%`, backgroundColor: t.colors.primary }} />
           </View>
           <Text style={{ color: "#FFFFFFAA", fontSize: 12, textAlign: "center" }}>
             Uploading… {progress}%
@@ -133,15 +119,7 @@ export default function UploadPreview() {
         </View>
       ) : null}
 
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingBottom: insets.bottom + 16,
-          paddingTop: 8,
-          flexDirection: "row",
-          gap: 12,
-        }}
-      >
+      <View style={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 16, paddingTop: 8, flexDirection: "row", gap: 12 }}>
         <Pressable
           onPress={() => nav.goBack()}
           disabled={uploading}

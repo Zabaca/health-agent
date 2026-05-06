@@ -16,6 +16,7 @@ type RepresentedPatientsState = {
   patients: RepresentedPatient[];
   loading: boolean;
   currentPatient: RepresentedPatient | null;
+  refresh: () => Promise<void>;
 };
 
 const RepresentedPatientsContext = createContext<RepresentedPatientsState | null>(null);
@@ -51,8 +52,8 @@ export function RepresentedPatientsProvider({ children }: PropsWithChildren) {
   );
 
   const value = useMemo<RepresentedPatientsState>(
-    () => ({ patients, loading, currentPatient }),
-    [patients, loading, currentPatient],
+    () => ({ patients, loading, currentPatient, refresh: load }),
+    [patients, loading, currentPatient, load],
   );
 
   return createElement(RepresentedPatientsContext.Provider, { value }, children);

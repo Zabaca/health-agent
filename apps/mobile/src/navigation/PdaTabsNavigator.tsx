@@ -5,6 +5,7 @@ import { Home as HomeIcon, FileText, Stethoscope, Send, User } from "lucide-reac
 import { ThemeProvider, useTheme } from "@/theme/ThemeProvider";
 import { useRole } from "@/hooks/useRole";
 import { listRepresentedPatients } from "@/lib/api";
+import { RepresentedPatientsProvider } from "@/contexts/RepresentedPatientsContext";
 import { PdaHomeStack } from "./PdaHomeStack";
 import { PdaRecordsStack } from "./PdaRecordsStack";
 import { PdaProvidersStack } from "./PdaProvidersStack";

@@ -71,8 +71,20 @@ export default function PdaProviders() {
         Providers
       </Text>
       {isEditor ? (
-        <Pressable hitSlop={8} onPress={() => nav.navigate("PdaAddProvider")}>
-          <Plus size={24} color={t.colors.primary} />
+        <Pressable
+          onPress={() => nav.navigate("PdaAddProvider")}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            backgroundColor: t.colors.primary,
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            borderRadius: t.radius.pill,
+          }}
+        >
+          <Plus size={16} color="#FFFFFF" />
+          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Add</Text>
         </Pressable>
       ) : null}
     </View>
@@ -163,7 +175,7 @@ export default function PdaProviders() {
       {providers.map((p) => {
         const detail = providerDetail(p);
         return (
-          <Pressable key={p.id} onPress={() => nav.navigate("PdaProviderDetail", { providerId: p.id })}>
+          <Pressable key={p.id} onPress={() => nav.navigate("PdaProviderDetail", { provider: p })}>
             <View
               style={{
                 backgroundColor: t.colors.surface,

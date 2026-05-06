@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { ChevronRight, Bell, ShieldCheck, Repeat, LogOut, User } from "lucide-react-native";
+import { ChevronRight, Bell, ShieldCheck, Repeat, LogOut, UserRound } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
+import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
@@ -90,18 +91,25 @@ export default function PdaProfile() {
             width: 44,
             height: 44,
             borderRadius: 22,
-            backgroundColor: t.colors.primary,
+            backgroundColor: t.colors.primaryBg,
             alignItems: "center",
             justifyContent: "center",
+            overflow: "hidden",
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>{initials(profile)}</Text>
+          {profile?.avatarUrl ? (
+            <AuthenticatedImage uri={profile.avatarUrl} style={{ width: 44, height: 44 }} resizeMode="cover" />
+          ) : initials(profile) ? (
+            <Text style={{ color: t.colors.primary, fontWeight: "700" }}>{initials(profile)}</Text>
+          ) : (
+            <UserRound size={22} color={t.colors.primary} />
+          )}
         </View>
         <View style={{ flex: 1 }}>
           <Text style={t.type.bodyStrong}>{fullName(profile) || (user?.email ?? "")}</Text>
           <Text style={t.type.caption}>{user?.email ?? ""}</Text>
         </View>
-        <Badge label="PDA" variant="success" />
+        <Badge label="You" variant="success" />
       </View>
 
       {currentPatient ? (
@@ -128,9 +136,18 @@ export default function PdaProfile() {
                   backgroundColor: t.colors.primaryBg,
                   alignItems: "center",
                   justifyContent: "center",
+                  overflow: "hidden",
                 }}
               >
-                <User size={18} color={t.colors.primary} />
+                {currentPatient.avatarUrl ? (
+                  <AuthenticatedImage uri={currentPatient.avatarUrl} style={{ width: 36, height: 36 }} resizeMode="cover" />
+                ) : (currentPatient.firstName || currentPatient.lastName) ? (
+                  <Text style={{ color: t.colors.primary, fontWeight: "700", fontSize: 13 }}>
+                    {`${currentPatient.firstName?.[0] ?? ""}${currentPatient.lastName?.[0] ?? ""}`.toUpperCase()}
+                  </Text>
+                ) : (
+                  <UserRound size={18} color={t.colors.primary} />
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={t.type.bodyStrong}>{patientName}</Text>

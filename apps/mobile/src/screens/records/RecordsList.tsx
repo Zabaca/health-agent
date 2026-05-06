@@ -222,12 +222,27 @@ export default function RecordsList() {
     });
   }, [records, query, filters, selectedReleaseCodes]);
 
+  const canGoBack = nav.canGoBack();
+
+  const DragHandle = canGoBack ? (
+    <Pressable
+      onPress={() => nav.goBack()}
+      hitSlop={{ top: 10, bottom: 10, left: 60, right: 60 }}
+      style={{ alignItems: "center", paddingTop: 10, paddingBottom: 6, backgroundColor: t.colors.bg }}
+    >
+      <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: t.colors.borderMuted }} />
+    </Pressable>
+  ) : null;
+
   const goToViewer = (record: IncomingFile) => {
     nav.navigate("DocumentViewer", {
+      fileId: record.id,
       fileURL: record.fileURL,
       fileType: record.fileType,
       title: viewerTitle(record),
       createdAt: record.createdAt,
+      source: record.source,
+      releaseCode: record.releaseCode,
     });
   };
 
@@ -441,6 +456,7 @@ export default function RecordsList() {
   if (loading && !records) {
     return (
       <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
+        {DragHandle}
         {Header}
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color={t.colors.primary} />
@@ -453,6 +469,7 @@ export default function RecordsList() {
   if (error && !records) {
     return (
       <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
+        {DragHandle}
         {Header}
         <View
           style={{
@@ -500,6 +517,7 @@ export default function RecordsList() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
+      {DragHandle}
       {Header}
       <FlatList
         data={filteredRecords ?? []}

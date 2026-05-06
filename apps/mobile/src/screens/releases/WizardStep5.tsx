@@ -461,26 +461,19 @@ export default function WizardStep5() {
           <View
             key={row.label}
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingVertical: 8,
+              paddingVertical: 10,
               borderTopWidth: i === 0 ? 0 : 1,
               borderTopColor: t.colors.divider,
-              gap: 8,
+              gap: 3,
             }}
           >
-            <Text style={[t.type.caption, { width: 110, flexShrink: 0 }]}>{row.label}</Text>
-            <Text
-              style={[t.type.body, { fontWeight: "600", flex: 1, textAlign: "right" }]}
-              numberOfLines={2}
-              adjustsFontSizeToFit
-              minimumFontScale={0.8}
-            >
-              {row.value}
-            </Text>
-            <Pressable onPress={row.onEdit} hitSlop={8} style={{ flexShrink: 0 }}>
-              <Text style={{ color: t.colors.primary, fontWeight: "600", fontSize: 13 }}>Edit</Text>
-            </Pressable>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={t.type.caption}>{row.label}</Text>
+              <Pressable onPress={row.onEdit} hitSlop={8}>
+                <Text style={{ color: t.colors.primary, fontWeight: "600", fontSize: 13 }}>Edit</Text>
+              </Pressable>
+            </View>
+            <Text style={[t.type.body, { fontWeight: "600" }]}>{row.value}</Text>
           </View>
         ))}
       </View>

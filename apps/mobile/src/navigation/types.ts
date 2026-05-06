@@ -44,10 +44,13 @@ export type RecordsParamList = {
       }
     | undefined;
   DocumentViewer: {
+    fileId: string;
     fileURL: string;
     fileType: string;
     title: string;
     createdAt: string;
+    source: string;
+    releaseCode: string | null;
   };
   CameraCapture: { source: "camera" } | { source: "library" };
   UploadPreview: {
@@ -107,12 +110,19 @@ export type TabsParamList = {
 
 // PDA flow
 
+export type PdaRecordsFilters = {
+  dateFrom: string | null;
+  dateTo: string | null;
+  fileTypes: string[];
+  providers: string[];
+};
+
 export type PdaHomeParamList = {
   PdaHome: undefined;
 };
 
 export type PdaRecordsParamList = {
-  PdaRecords: undefined;
+  PdaRecords: { filters?: PdaRecordsFilters } | undefined;
   PdaRecordDetail: {
     fileId: string;
     fileURL: string;
@@ -121,20 +131,34 @@ export type PdaRecordsParamList = {
     createdAt: string;
     pagecount: number | null;
     originalName: string | null;
+    releaseCode: string | null;
+    patientId: string;
+    permission: "viewer" | "editor";
+  };
+  PdaFilterSheet: { current?: PdaRecordsFilters; availableProviders?: AvailableProvider[] } | undefined;
+  PdaUploadSheet: { patientId: string };
+  PdaCameraCapture: { patientId: string };
+  PdaUploadPreview: {
+    uri: string;
+    mimeType: string;
+    name: string;
+    width?: number;
+    height?: number;
+    patientId: string;
   };
 };
 
 export type PdaProvidersParamList = {
   PdaProviders: undefined;
-  PdaAddProvider: undefined;
-  PdaProviderDetail: { providerId: string };
+  PdaAddProvider: { provider?: import("@/lib/api").UserProvider } | undefined;
+  PdaProviderDetail: { provider: import("@/lib/api").UserProvider };
 };
 
 export type PdaReleasesParamList = {
   PdaReleases: undefined;
   PdaReleaseDetail: { releaseId: string };
   PdaWizardStep1: undefined;
-  PdaWizardStep2: undefined;
+  PdaWizardStep2: { providerType: string; providerId: string };
   PdaWizardStep3: undefined;
   PdaWizardStep4: undefined;
 };
@@ -144,7 +168,7 @@ export type PdaProfileParamList = {
   PdaEditProfile: undefined;
   PdaPeopleIRepresent: undefined;
   RoleSwitcher: undefined;
-  PdaInvite: undefined;
+  PdaInvite: { invite: import("@/lib/api").PendingRepresentingInvite };
 };
 
 export type PdaTabsParamList = {

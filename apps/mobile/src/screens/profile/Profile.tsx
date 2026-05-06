@@ -87,7 +87,7 @@ export default function Profile() {
             style={{
               width: 44,
               height: 44,
-              borderRadius: 12,
+              borderRadius: 22,
               backgroundColor: t.colors.primaryBg,
               alignItems: "center",
               justifyContent: "center",

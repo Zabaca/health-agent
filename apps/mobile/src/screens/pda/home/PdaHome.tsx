@@ -1,8 +1,9 @@
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { ChevronDown, ChevronRight, FileText, Stethoscope, Send } from "lucide-react-native";
+import { ChevronDown, ChevronRight, FileText, Stethoscope, Send, UserRound } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
+import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
 import type { PdaHomeParamList, PdaProfileParamList, PdaTabsParamList } from "@/navigation/types";
@@ -105,9 +106,16 @@ export default function PdaHome() {
             backgroundColor: t.colors.primaryBg,
             alignItems: "center",
             justifyContent: "center",
+            overflow: "hidden",
           }}
         >
-          <Text style={{ color: t.colors.primary, fontWeight: "700" }}>{patientInitials}</Text>
+          {currentPatient.avatarUrl ? (
+            <AuthenticatedImage uri={currentPatient.avatarUrl} style={{ width: 44, height: 44 }} resizeMode="cover" />
+          ) : patientInitials ? (
+            <Text style={{ color: t.colors.primary, fontWeight: "700" }}>{patientInitials}</Text>
+          ) : (
+            <UserRound size={22} color={t.colors.primary} />
+          )}
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={t.type.bodyStrong}>{patientName}</Text>
