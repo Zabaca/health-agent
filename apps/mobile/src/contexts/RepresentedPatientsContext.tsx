@@ -29,8 +29,13 @@ export function RepresentedPatientsProvider({ children }: PropsWithChildren) {
   const load = useCallback(async () => {
     try {
       const list = await listRepresentedPatients();
-      setPatients(list);
-      if (list.length === 0) switchTo("patient");
+      setPatients((prev) => {
+        // Only force-switch back to patient mode when an existing relationship
+        // disappears (revoked/declined). Don't boot a brand-new user who simply
+        // hasn't accepted any invites yet.
+        if (prev.length > 0 && list.length === 0) switchTo("patient");
+        return list;
+      });
     } catch {
       // network error — keep existing state, don't boot user
     } finally {

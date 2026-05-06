@@ -44,8 +44,8 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
   if (!release) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Verify this PDA is the authorized agent for this release
-  if (release.authAgentEmail && release.authAgentEmail !== pda?.email) {
+  // PDA may only access releases where they are the authorized agent.
+  if (release.authAgentEmail !== pda?.email) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -69,7 +69,7 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
 
   if (!release) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (release.voided) return NextResponse.json({ error: "Already voided" }, { status: 409 });
-  if (release.authAgentEmail && release.authAgentEmail !== pda?.email) {
+  if (release.authAgentEmail !== pda?.email) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

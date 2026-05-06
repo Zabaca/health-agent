@@ -152,7 +152,7 @@ export default function PdaInvite() {
         >
           <Info size={16} color={t.colors.primary} />
           <Text style={[t.type.caption, { color: t.colors.primary, flex: 1 }]}>
-            As their designated agent, you'll be able to act on {invite.patientFirstName ?? "their"}'s behalf within the permissions listed above.
+            As their designated agent, you'll be able to act on {invite.patientFirstName ? `${invite.patientFirstName}'s` : "their"} behalf within the permissions listed above.
           </Text>
         </View>
       </Screen>

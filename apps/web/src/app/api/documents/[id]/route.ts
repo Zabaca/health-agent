@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveUserSession } from '@/lib/session-resolver';
 import { db } from '@/lib/db';
-import { incomingFiles, fileUploadLog, patientAssignments, patientDesignatedAgents } from '@/lib/db/schema';
+import { incomingFiles, fileUploadLog, patientAssignments, patientDesignatedAgents, releases } from '@/lib/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { deleteFromR2 } from '@/lib/r2';
 
@@ -63,7 +63,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const updates: Partial<{ releaseCode: string | null }> = {};
-  if (releaseCode !== undefined) updates.releaseCode = releaseCode ?? null;
+  if (releaseCode !== undefined) {
+    if (releaseCode === null || releaseCode === '') {
+      updates.releaseCode = null;
+    } else if (typeof releaseCode === 'string' && file.patientId) {
+      // Code must belong to a release owned by this file's patient.
+      const release = await db.query.releases.findFirst({
+        where: and(eq(releases.releaseCode, releaseCode), eq(releases.userId, file.patientId)),
+        columns: { id: true },
+      });
+      if (!release) return NextResponse.json({ error: 'Invalid release code' }, { status: 400 });
+      updates.releaseCode = releaseCode;
+    } else {
+      return NextResponse.json({ error: 'Invalid release code' }, { status: 400 });
+    }
+  }
 
   if (Object.keys(updates).length > 0) {
     await db.update(incomingFiles).set(updates).where(eq(incomingFiles.id, id));

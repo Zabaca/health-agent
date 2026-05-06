@@ -495,8 +495,6 @@ export type RepresentingReleaseSummary = {
 
 export type CreateRepresentingReleaseInput = {
   providers: ReleaseProviderInput[];
-  releaseAuthAgent: boolean;
-  releaseAuthZabaca: boolean;
   authExpirationDate?: string;
   authPrintedName?: string;
   authDate?: string;

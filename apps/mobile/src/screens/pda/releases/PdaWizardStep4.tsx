@@ -109,8 +109,6 @@ export default function PdaWizardStep4() {
 
       await createRepresentingRelease(currentPatient.patientId, {
         providers: [providerInput],
-        releaseAuthAgent: true,
-        releaseAuthZabaca: false,
         authExpirationDate: expiryDateStr,
       });
 

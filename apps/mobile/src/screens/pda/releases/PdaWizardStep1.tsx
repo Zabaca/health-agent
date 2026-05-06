@@ -39,13 +39,13 @@ export default function PdaWizardStep1() {
     try {
       const list = await listRepresentingProviders(currentPatient.patientId);
       setProviders(list);
-      if (list.length > 0 && !selected) setSelected(list[0].id);
+      setSelected((prev) => prev ?? list[0]?.id ?? null);
     } catch {
       // keep existing state
     } finally {
       setLoading(false);
     }
-  }, [currentPatient, selected]);
+  }, [currentPatient]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 

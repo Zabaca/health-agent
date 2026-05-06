@@ -11,13 +11,12 @@ import { sendReleaseSignatureRequiredEmail, getSiteBaseUrl } from "@/lib/email";
 import { encryptPii, extractLast4Ssn } from "@/lib/crypto";
 
 // Simplified schema for PDA release creation — patient personal info is fetched from DB.
+// Wizard creates exactly one provider per release; the route enforces that contract.
 const pdaReleaseBodySchema = z.object({
-  providers: z.array(providerSchema).min(1, "At least one provider is required"),
-  authExpirationDate: z.string().optional().default(""),
+  providers: z.array(providerSchema).length(1, "Exactly one provider is required"),
+  authExpirationDate: z.string().optional(),
   authPrintedName: z.string().trim().optional().default(""),
-  authDate: z.string().optional().default(""),
-  releaseAuthAgent: z.boolean().optional().default(true),
-  releaseAuthZabaca: z.boolean().optional().default(false),
+  authDate: z.string().optional(),
 });
 
 // GET /api/representing/[patientId]/releases — list releases where PDA is authorized agent
@@ -144,11 +143,11 @@ export async function POST(
     authAgentAddress: pda.address ?? '',
     authAgentPhone: pda.phoneNumber ?? '',
     authAgentEmail: pda.email,
-    authExpirationDate: data.authExpirationDate ?? null,
+    authExpirationDate: data.authExpirationDate || null,
     authExpirationEvent: null,
     authPrintedName: data.authPrintedName ?? '',
     authSignatureImage: null as null, // patient must sign
-    authDate: data.authDate ?? today,
+    authDate: data.authDate || today,
     createdAt: now,
     updatedAt: now,
   });
