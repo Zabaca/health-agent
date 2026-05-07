@@ -28,6 +28,10 @@ async function resolveAccess(req: NextRequest, patientId: string) {
     columns: { email: true },
   });
 
+  if (!pda?.email) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }), result: null, relation: null, pda: null };
+  }
+
   return { error: null, result, relation, pda };
 }
 

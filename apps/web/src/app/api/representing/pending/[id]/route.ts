@@ -33,12 +33,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     await db
       .update(patientDesignatedAgents)
       .set({ agentUserId: result.userId, status: "accepted", updatedAt: new Date().toISOString() })
-      .where(eq(patientDesignatedAgents.id, id));
+      .where(and(eq(patientDesignatedAgents.id, id), eq(patientDesignatedAgents.status, "pending")));
   } else if (action === "decline") {
     await db
       .update(patientDesignatedAgents)
       .set({ status: "revoked", updatedAt: new Date().toISOString() })
-      .where(eq(patientDesignatedAgents.id, id));
+      .where(and(eq(patientDesignatedAgents.id, id), eq(patientDesignatedAgents.status, "pending")));
   } else {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }

@@ -88,7 +88,7 @@ export default function PdaWizardStep4() {
 
       const providerInput: ReleaseProviderInput = {
         providerName: wizard.provider.providerName || undefined,
-        providerType: wizard.provider.providerType as "Insurance" | "Hospital" | "Facility",
+        providerType: wizard.provider.providerType,
         insurance: wizard.provider.insurance ?? undefined,
         patientId: wizard.provider.patientId ?? undefined,
         patientMemberId: wizard.provider.patientMemberId ?? undefined,

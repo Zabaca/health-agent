@@ -15,8 +15,6 @@ import { encryptPii, extractLast4Ssn } from "@/lib/crypto";
 const pdaReleaseBodySchema = z.object({
   providers: z.array(providerSchema).length(1, "Exactly one provider is required"),
   authExpirationDate: z.string().optional(),
-  authPrintedName: z.string().trim().optional().default(""),
-  authDate: z.string().optional(),
 });
 
 // GET /api/representing/[patientId]/releases — list releases where PDA is authorized agent
@@ -145,9 +143,9 @@ export async function POST(
     authAgentEmail: pda.email,
     authExpirationDate: data.authExpirationDate || null,
     authExpirationEvent: null,
-    authPrintedName: data.authPrintedName ?? '',
+    authPrintedName: '',
     authSignatureImage: null as null, // patient must sign
-    authDate: data.authDate || today,
+    authDate: today,
     createdAt: now,
     updatedAt: now,
   });

@@ -36,8 +36,9 @@ export function RepresentedPatientsProvider({ children }: PropsWithChildren) {
         if (prev.length > 0 && list.length === 0) switchTo("patient");
         return list;
       });
-    } catch {
+    } catch (e) {
       // network error — keep existing state, don't boot user
+      if (__DEV__) console.warn("[RepresentedPatientsContext] load failed:", e);
     } finally {
       setLoading(false);
     }

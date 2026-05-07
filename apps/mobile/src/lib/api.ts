@@ -210,7 +210,7 @@ export type UserProvider = {
   userId: string;
   order: number;
   providerName: string;
-  providerType: string;
+  providerType: "Hospital" | "Facility" | "Insurance";
   physicianName: string | null;
   patientId: string | null;
   insurance: string | null;

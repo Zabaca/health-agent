@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { resolveUserSession } from '@/lib/session-resolver';
 import { db } from '@/lib/db';
 import { incomingFiles, fileUploadLog, patientAssignments, patientDesignatedAgents, userProviders } from '@/lib/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { deleteFromR2 } from '@/lib/r2';
+
+const patchSchema = z.object({
+  originalName: z.string().trim().min(1).max(500).optional(),
+  userProviderId: z.string().nullable().optional(),
+});
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -56,7 +62,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (error) return error;
 
   const { id } = await params;
-  const { originalName, userProviderId } = await req.json();
+  const parsed = patchSchema.safeParse(await req.json());
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const { originalName, userProviderId } = parsed.data;
 
   const { file, allowed } = await resolveAccess(result, id);
   if (!file) return NextResponse.json({ error: 'Not found' }, { status: 404 });
