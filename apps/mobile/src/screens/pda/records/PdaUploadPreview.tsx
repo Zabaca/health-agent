@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AlertTriangle, ArrowLeft, Check } from "lucide-react-native";
 import { useTheme } from "@/theme/ThemeProvider";
-import { registerRecord, uploadFile } from "@/lib/api";
+import { listRepresentingRecordProviders, registerRecord, uploadFile, type RecordProvider } from "@/lib/api";
 import type { PdaRecordsParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaRecordsParamList>;
@@ -25,6 +25,8 @@ export default function PdaUploadPreview() {
   const nav = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { params } = useRoute<R>();
+  const [providers, setProviders] = useState<RecordProvider[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +34,10 @@ export default function PdaUploadPreview() {
   // allow the programmatic popToTop() through while still blocking
   // user-initiated back gestures during an in-flight upload.
   const uploadDone = useRef(false);
+
+  useEffect(() => {
+    listRepresentingRecordProviders(params.patientId).then(setProviders).catch(() => {});
+  }, [params.patientId]);
 
   useEffect(() => {
     if (!uploading) return;
@@ -58,6 +64,7 @@ export default function PdaUploadPreview() {
         fileType: extFromMime(params.mimeType),
         originalName: params.name,
         patientId: params.patientId,
+        userProviderId: selectedProviderId ?? undefined,
       });
       uploadDone.current = true;
       nav.popToTop();
@@ -89,6 +96,41 @@ export default function PdaUploadPreview() {
           resizeMode="contain"
         />
       </View>
+
+      {providers.length > 0 && !uploading ? (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+          <Text style={{ color: "#FFFFFFAA", fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
+            Provider (optional)
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <Pressable
+              onPress={() => setSelectedProviderId(null)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: selectedProviderId === null ? t.colors.primary : "#FFFFFF22",
+              }}
+            >
+              <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "600" }}>None</Text>
+            </Pressable>
+            {providers.map((p) => (
+              <Pressable
+                key={p.id}
+                onPress={() => setSelectedProviderId(p.id)}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  backgroundColor: selectedProviderId === p.id ? t.colors.primary : "#FFFFFF22",
+                }}
+              >
+                <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "600" }}>{p.name}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       {error ? (
         <View

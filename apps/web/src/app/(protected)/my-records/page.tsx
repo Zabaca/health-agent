@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { incomingFiles, releases as releasesTable, providers as releaseProvidersTable } from "@/lib/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { incomingFiles, userProviders } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import PageHeader from "@/components/shared/PageHeader";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
 import UploadFileButton from "@/components/records/UploadFileButton";
@@ -14,65 +14,23 @@ export default async function MyRecordsPage() {
 
   const userId = session.user.id;
 
-  const [files, releases] = await Promise.all([
+  const [files, myProviders] = await Promise.all([
     db.query.incomingFiles.findMany({
       where: eq(incomingFiles.patientId, userId),
       with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
       orderBy: (f, { desc }) => [desc(f.createdAt)],
     }),
-    db.query.releases.findMany({
-      where: eq(releasesTable.userId, userId),
-      columns: { id: true, releaseCode: true },
-    }),
+    db.select({ id: userProviders.id, providerName: userProviders.providerName, providerType: userProviders.providerType, insurance: userProviders.insurance })
+      .from(userProviders)
+      .where(eq(userProviders.userId, userId)),
   ]);
 
-  const releaseIds = releases.map(r => r.id);
-  const releaseProviders = releaseIds.length
-    ? await db
-        .select({ releaseId: releaseProvidersTable.releaseId, providerName: releaseProvidersTable.providerName, insurance: releaseProvidersTable.insurance, providerType: releaseProvidersTable.providerType })
-        .from(releaseProvidersTable)
-        .where(inArray(releaseProvidersTable.releaseId, releaseIds))
-    : [];
+  const providerOptions = myProviders.map((p) => ({
+    id: p.id,
+    name: (p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName) ?? "",
+  }));
 
-  const providersByRelease = new Map<string, string[]>();
-  for (const p of releaseProviders) {
-    const names = providersByRelease.get(p.releaseId) ?? [];
-    const displayName = p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName;
-    names.push(displayName);
-    providersByRelease.set(p.releaseId, names);
-  }
-
-  const releaseOptions = releases
-    .filter(r => r.releaseCode)
-    .map(r => ({
-      id: r.id,
-      releaseCode: r.releaseCode!,
-      providerNames: providersByRelease.get(r.id) ?? [],
-    }));
-
-  // Provider chips: only releases that are actually tagged on a record count.
-  // A provider name appearing across multiple releases is deduped — selecting
-  // it filters records tagged with any of those release codes.
-  const taggedReleaseCodes = new Set<string>();
-  for (const f of files) {
-    if (f.releaseCode) taggedReleaseCodes.add(f.releaseCode);
-  }
-  const providerMap = new Map<string, Set<string>>();
-  for (const release of releases) {
-    if (!release.releaseCode || !taggedReleaseCodes.has(release.releaseCode)) continue;
-    const names = providersByRelease.get(release.id) ?? [];
-    for (const name of names) {
-      let codes = providerMap.get(name);
-      if (!codes) {
-        codes = new Set();
-        providerMap.set(name, codes);
-      }
-      codes.add(release.releaseCode);
-    }
-  }
-  const providerOptions = Array.from(providerMap.entries())
-    .map(([name, codes]) => ({ name, releaseCodes: Array.from(codes).sort() }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const providerById = new Map(providerOptions.map(p => [p.id, p.name]));
 
   const rows = files.map(f => {
     const uploader = f.uploadLog?.uploadedBy;
@@ -82,7 +40,8 @@ export default async function MyRecordsPage() {
       fileType: f.fileType,
       fileURL: f.fileURL,
       originalName: f.uploadLog?.originalName ?? null,
-      releaseCode: f.releaseCode ?? null,
+      userProviderId: f.userProviderId ?? null,
+      providerName: f.userProviderId ? (providerById.get(f.userProviderId) ?? null) : null,
       pagecount: f.faxLog?.pagecount ?? null,
       uploadedBy: uploader
         ? [uploader.firstName, uploader.lastName].filter(Boolean).join(' ') || uploader.email
@@ -92,8 +51,8 @@ export default async function MyRecordsPage() {
 
   return (
     <>
-      <PageHeader title="My Health Records" action={<UploadFileButton releases={releaseOptions} />} />
-      <MyRecordsTable rows={rows} releases={releaseOptions} providers={providerOptions} />
+      <PageHeader title="My Health Records" action={<UploadFileButton providers={providerOptions} />} />
+      <MyRecordsTable rows={rows} providers={providerOptions} />
     </>
   );
 }

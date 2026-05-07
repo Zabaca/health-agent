@@ -3,6 +3,7 @@ import PdaProfile from "@/screens/pda/profile/PdaProfile";
 import PdaEditProfile from "@/screens/pda/profile/PdaEditProfile";
 import PdaPeopleIRepresent from "@/screens/pda/profile/PdaPeopleIRepresent";
 import RoleSwitcher from "@/screens/pda/profile/RoleSwitcher";
+import ActiveDevices from "@/screens/profile/ActiveDevices";
 import PdaInvite from "@/screens/pda/PdaInvite";
 import type { PdaProfileParamList } from "./types";
 
@@ -22,6 +23,7 @@ export function PdaProfileStack() {
         component={RoleSwitcher}
         options={{ presentation: "transparentModal", animation: "fade" }}
       />
+      <Stack.Screen name="ActiveDevices" component={ActiveDevices} />
       <Stack.Screen name="PdaInvite" component={PdaInvite} options={{ presentation: "modal" }} />
     </Stack.Navigator>
   );

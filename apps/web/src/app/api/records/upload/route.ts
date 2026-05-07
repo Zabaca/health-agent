@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
-  const { fileURL, fileType, originalName, patientId, releaseCode } = await req.json();
+  const { fileURL, fileType, originalName, patientId, userProviderId } = await req.json();
 
   if (!fileURL || !fileType || !originalName) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     source: 'upload',
     incomingFaxLogId: null,
     patientId: assignedPatientId,
-    releaseCode: releaseCode ?? null,
+    userProviderId: userProviderId ?? null,
   });
 
   await db.insert(fileUploadLog).values({

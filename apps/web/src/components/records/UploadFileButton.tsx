@@ -9,15 +9,14 @@ import { useDropzone } from 'react-dropzone';
 
 const MAX_SIZE = 20 * 1024 * 1024; // 20MB
 
-interface ReleaseOption {
+interface ProviderOption {
   id: string;
-  releaseCode: string | null;
-  providerNames?: string[];
+  name: string;
 }
 
 interface Props {
   patientId?: string;
-  releases?: ReleaseOption[];
+  providers?: ProviderOption[];
 }
 
 interface FileUploadState {
@@ -27,18 +26,18 @@ interface FileUploadState {
   error: string;
 }
 
-export default function UploadFileButton({ patientId, releases }: Props) {
+export default function UploadFileButton({ patientId, providers }: Props) {
   const [opened, { open, close }] = useDisclosure(false);
   const router = useRouter();
   const [fileStates, setFileStates] = useState<FileUploadState[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [selectedReleaseCode, setSelectedReleaseCode] = useState<string | null>(null);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
 
   const handleClose = () => {
     if (uploading) return;
     setFileStates([]);
-    setSelectedReleaseCode(null);
-    setReleaseSearch('');
+    setSelectedProviderId(null);
+    setProviderSearch('');
     close();
   };
 
@@ -67,7 +66,7 @@ export default function UploadFileButton({ patientId, releases }: Props) {
     setFileStates(prev => prev.map((s, i) => i === index ? { ...s, ...patch } : s));
   }, []);
 
-  const uploadFile = async (file: File, index: number, releaseCode: string | null): Promise<boolean> => {
+  const uploadFile = async (file: File, index: number, providerId: string | null): Promise<boolean> => {
     updateFileState(index, { progress: 0, error: '', success: false });
 
     try {
@@ -90,7 +89,7 @@ export default function UploadFileButton({ patientId, releases }: Props) {
           fileType: ext,
           originalName: file.name,
           patientId: patientId ?? undefined,
-          releaseCode: releaseCode ?? undefined,
+          userProviderId: providerId ?? undefined,
         }),
       });
       if (!recordRes.ok) throw new Error('Failed to save record');
@@ -127,8 +126,8 @@ export default function UploadFileButton({ patientId, releases }: Props) {
     if (accepted.length === 0) return;
 
     setUploading(true);
-    const releaseCode = selectedReleaseCode;
-    const results = await Promise.all(accepted.map((file, i) => uploadFile(file, startIndex + i, releaseCode)));
+    const providerId = selectedProviderId;
+    const results = await Promise.all(accepted.map((file, i) => uploadFile(file, startIndex + i, providerId)));
     setUploading(false);
     if (results.some(Boolean)) router.refresh();
 
@@ -145,35 +144,26 @@ export default function UploadFileButton({ patientId, releases }: Props) {
     disabled: uploading,
   });
 
-  const [releaseSearch, setReleaseSearch] = useState('');
-  const releaseCombobox = useCombobox({
-    onDropdownClose: () => { releaseCombobox.resetSelectedOption(); setReleaseSearch(''); },
+  const [providerSearch, setProviderSearch] = useState('');
+  const providerCombobox = useCombobox({
+    onDropdownClose: () => { providerCombobox.resetSelectedOption(); setProviderSearch(''); },
   });
 
-  const releaseOptions = useMemo(() =>
-    (releases ?? []).filter(r => r.releaseCode).map(r => ({
-      releaseCode: r.releaseCode!,
-      providerNames: r.providerNames ?? [],
-    })),
-  [releases]);
-
-  const filteredReleases = useMemo(() => {
-    if (!releaseSearch.trim()) return releaseOptions;
-    const q = releaseSearch.toLowerCase();
-    return releaseOptions.filter(o => {
-      const combined = [o.releaseCode, ...o.providerNames].join(' ').toLowerCase();
+  const filteredProviders = useMemo(() => {
+    const opts = providers ?? [];
+    if (!providerSearch.trim()) return opts;
+    const q = providerSearch.toLowerCase();
+    return opts.filter(o => {
+      const t = (o.name ?? '').toLowerCase();
       let qi = 0;
-      for (let i = 0; i < combined.length && qi < q.length; i++) {
-        if (combined[i] === q[qi]) qi++;
+      for (let i = 0; i < t.length && qi < q.length; i++) {
+        if (t[i] === q[qi]) qi++;
       }
       return qi === q.length;
     });
-  }, [releaseSearch, releaseOptions]);
+  }, [providerSearch, providers]);
 
-  const selectedRelease = releaseOptions.find(o => o.releaseCode === selectedReleaseCode);
-  const releaseDisplayValue = selectedRelease
-    ? `${selectedRelease.releaseCode}${selectedRelease.providerNames.length ? ` — ${selectedRelease.providerNames.join(', ')}` : ''}`
-    : '';
+  const selectedProvider = (providers ?? []).find(o => o.id === selectedProviderId);
 
   const hasFiles = fileStates.length > 0;
   const allDone = hasFiles && fileStates.every(s => s.success || s.error);
@@ -239,19 +229,19 @@ export default function UploadFileButton({ patientId, releases }: Props) {
             </Stack>
           )}
 
-          {releaseOptions.length > 0 && (
+          {(providers ?? []).length > 0 && (
             <Combobox
-              store={releaseCombobox}
-              onOptionSubmit={val => { setSelectedReleaseCode(val); releaseCombobox.closeDropdown(); }}
+              store={providerCombobox}
+              onOptionSubmit={val => { setSelectedProviderId(val === '__none__' ? null : val); providerCombobox.closeDropdown(); }}
             >
               <Combobox.Target>
                 <InputBase
-                  label="Associate with Release (optional)"
-                  placeholder="Search by code or provider…"
-                  value={releaseCombobox.dropdownOpened ? releaseSearch : releaseDisplayValue}
-                  onChange={e => { setReleaseSearch(e.currentTarget.value); releaseCombobox.openDropdown(); }}
-                  onClick={() => releaseCombobox.openDropdown()}
-                  onFocus={() => releaseCombobox.openDropdown()}
+                  label="Associate with Provider (optional)"
+                  placeholder="Search providers…"
+                  value={providerCombobox.dropdownOpened ? providerSearch : (selectedProvider?.name ?? '')}
+                  onChange={e => { setProviderSearch(e.currentTarget.value); providerCombobox.openDropdown(); }}
+                  onClick={() => providerCombobox.openDropdown()}
+                  onFocus={() => providerCombobox.openDropdown()}
                   rightSection={<Combobox.Chevron />}
                   rightSectionPointerEvents="none"
                   disabled={uploading}
@@ -260,16 +250,14 @@ export default function UploadFileButton({ patientId, releases }: Props) {
               <Combobox.Dropdown>
                 <Combobox.Options>
                   <ScrollArea.Autosize mah={200} type="scroll">
-                    {filteredReleases.length === 0 ? (
-                      <Combobox.Empty>No releases found</Combobox.Empty>
-                    ) : filteredReleases.map(o => (
-                      <Combobox.Option key={o.releaseCode} value={o.releaseCode} active={selectedReleaseCode === o.releaseCode}>
-                        <Group gap="xs" wrap="nowrap">
-                          <Text size="sm" fw={500} ff="monospace">{o.releaseCode}</Text>
-                          {o.providerNames.length > 0 && (
-                            <Text size="xs" c="dimmed" truncate>{o.providerNames.join(', ')}</Text>
-                          )}
-                        </Group>
+                    <Combobox.Option value="__none__" active={selectedProviderId === null}>
+                      <Text size="sm" c="dimmed">None</Text>
+                    </Combobox.Option>
+                    {filteredProviders.length === 0 ? (
+                      <Combobox.Empty>No providers found</Combobox.Empty>
+                    ) : filteredProviders.map(o => (
+                      <Combobox.Option key={o.id} value={o.id} active={selectedProviderId === o.id}>
+                        <Text size="sm">{o.name}</Text>
                       </Combobox.Option>
                     ))}
                   </ScrollArea.Autosize>

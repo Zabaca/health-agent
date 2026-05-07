@@ -28,8 +28,7 @@ export type RecordsFilters = {
   providers: string[]; // selected provider names, empty = no filter
 };
 
-/** Provider chip data: name displayed + release codes the name corresponds to. */
-export type AvailableProvider = { name: string; releaseCodes: string[] };
+export type AvailableProvider = { id: string; name: string };
 
 export type RecordsParamList = {
   RecordsList: { filters?: RecordsFilters } | undefined;
@@ -50,7 +49,7 @@ export type RecordsParamList = {
     title: string;
     createdAt: string;
     source: string;
-    releaseCode: string | null;
+    userProviderId: string | null;
   };
   CameraCapture: { source: "camera" } | { source: "library" };
   UploadPreview: {
@@ -98,6 +97,7 @@ export type ProfileParamList = {
   InviteRepresentative: undefined;
   RepresentativeDetail: { agent: import("@/lib/api").DesignatedAgent };
   ActiveDevices: undefined;
+  RoleSwitcher: undefined;
 };
 
 export type TabsParamList = {
@@ -131,7 +131,7 @@ export type PdaRecordsParamList = {
     createdAt: string;
     pagecount: number | null;
     originalName: string | null;
-    releaseCode: string | null;
+    userProviderId: string | null;
     patientId: string;
     permission: "viewer" | "editor";
   };
@@ -168,6 +168,7 @@ export type PdaProfileParamList = {
   PdaEditProfile: undefined;
   PdaPeopleIRepresent: undefined;
   RoleSwitcher: undefined;
+  ActiveDevices: undefined;
   PdaInvite: { invite: import("@/lib/api").PendingRepresentingInvite };
 };
 

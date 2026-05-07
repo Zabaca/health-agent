@@ -29,10 +29,9 @@ interface Pda {
   agentUser: { firstName: string | null; lastName: string | null; email: string } | null;
 }
 
-interface ReleaseOption {
+interface PatientProviderOption {
   id: string;
-  releaseCode: string | null;
-  providerNames: string[];
+  name: string;
 }
 
 interface Props {
@@ -57,7 +56,7 @@ interface Props {
 
   // Records
   documents: PatientDocumentRow[];
-  releases: ReleaseOption[];
+  userProviders: PatientProviderOption[];
   recordsBasePath: string;
 
   // PDAs
@@ -78,7 +77,7 @@ export default function PatientDetailTabs({
   releaseHrefBase,
   onVoid,
   documents,
-  releases,
+  userProviders,
   recordsBasePath,
   pdas,
 }: Props) {
@@ -169,7 +168,7 @@ export default function PatientDetailTabs({
           patientId={patientId}
           role={role}
           documents={documents}
-          releases={releases}
+          providers={userProviders}
           recordsBasePath={recordsBasePath}
         />
       </Tabs.Panel>

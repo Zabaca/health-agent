@@ -1,15 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { listSessions, revokeSession, type ActiveSession } from "@/lib/api";
-import type { ProfileParamList } from "@/navigation/types";
-
-type Nav = NativeStackNavigationProp<ProfileParamList>;
 
 function formatRelative(iso: string | null): string {
   if (!iso) return "—";
@@ -29,7 +25,7 @@ function formatLocation(row: ActiveSession): string {
 
 export default function ActiveDevices() {
   const t = useTheme();
-  const nav = useNavigation<Nav>();
+  const nav = useNavigation();
   const { signOut } = useAuth();
   const [rows, setRows] = useState<ActiveSession[] | null>(null);
   const [error, setError] = useState<string | null>(null);

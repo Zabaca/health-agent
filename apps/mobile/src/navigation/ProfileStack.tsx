@@ -8,6 +8,7 @@ import DesignatedAgents from "@/screens/access/AccessList";
 import InviteRepresentative from "@/screens/access/InviteRepresentative";
 import RepresentativeDetail from "@/screens/access/RepresentativeDetail";
 import ActiveDevices from "@/screens/profile/ActiveDevices";
+import RoleSwitcher from "@/screens/pda/profile/RoleSwitcher";
 import type { ProfileParamList } from "./types";
 
 const Stack = createNativeStackNavigator<ProfileParamList>();
@@ -27,6 +28,11 @@ export function ProfileStack() {
       <Stack.Screen name="InviteRepresentative" component={InviteRepresentative} />
       <Stack.Screen name="RepresentativeDetail" component={RepresentativeDetail} />
       <Stack.Screen name="ActiveDevices" component={ActiveDevices} />
+      <Stack.Screen
+        name="RoleSwitcher"
+        component={RoleSwitcher}
+        options={{ presentation: "transparentModal", animation: "fade" }}
+      />
     </Stack.Navigator>
   );
 }

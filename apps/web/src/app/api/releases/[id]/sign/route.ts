@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { requireActiveSession } from "@/lib/auth-guards";
+import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { releases as releasesTable } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 
-export const POST = contractRoute(contract.releases.sign, async ({ params, body }) => {
-  const { session, error } = await requireActiveSession();
+export const POST = contractRoute(contract.releases.sign, async ({ params, body, req }) => {
+  const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   const existing = await db.query.releases.findFirst({
-    where: and(eq(releasesTable.id, params.id), eq(releasesTable.userId, session.user.id)),
+    where: and(eq(releasesTable.id, params.id), eq(releasesTable.userId, result.userId)),
   });
 
   if (!existing) {

@@ -64,8 +64,12 @@ export default function PdaPeopleIRepresent() {
                 <Pressable
                   key={p.patientId}
                   onPress={() => {
-                    if (!isActive) switchTo("pda", p.patientId);
-                    nav.popToTop();
+                    if (!isActive) {
+                      switchTo("pda", p.patientId);
+                      nav.popToTop();
+                    } else {
+                      nav.navigate("RoleSwitcher");
+                    }
                   }}
                 >
                   <View

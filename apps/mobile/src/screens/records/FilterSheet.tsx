@@ -260,9 +260,9 @@ export default function FilterSheet() {
               }}
             >
               {availableProviders.map((p) => {
-                const on = filters.providers.includes(p.name);
+                const on = filters.providers.includes(p.id);
                 return (
-                  <Pressable key={p.name} onPress={() => toggleProvider(p.name)}>
+                  <Pressable key={p.id} onPress={() => toggleProvider(p.id)}>
                     <View
                       style={{
                         height: 34,

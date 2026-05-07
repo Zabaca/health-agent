@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
+import ActiveDevicesSection from "@/components/shared/ActiveDevicesSection";
 import RoleSwitchSection from "@/components/shared/RoleSwitchSection";
 
 const schema = z.object({
@@ -68,6 +69,9 @@ export default function PdaAccountForm({ defaultValues, isPatient }: Props) {
 
   return (
     <>
+    {isPatient && (
+      <RoleSwitchSection href="/dashboard" label="Switch to My Account View" />
+    )}
     <form onSubmit={handleSubmit(onSubmit)}>
       <Group justify="space-between" align="center" mb="lg">
         <Title order={2}>My Account</Title>
@@ -124,9 +128,7 @@ export default function PdaAccountForm({ defaultValues, isPatient }: Props) {
       </Paper>
     </form>
     <ChangePasswordSection />
-    {isPatient && (
-      <RoleSwitchSection href="/dashboard" label="Switch to My Account View" />
-    )}
+    <ActiveDevicesSection />
     </>
   );
 }

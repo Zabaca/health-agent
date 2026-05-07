@@ -177,9 +177,9 @@ export default function PdaFilterSheet() {
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: t.spacing.gutter, paddingTop: 8 }}>
               {availableProviders.map((p) => {
-                const on = filters.providers.includes(p.name);
+                const on = filters.providers.includes(p.id);
                 return (
-                  <Pressable key={p.name} onPress={() => toggleProvider(p.name)}>
+                  <Pressable key={p.id} onPress={() => toggleProvider(p.id)}>
                     <View
                       style={{
                         height: 34,

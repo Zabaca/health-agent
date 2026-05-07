@@ -68,8 +68,20 @@ export default function PdaReleases() {
         HIPAA Releases
       </Text>
       {isEditor ? (
-        <Pressable hitSlop={8} onPress={() => nav.navigate("PdaWizardStep1")}>
-          <Plus size={24} color={t.colors.primary} />
+        <Pressable
+          onPress={() => nav.navigate("PdaWizardStep1")}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            backgroundColor: t.colors.primary,
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            borderRadius: t.radius.pill,
+          }}
+        >
+          <Plus size={16} color="#FFFFFF" />
+          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Add</Text>
         </Pressable>
       ) : null}
     </View>

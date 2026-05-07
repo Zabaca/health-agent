@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Check } from "lucide-react-native";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/theme/ThemeProvider";
-import { listRepresentingReleases, patchRecord, type RepresentingReleaseSummary } from "@/lib/api";
+import { listRepresentingRecordProviders, patchRecord, type RecordProvider } from "@/lib/api";
 
 function RadioDot({ selected, color, border }: { selected: boolean; color: string; border: string }) {
   return (
@@ -28,46 +28,46 @@ function RadioDot({ selected, color, border }: { selected: boolean; color: strin
 type Props = {
   fileId: string;
   name: string;
-  releaseCode: string | null;
+  userProviderId: string | null;
   source: string;
   patientId: string;
   onClose: () => void;
-  onSaved: (name: string, releaseCode: string | null) => void;
+  onSaved: (name: string, userProviderId: string | null) => void;
 };
 
-export function PdaEditRecordForm({ fileId, name, releaseCode, source, patientId, onClose, onSaved }: Props) {
+export function PdaEditRecordForm({ fileId, name, userProviderId, source, patientId, onClose, onSaved }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
 
   const [draftName, setDraftName] = useState(name);
-  const [draftCode, setDraftCode] = useState<string | null>(releaseCode);
-  const [releases, setReleases] = useState<RepresentingReleaseSummary[]>([]);
-  const [loadingReleases, setLoadingReleases] = useState(true);
+  const [draftProviderId, setDraftProviderId] = useState<string | null>(userProviderId);
+  const [providers, setProviders] = useState<RecordProvider[]>([]);
+  const [loadingProviders, setLoadingProviders] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listRepresentingReleases(patientId)
-      .then((all) => setReleases(all.filter((r) => !r.voided && r.releaseCode)))
+    listRepresentingRecordProviders(patientId)
+      .then(setProviders)
       .catch(() => {})
-      .finally(() => setLoadingReleases(false));
+      .finally(() => setLoadingProviders(false));
   }, [patientId]);
 
   const isUpload = source === "upload";
   const nameChanged = isUpload && draftName.trim() !== name;
-  const codeChanged = draftCode !== releaseCode;
-  const hasChanges = nameChanged || codeChanged;
+  const providerChanged = draftProviderId !== userProviderId;
+  const hasChanges = nameChanged || providerChanged;
 
   const save = async () => {
     if (!hasChanges || saving) return;
     setSaving(true);
     setError(null);
     try {
-      const body: { originalName?: string; releaseCode?: string | null } = {};
+      const body: { originalName?: string; userProviderId?: string | null } = {};
       if (nameChanged) body.originalName = draftName.trim();
-      if (codeChanged) body.releaseCode = draftCode;
+      if (providerChanged) body.userProviderId = draftProviderId;
       await patchRecord(fileId, body);
-      onSaved(isUpload ? draftName.trim() : name, draftCode);
+      onSaved(isUpload ? draftName.trim() : name, draftProviderId);
     } catch {
       setError("Failed to save. Please try again.");
       setSaving(false);
@@ -119,39 +119,38 @@ export function PdaEditRecordForm({ fileId, name, releaseCode, source, patientId
         ) : null}
 
         <View style={{ paddingHorizontal: 20, paddingTop: 24 }}>
-          <Text style={[t.type.sectionLabel, { textTransform: "uppercase", marginBottom: 8 }]}>Release</Text>
-          {loadingReleases ? (
+          <Text style={[t.type.sectionLabel, { textTransform: "uppercase", marginBottom: 8 }]}>Provider</Text>
+          {loadingProviders ? (
             <ActivityIndicator color={t.colors.primary} style={{ marginTop: 8 }} />
-          ) : releases.length === 0 ? (
+          ) : providers.length === 0 ? (
             <Text style={[t.type.caption, { color: t.colors.textSecondary, paddingTop: 4 }]}>
-              No releases found for this patient.
+              No providers found for this patient.
             </Text>
           ) : (
             <View style={{ borderRadius: 12, borderWidth: 1, borderColor: t.colors.border, overflow: "hidden" }}>
               <Pressable
-                onPress={() => setDraftCode(null)}
+                onPress={() => setDraftProviderId(null)}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
                   paddingHorizontal: 14,
                   paddingVertical: 14,
                   gap: 12,
-                  backgroundColor: draftCode === null ? `${t.colors.primary}10` : t.colors.bg,
+                  backgroundColor: draftProviderId === null ? `${t.colors.primary}10` : t.colors.bg,
                 }}
               >
-                <RadioDot selected={draftCode === null} color={t.colors.primary} border={t.colors.border} />
-                <Text style={[t.type.body, { color: draftCode === null ? t.colors.primary : t.colors.textSecondary }]}>
+                <RadioDot selected={draftProviderId === null} color={t.colors.primary} border={t.colors.border} />
+                <Text style={[t.type.body, { color: draftProviderId === null ? t.colors.primary : t.colors.textSecondary }]}>
                   None
                 </Text>
               </Pressable>
 
-              {releases.map((r) => {
-                const selected = draftCode === r.releaseCode;
-                const providerLabel = r.providerNames.filter(Boolean).join(", ");
+              {providers.map((p) => {
+                const selected = draftProviderId === p.id;
                 return (
                   <Pressable
-                    key={r.id}
-                    onPress={() => setDraftCode(r.releaseCode)}
+                    key={p.id}
+                    onPress={() => setDraftProviderId(p.id)}
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
@@ -164,16 +163,9 @@ export function PdaEditRecordForm({ fileId, name, releaseCode, source, patientId
                     }}
                   >
                     <RadioDot selected={selected} color={t.colors.primary} border={t.colors.border} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[t.type.bodyStrong, { color: selected ? t.colors.primary : t.colors.textPrimary }]}>
-                        {r.releaseCode}
-                      </Text>
-                      {providerLabel ? (
-                        <Text style={[t.type.caption, { color: selected ? t.colors.primary : t.colors.textSecondary }]}>
-                          {providerLabel}
-                        </Text>
-                      ) : null}
-                    </View>
+                    <Text style={[t.type.bodyStrong, { flex: 1, color: selected ? t.colors.primary : t.colors.textPrimary }]}>
+                      {p.name}
+                    </Text>
                   </Pressable>
                 );
               })}

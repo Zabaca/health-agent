@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { ChevronRight, Bell, ShieldCheck, Repeat, LogOut, UserRound } from "lucide-react-native";
+import { ChevronRight, Bell, ShieldCheck, Repeat, Monitor, LogOut, UserRound } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
+import { useRole } from "@/hooks/useRole";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
 import { getProfile, type ProfileData } from "@/lib/api";
 import type { PdaProfileParamList } from "@/navigation/types";
@@ -29,6 +30,7 @@ export default function PdaProfile() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const { signOut, user } = useAuth();
+  const { switchTo } = useRole();
   const { currentPatient } = useRepresentedPatients();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [signOutOpen, setSignOutOpen] = useState(false);
@@ -175,10 +177,15 @@ export default function PdaProfile() {
           <Row icon={<Bell size={18} color={t.colors.textSecondary} />} label="Notifications" />
           <Row icon={<ShieldCheck size={18} color={t.colors.textSecondary} />} label="Privacy & Security" />
           <Row
+            icon={<Monitor size={18} color={t.colors.textSecondary} />}
+            label="Active Devices"
+            onPress={() => nav.navigate("ActiveDevices")}
+          />
+          <Row
             icon={<Repeat size={18} color={t.colors.primary} />}
             label="Switch to Patient View"
             tint="primary"
-            onPress={() => nav.navigate("RoleSwitcher")}
+            onPress={() => switchTo("patient")}
           />
         </View>
       </View>

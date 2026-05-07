@@ -181,20 +181,10 @@ export default function RecordsList() {
     }, [loadInitial]),
   );
 
-  // Provider-filter → set of releaseCodes. A provider name maps to the union
-  // of releaseCodes across all releases tagging that provider, so selecting
-  // "Provider X" matches any file tagged with any release that lists X.
-  const selectedReleaseCodes = useMemo(() => {
+  const selectedProviderIds = useMemo(() => {
     if (!filters.providers.length) return null;
-    const codes = new Set<string>();
-    const selected = new Set(filters.providers);
-    for (const p of providers) {
-      if (selected.has(p.name)) {
-        for (const c of p.releaseCodes) codes.add(c);
-      }
-    }
-    return codes;
-  }, [filters.providers, providers]);
+    return new Set(filters.providers);
+  }, [filters.providers]);
 
   // Client-side filter applied to the currently-loaded page set. Server-side
   // search/filter would require API changes (cursor + filter combo); deferred
@@ -215,12 +205,12 @@ export default function RecordsList() {
       if (fromMs !== null && createdMs < fromMs) return false;
       if (toMs !== null && createdMs > toMs) return false;
       if (typeSet && !typeSet.has(r.fileType.toLowerCase())) return false;
-      if (selectedReleaseCodes && (!r.releaseCode || !selectedReleaseCodes.has(r.releaseCode))) {
+      if (selectedProviderIds && (!r.userProviderId || !selectedProviderIds.has(r.userProviderId))) {
         return false;
       }
       return true;
     });
-  }, [records, query, filters, selectedReleaseCodes]);
+  }, [records, query, filters, selectedProviderIds]);
 
   const canGoBack = nav.canGoBack();
 
@@ -242,7 +232,7 @@ export default function RecordsList() {
       title: viewerTitle(record),
       createdAt: record.createdAt,
       source: record.source,
-      releaseCode: record.releaseCode,
+      userProviderId: record.userProviderId,
     });
   };
 
@@ -369,10 +359,10 @@ export default function RecordsList() {
             const chips: { key: string; label: string; active: boolean; onPress: () => void }[] = [
               { key: "__all__", label: "All", active: allActive, onPress: () => setStripProvider(null) },
               ...providers.map((p) => ({
-                key: p.name,
+                key: p.id,
                 label: p.name,
-                active: singleSelected === p.name,
-                onPress: () => setStripProvider(p.name),
+                active: singleSelected === p.id,
+                onPress: () => setStripProvider(p.id),
               })),
             ];
             return chips.map((c) => (

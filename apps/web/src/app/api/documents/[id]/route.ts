@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveUserSession } from '@/lib/session-resolver';
 import { db } from '@/lib/db';
-import { incomingFiles, fileUploadLog, patientAssignments, patientDesignatedAgents, releases } from '@/lib/db/schema';
+import { incomingFiles, fileUploadLog, patientAssignments, patientDesignatedAgents, userProviders } from '@/lib/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { deleteFromR2 } from '@/lib/r2';
 
@@ -56,26 +56,25 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (error) return error;
 
   const { id } = await params;
-  const { originalName, releaseCode } = await req.json();
+  const { originalName, userProviderId } = await req.json();
 
   const { file, allowed } = await resolveAccess(result, id);
   if (!file) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const updates: Partial<{ releaseCode: string | null }> = {};
-  if (releaseCode !== undefined) {
-    if (releaseCode === null || releaseCode === '') {
-      updates.releaseCode = null;
-    } else if (typeof releaseCode === 'string' && file.patientId) {
-      // Code must belong to a release owned by this file's patient.
-      const release = await db.query.releases.findFirst({
-        where: and(eq(releases.releaseCode, releaseCode), eq(releases.userId, file.patientId)),
+  const updates: Partial<{ userProviderId: string | null }> = {};
+  if (userProviderId !== undefined) {
+    if (userProviderId === null || userProviderId === '') {
+      updates.userProviderId = null;
+    } else if (typeof userProviderId === 'string' && file.patientId) {
+      const provider = await db.query.userProviders.findFirst({
+        where: and(eq(userProviders.id, userProviderId), eq(userProviders.userId, file.patientId)),
         columns: { id: true },
       });
-      if (!release) return NextResponse.json({ error: 'Invalid release code' }, { status: 400 });
-      updates.releaseCode = releaseCode;
+      if (!provider) return NextResponse.json({ error: 'Invalid provider' }, { status: 400 });
+      updates.userProviderId = userProviderId;
     } else {
-      return NextResponse.json({ error: 'Invalid release code' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid provider' }, { status: 400 });
     }
   }
 

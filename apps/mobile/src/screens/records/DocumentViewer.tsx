@@ -31,7 +31,7 @@ export default function DocumentViewer() {
   const [imageVisible, setImageVisible] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [localTitle, setLocalTitle] = useState(params.title);
-  const [localReleaseCode, setLocalReleaseCode] = useState(params.releaseCode);
+  const [localUserProviderId, setLocalUserProviderId] = useState(params.userProviderId);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,12 +63,12 @@ export default function DocumentViewer() {
         <EditRecordForm
           fileId={params.fileId}
           name={localTitle}
-          releaseCode={localReleaseCode}
+          userProviderId={localUserProviderId}
           source={params.source}
           onClose={() => nav.goBack()}
-          onSaved={(name, code) => {
+          onSaved={(name, providerId) => {
             setLocalTitle(name);
-            setLocalReleaseCode(code);
+            setLocalUserProviderId(providerId);
             nav.goBack();
           }}
         />
@@ -121,12 +121,12 @@ export default function DocumentViewer() {
       <EditRecordForm
         fileId={params.fileId}
         name={localTitle}
-        releaseCode={localReleaseCode}
+        userProviderId={localUserProviderId}
         source={params.source}
         onClose={() => setEditMode(false)}
-        onSaved={(name, code) => {
+        onSaved={(name, providerId) => {
           setLocalTitle(name);
-          setLocalReleaseCode(code);
+          setLocalUserProviderId(providerId);
           setEditMode(false);
         }}
       />

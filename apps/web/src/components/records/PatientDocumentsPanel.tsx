@@ -15,42 +15,33 @@ export interface PatientDocumentRow {
   fileType: string;
   fileURL: string;
   originalName: string | null;
-  releaseCode: string | null;
+  userProviderId: string | null;
+  providerName: string | null;
   source: string;
   uploadedBy: string | null;
 }
 
-interface ReleaseOption {
+interface ProviderOption {
   id: string;
-  releaseCode: string | null;
-  providerNames?: string[];
+  name: string;
 }
 
 interface Props {
   patientId: string;
   role: 'admin' | 'agent';
   documents: PatientDocumentRow[];
-  releases?: ReleaseOption[];
+  providers?: ProviderOption[];
   recordsBasePath: string;
 }
 
-function fuzzyMatch(query: string, target: string): boolean {
-  const q = query.toLowerCase();
-  const t = target.toLowerCase();
-  let qi = 0;
-  for (let i = 0; i < t.length && qi < q.length; i++) {
-    if (t[i] === q[qi]) qi++;
-  }
-  return qi === q.length;
-}
 
-interface ReleaseSelectProps {
+interface ProviderSelectProps {
   value: string | null;
   onChange: (val: string | null) => void;
-  options: { releaseCode: string; providerNames: string[] }[];
+  options: ProviderOption[];
 }
 
-function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
+function ProviderSelect({ value, onChange, options }: ProviderSelectProps) {
   const [search, setSearch] = useState('');
   const combobox = useCombobox({
     onDropdownClose: () => { combobox.resetSelectedOption(); setSearch(''); },
@@ -58,27 +49,29 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
 
   const filtered = useMemo(() => {
     if (!search.trim()) return options;
+    const q = search.toLowerCase();
     return options.filter(o => {
-      const combined = [o.releaseCode, ...o.providerNames].join(' ');
-      return fuzzyMatch(search, combined);
+      const t = (o.name ?? '').toLowerCase();
+      let qi = 0;
+      for (let i = 0; i < t.length && qi < q.length; i++) {
+        if (t[i] === q[qi]) qi++;
+      }
+      return qi === q.length;
     });
   }, [search, options]);
 
-  const selected = options.find(o => o.releaseCode === value);
-  const displayValue = selected
-    ? `${selected.releaseCode}${selected.providerNames.length ? ` — ${selected.providerNames.join(', ')}` : ''}`
-    : '';
+  const selected = options.find(o => o.id === value);
 
   return (
     <Combobox
       store={combobox}
-      onOptionSubmit={val => { onChange(val); combobox.closeDropdown(); }}
+      onOptionSubmit={val => { onChange(val === '__none__' ? null : val); combobox.closeDropdown(); }}
     >
       <Combobox.Target>
         <InputBase
-          label="Associate with Release (optional)"
-          placeholder="Search by code or provider…"
-          value={combobox.dropdownOpened ? search : displayValue}
+          label="Associate with Provider (optional)"
+          placeholder="Search providers…"
+          value={combobox.dropdownOpened ? search : (selected?.name ?? '')}
           onChange={e => { setSearch(e.currentTarget.value); combobox.openDropdown(); }}
           onClick={() => combobox.openDropdown()}
           onFocus={() => combobox.openDropdown()}
@@ -89,16 +82,14 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
       <Combobox.Dropdown>
         <Combobox.Options>
           <ScrollArea.Autosize mah={200} type="scroll">
+            <Combobox.Option value="__none__" active={value === null}>
+              <Text size="sm" c="dimmed">None</Text>
+            </Combobox.Option>
             {filtered.length === 0 ? (
-              <Combobox.Empty>No releases found</Combobox.Empty>
+              <Combobox.Empty>No providers found</Combobox.Empty>
             ) : filtered.map(o => (
-              <Combobox.Option key={o.releaseCode} value={o.releaseCode} active={value === o.releaseCode}>
-                <Group gap="xs" wrap="nowrap">
-                  <Text size="sm" fw={500} ff="monospace">{o.releaseCode}</Text>
-                  {o.providerNames.length > 0 && (
-                    <Text size="xs" c="dimmed" truncate>{o.providerNames.join(', ')}</Text>
-                  )}
-                </Group>
+              <Combobox.Option key={o.id} value={o.id} active={value === o.id}>
+                <Text size="sm">{o.name}</Text>
               </Combobox.Option>
             ))}
           </ScrollArea.Autosize>
@@ -108,13 +99,13 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
   );
 }
 
-export default function PatientDocumentsPanel({ patientId, documents, releases, recordsBasePath }: Props) {
+export default function PatientDocumentsPanel({ patientId, documents, providers, recordsBasePath }: Props) {
   const router = useRouter();
 
   // Edit state
   const [editDoc, setEditDoc] = useState<PatientDocumentRow | null>(null);
   const [editName, setEditName] = useState('');
-  const [editReleaseCode, setEditReleaseCode] = useState<string | null>(null);
+  const [editProviderId, setEditProviderId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
 
@@ -123,14 +114,10 @@ export default function PatientDocumentsPanel({ patientId, documents, releases, 
   const [deleting, setDeleting] = useState(false);
   const [deleteOpened, { open: openDelete, close: closeDelete }] = useDisclosure(false);
 
-  const releaseOptions = (releases ?? [])
-    .filter(r => r.releaseCode)
-    .map(r => ({ releaseCode: r.releaseCode!, providerNames: r.providerNames ?? [] }));
-
   function handleEditClick(doc: PatientDocumentRow) {
     setEditDoc(doc);
     setEditName(doc.originalName ?? '');
-    setEditReleaseCode(doc.releaseCode);
+    setEditProviderId(doc.userProviderId);
     openEdit();
   }
 
@@ -146,7 +133,7 @@ export default function PatientDocumentsPanel({ patientId, documents, releases, 
       const res = await fetch(`/api/documents/${editDoc.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ originalName: editName.trim() || editDoc.originalName, releaseCode: editReleaseCode }),
+        body: JSON.stringify({ originalName: editName.trim() || editDoc.originalName, userProviderId: editProviderId }),
       });
       if (!res.ok) throw new Error('Failed to save');
       closeEdit();
@@ -177,7 +164,7 @@ export default function PatientDocumentsPanel({ patientId, documents, releases, 
     <Paper withBorder p="md" radius="md">
       <Group justify="space-between" align="center" mb="md">
         <Title order={4}>Records</Title>
-        <UploadFileButton patientId={patientId} releases={releases} />
+        <UploadFileButton patientId={patientId} providers={providers} />
       </Group>
 
       {documents.length === 0 ? (
@@ -189,7 +176,7 @@ export default function PatientDocumentsPanel({ patientId, documents, releases, 
               <Table.Th>File Name</Table.Th>
               <Table.Th>Date</Table.Th>
               <Table.Th>Type</Table.Th>
-              <Table.Th>Release Code</Table.Th>
+              <Table.Th>Provider</Table.Th>
               <Table.Th>Source</Table.Th>
               <Table.Th>Uploaded By</Table.Th>
               <Table.Th />
@@ -214,8 +201,8 @@ export default function PatientDocumentsPanel({ patientId, documents, releases, 
                   <Badge variant="light" size="sm">{doc.fileType.toUpperCase()}</Badge>
                 </Table.Td>
                 <Table.Td>
-                  {doc.releaseCode
-                    ? <Badge variant="outline" size="sm" color="blue">{doc.releaseCode}</Badge>
+                  {doc.providerName
+                    ? <Badge variant="outline" size="sm" color="blue">{doc.providerName}</Badge>
                     : '—'
                   }
                 </Table.Td>
@@ -250,11 +237,11 @@ export default function PatientDocumentsPanel({ patientId, documents, releases, 
             onChange={e => setEditName(e.currentTarget.value)}
             placeholder="Enter file name"
           />
-          {releaseOptions.length > 0 && (
-            <ReleaseSelect
-              value={editReleaseCode}
-              onChange={setEditReleaseCode}
-              options={releaseOptions}
+          {(providers ?? []).length > 0 && (
+            <ProviderSelect
+              value={editProviderId}
+              onChange={setEditProviderId}
+              options={providers ?? []}
             />
           )}
           <Group justify="flex-end" gap="sm">

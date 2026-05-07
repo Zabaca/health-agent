@@ -31,7 +31,7 @@ export default function PdaRecordDetail() {
   const [imageVisible, setImageVisible] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [localName, setLocalName] = useState(params.originalName ?? params.fileType.toUpperCase());
-  const [localReleaseCode, setLocalReleaseCode] = useState(params.releaseCode);
+  const [localUserProviderId, setLocalUserProviderId] = useState(params.userProviderId);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,13 +64,13 @@ export default function PdaRecordDetail() {
         <PdaEditRecordForm
           fileId={params.fileId}
           name={localName}
-          releaseCode={localReleaseCode}
+          userProviderId={localUserProviderId}
           source={params.source}
           patientId={params.patientId}
           onClose={() => nav.goBack()}
-          onSaved={(name, code) => {
+          onSaved={(name, providerId) => {
             setLocalName(name);
-            setLocalReleaseCode(code);
+            setLocalUserProviderId(providerId);
             nav.goBack();
           }}
         />
@@ -123,13 +123,13 @@ export default function PdaRecordDetail() {
       <PdaEditRecordForm
         fileId={params.fileId}
         name={localName}
-        releaseCode={localReleaseCode}
+        userProviderId={localUserProviderId}
         source={params.source}
         patientId={params.patientId}
         onClose={() => setEditMode(false)}
-        onSaved={(name, code) => {
+        onSaved={(name, providerId) => {
           setLocalName(name);
-          setLocalReleaseCode(code);
+          setLocalUserProviderId(providerId);
           setEditMode(false);
         }}
       />

@@ -571,7 +571,7 @@ export type RepresentingRecord = {
   fileType: string;
   source: string;
   createdAt: string;
-  releaseCode: string | null;
+  userProviderId: string | null;
   pagecount: number | null;
   originalName: string | null;
   uploadedBy: { id: string; firstName: string | null; lastName: string | null } | null;
@@ -646,7 +646,7 @@ export type IncomingFile = {
   source: string;
   incomingFaxLogId: string | null;
   patientId: string | null;
-  releaseCode: string | null;
+  userProviderId: string | null;
   createdAt: string;
   deletedAt: string | null;
   deletedById: string | null;
@@ -664,7 +664,7 @@ export async function listMyRecords(opts?: { cursor?: string | null; limit?: num
   return (await apiFetch(`/api/my-records${qs ? `?${qs}` : ""}`, {}, { auth: true })) as RecordsPage;
 }
 
-export type RecordProvider = { name: string; releaseCodes: string[] };
+export type RecordProvider = { id: string; name: string };
 
 export async function listMyRecordProviders(): Promise<RecordProvider[]> {
   const res = (await apiFetch("/api/my-records/providers", {}, { auth: true })) as {
@@ -675,7 +675,7 @@ export async function listMyRecordProviders(): Promise<RecordProvider[]> {
 
 export async function patchRecord(
   id: string,
-  data: { originalName?: string; releaseCode?: string | null },
+  data: { originalName?: string; userProviderId?: string | null },
 ): Promise<{ ok: true }> {
   return (await apiFetch(
     `/api/documents/${encodeURIComponent(id)}`,
@@ -689,7 +689,7 @@ export async function registerRecord(input: {
   fileType: string;
   originalName: string;
   patientId?: string;
-  releaseCode?: string;
+  userProviderId?: string;
 }): Promise<{ id: string }> {
   return (await apiFetch("/api/records/upload", {
     method: "POST",

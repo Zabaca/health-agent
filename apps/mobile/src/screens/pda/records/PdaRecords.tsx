@@ -140,18 +140,10 @@ export default function PdaRecords() {
     ? `${currentPatient.firstName ?? ""} ${currentPatient.lastName ?? ""}`.trim()
     : "";
 
-  // Provider filter → set of releaseCodes (mirrors RecordsList exactly).
-  const selectedReleaseCodes = useMemo(() => {
+  const selectedProviderIds = useMemo(() => {
     if (!filters.providers.length) return null;
-    const codes = new Set<string>();
-    const selected = new Set(filters.providers);
-    for (const p of providers) {
-      if (selected.has(p.name)) {
-        for (const c of p.releaseCodes) codes.add(c);
-      }
-    }
-    return codes;
-  }, [filters.providers, providers]);
+    return new Set(filters.providers);
+  }, [filters.providers]);
 
   const filteredFiles = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -167,10 +159,10 @@ export default function PdaRecords() {
       if (fromMs !== null && createdMs < fromMs) return false;
       if (toMs !== null && createdMs > toMs) return false;
       if (typeSet && !typeSet.has(r.fileType.toLowerCase())) return false;
-      if (selectedReleaseCodes && (!r.releaseCode || !selectedReleaseCodes.has(r.releaseCode))) return false;
+      if (selectedProviderIds && (!r.userProviderId || !selectedProviderIds.has(r.userProviderId))) return false;
       return true;
     });
-  }, [files, query, filters, selectedReleaseCodes]);
+  }, [files, query, filters, selectedProviderIds]);
 
   const setStripProvider = (name: string | null) => {
     nav.setParams({
@@ -187,7 +179,7 @@ export default function PdaRecords() {
       createdAt: r.createdAt,
       pagecount: r.pagecount,
       originalName: r.originalName,
-      releaseCode: r.releaseCode,
+      userProviderId: r.userProviderId,
       patientId: currentPatient!.patientId,
       permission: perm!,
     });
@@ -310,10 +302,10 @@ export default function PdaRecords() {
             const chips: { key: string; label: string; active: boolean; onPress: () => void }[] = [
               { key: "__all__", label: "All", active: allActive, onPress: () => setStripProvider(null) },
               ...providers.map((p) => ({
-                key: p.name,
+                key: p.id,
                 label: p.name,
-                active: singleSelected === p.name,
-                onPress: () => setStripProvider(p.name),
+                active: singleSelected === p.id,
+                onPress: () => setStripProvider(p.id),
               })),
             ];
             return chips.map((c) => (

@@ -1,17 +1,13 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRole } from "@/hooks/useRole";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
-import type { PdaProfileParamList } from "@/navigation/types";
 import type { RepresentedPatient } from "@/lib/api";
-
-type Nav = NativeStackNavigationProp<PdaProfileParamList>;
 
 function patientName(p: RepresentedPatient) {
   return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || p.patientId;
@@ -19,7 +15,7 @@ function patientName(p: RepresentedPatient) {
 
 export default function RoleSwitcher() {
   const t = useTheme();
-  const nav = useNavigation<Nav>();
+  const nav = useNavigation();
   const insets = useSafeAreaInsets();
   const { representing, switchTo } = useRole();
   const { patients, loading } = useRepresentedPatients();
