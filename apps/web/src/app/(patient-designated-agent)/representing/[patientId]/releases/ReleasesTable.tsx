@@ -27,7 +27,7 @@ interface Props {
 
 const STATUS_OPTIONS = [
   { value: "signed", label: "Signed" },
-  { value: "pending", label: "Awaiting Patient Signature" },
+  { value: "pending", label: "Pending Signature" },
   { value: "voided", label: "Voided" },
 ];
 
@@ -139,7 +139,7 @@ export default function ReleasesTable({ releases, patientId }: Props) {
                     {r.voided ? (
                       <Badge color="gray" variant="light">Voided</Badge>
                     ) : !r.authSignatureImage ? (
-                      <Badge color="yellow" variant="light">Awaiting Patient Signature</Badge>
+                      <Badge color="yellow" variant="light">Pending Signature</Badge>
                     ) : (
                       <Badge color="green" variant="light">Signed</Badge>
                     )}

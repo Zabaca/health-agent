@@ -1,97 +1,178 @@
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
-import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import { useCallback, useState } from "react";
+import { Alert, Text, View } from "react-native";
+import { useNavigation, useRoute, useFocusEffect, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
-import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
+import { AuthenticatedImage } from "@/components/AuthenticatedImage";
+import { ProviderAvatar } from "@/components/ProviderAvatar";
 import { useTheme } from "@/theme/ThemeProvider";
-import { mockProviders } from "@/mock/providers";
+import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
+import { listRepresentingProviders, replaceRepresentingProviders, type UserProvider, type MyProviderInput } from "@/lib/api";
 import type { PdaProvidersParamList } from "@/navigation/types";
 
 type R = RouteProp<PdaProvidersParamList, "PdaProviderDetail">;
 type Nav = NativeStackNavigationProp<PdaProvidersParamList>;
 
-const types = ["Hospital", "Facility", "Insurance"];
+type ProviderType = "Hospital" | "Facility" | "Insurance";
+const VALID_TYPES: ReadonlyArray<ProviderType> = ["Hospital", "Facility", "Insurance"];
+
+function toInput(p: UserProvider): MyProviderInput {
+  return {
+    providerType: VALID_TYPES.includes(p.providerType as ProviderType) ? (p.providerType as ProviderType) : "Hospital",
+    providerName: p.providerName,
+    insurance: p.insurance ?? undefined,
+    physicianName: p.physicianName ?? undefined,
+    phone: p.phone ?? undefined,
+    fax: p.fax ?? undefined,
+    address: p.address ?? undefined,
+    patientId: p.patientId ?? undefined,
+    patientMemberId: p.patientMemberId ?? undefined,
+    groupId: p.groupId ?? undefined,
+    planName: p.planName ?? undefined,
+    providerEmail: p.providerEmail ?? undefined,
+    membershipIdFront: p.membershipIdFront ?? undefined,
+    membershipIdBack: p.membershipIdBack ?? undefined,
+  };
+}
 
 export default function PdaProviderDetail() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const { params } = useRoute<R>();
-  const provider = mockProviders.find((p) => p.id === params.providerId) ?? mockProviders[0];
-  const [type, setType] = useState(0);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const { currentPatient } = useRepresentedPatients();
+  const patientId = currentPatient?.patientId ?? "";
+  const isEditor = currentPatient?.manageProvidersPermission === "editor";
+
+  const [p, setP] = useState<UserProvider>(params.provider);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    if (!patientId) return;
+    listRepresentingProviders(patientId).then((list) => {
+      const fresh = list.find((x) => x.id === params.provider.id);
+      if (fresh) setP(fresh);
+    }).catch(() => {});
+  }, [patientId, params.provider.id]));
+
+  const displayName = p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName;
+
+  const rows = [
+    { label: p.providerType === "Insurance" ? "INSURANCE" : "PROVIDER", value: displayName },
+    { label: "TYPE", value: p.providerType },
+    p.physicianName ? { label: "PHYSICIAN", value: p.physicianName } : null,
+    p.phone ? { label: "PHONE", value: p.phone } : null,
+    p.fax ? { label: "FAX", value: p.fax } : null,
+    p.address ? { label: "ADDRESS", value: p.address } : null,
+    p.patientId ? { label: "PATIENT ID", value: p.patientId } : null,
+    p.patientMemberId ? { label: "MEMBER ID", value: p.patientMemberId } : null,
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const handleRemove = useCallback(async () => {
+    try {
+      setRemoving(true);
+      const current = await listRepresentingProviders(patientId);
+      const updated = current.filter((x) => x.id !== p.id).map(toInput);
+      await replaceRepresentingProviders(patientId, updated);
+      setRemoveOpen(false);
+      nav.goBack();
+    } catch (e) {
+      setRemoveOpen(false);
+      Alert.alert("Error", e instanceof Error ? e.message : "Failed to remove provider.");
+    } finally {
+      setRemoving(false);
+    }
+  }, [p.id, patientId, nav]);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
-      <Header
-        title="Provider Details"
-        onBack={() => nav.goBack()}
-        rightAction={{ label: "Save", onPress: () => nav.goBack() }}
-      />
+      <Header title="Provider Detail" onBack={() => nav.goBack()} />
       <Screen
         bottom={
-          <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16 }}>
-            <Pressable
-              onPress={() => setDeleteOpen(true)}
-              style={{ height: 52, borderRadius: t.radius.button, backgroundColor: t.colors.destructive, alignItems: "center", justifyContent: "center" }}
-            >
-              <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 16 }}>Delete Provider</Text>
-            </Pressable>
-          </View>
+          isEditor ? (
+            <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16, gap: 10 }}>
+              <Button
+                label="Edit Provider"
+                variant="secondary"
+                onPress={() => nav.navigate("PdaAddProvider", { provider: p })}
+                fullWidth
+              />
+              <Button
+                label="Remove Provider"
+                variant="destructive"
+                onPress={() => setRemoveOpen(true)}
+                fullWidth
+              />
+            </View>
+          ) : undefined
         }
         contentContainerStyle={{ gap: 12 }}
       >
-        <Input label="Provider Name" defaultValue={provider.organization} />
-
-        <View style={{ gap: 6 }}>
-          <Text style={t.type.rowLabel}>Provider Type</Text>
-          <View
-            style={{
-              flexDirection: "row",
-              backgroundColor: t.colors.surfaceSubtle,
-              borderRadius: t.radius.button,
-              padding: 4,
-            }}
-          >
-            {types.map((label, i) => {
-              const on = i === type;
-              return (
-                <Pressable
-                  key={label}
-                  onPress={() => setType(i)}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: 10,
-                    alignItems: "center",
-                    backgroundColor: on ? t.colors.primary : "transparent",
-                  }}
-                >
-                  <Text style={{ color: on ? "#FFFFFF" : t.colors.textPrimary, fontWeight: "600", fontSize: 13 }}>
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+        <View style={{ alignItems: "center", paddingVertical: 8, gap: 8 }}>
+          <ProviderAvatar type={p.providerType} size={56} />
+          <Text style={t.type.h3}>{displayName}</Text>
         </View>
 
-        <Input label="Physician Name" defaultValue={provider.physician} />
-        <Input label="Phone" defaultValue={provider.phone} keyboardType="phone-pad" />
-        <Input label="Fax" defaultValue={provider.fax} keyboardType="phone-pad" />
-        <Input label="Email" placeholder="Optional" autoCapitalize="none" keyboardType="email-address" />
-        <Input label="Address" defaultValue={provider.address} multiline />
+        <View
+          style={{
+            backgroundColor: t.colors.surface,
+            borderRadius: t.radius.card,
+            borderWidth: 1,
+            borderColor: t.colors.border,
+            overflow: "hidden",
+          }}
+        >
+          {rows.map((row, i) => (
+            <View
+              key={row.label}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                gap: 4,
+                borderTopWidth: i === 0 ? 0 : 1,
+                borderTopColor: t.colors.divider,
+              }}
+            >
+              <Text style={t.type.rowLabel}>{row.label}</Text>
+              <Text style={t.type.body}>{row.value}</Text>
+            </View>
+          ))}
+        </View>
+
+        {p.providerType === "Insurance" && (p.membershipIdFront || p.membershipIdBack) && (
+          <View style={{ gap: 10 }}>
+            {p.membershipIdFront && (
+              <View style={{ gap: 6 }}>
+                <Text style={t.type.rowLabel}>MEMBERSHIP CARD (FRONT)</Text>
+                <AuthenticatedImage
+                  uri={p.membershipIdFront}
+                  style={{ width: "100%", aspectRatio: 85.6 / 54, borderRadius: t.radius.card, backgroundColor: t.colors.surfaceSubtle }}
+                />
+              </View>
+            )}
+            {p.membershipIdBack && (
+              <View style={{ gap: 6 }}>
+                <Text style={t.type.rowLabel}>MEMBERSHIP CARD (BACK)</Text>
+                <AuthenticatedImage
+                  uri={p.membershipIdBack}
+                  style={{ width: "100%", aspectRatio: 85.6 / 54, borderRadius: t.radius.card, backgroundColor: t.colors.surfaceSubtle }}
+                />
+              </View>
+            )}
+          </View>
+        )}
       </Screen>
 
       <ConfirmDrawer
-        visible={deleteOpen}
-        title={`Delete ${provider.organization}?`}
+        visible={removeOpen}
+        title={`Remove ${displayName}?`}
         message="This provider will be removed from the patient's list. Existing releases that reference them are not affected."
-        confirmLabel="Delete Provider"
-        onCancel={() => setDeleteOpen(false)}
-        onConfirm={() => { setDeleteOpen(false); nav.goBack(); }}
+        confirmLabel={removing ? "Removing…" : "Remove Provider"}
+        onCancel={() => setRemoveOpen(false)}
+        onConfirm={handleRemove}
       />
     </View>
   );

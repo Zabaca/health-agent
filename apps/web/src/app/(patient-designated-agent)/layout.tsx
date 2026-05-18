@@ -72,6 +72,9 @@ export default async function PatientDesignatedAgentLayout({
   });
 
   const bottomNavItems = [
+    ...(relations.length > 1
+      ? [{ href: "/representing", label: "Switch Patient", icon: <IconUsers size={16} /> }]
+      : []),
     { href: "/account", label: "My Account", icon: <IconUser size={16} /> },
     ...(isPatient
       ? [{ href: "/dashboard", label: "Patient View", icon: <IconArrowsLeftRight size={16} /> }]

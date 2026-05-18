@@ -41,6 +41,7 @@ export async function GET(
       fileType: f.fileType,
       source: f.source,
       createdAt: f.createdAt,
+      userProviderId: f.userProviderId ?? null,
       pagecount: f.faxLog?.pagecount ?? null,
       originalName: f.uploadLog?.originalName ?? null,
       uploadedBy: f.uploadLog?.uploadedBy

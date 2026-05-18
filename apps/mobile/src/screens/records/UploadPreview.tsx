@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AlertTriangle, ArrowLeft, Check } from "lucide-react-native";
 import { useTheme } from "@/theme/ThemeProvider";
-import { registerRecord, uploadFile } from "@/lib/api";
+import { listMyRecordProviders, registerRecord, uploadFile, type RecordProvider } from "@/lib/api";
 import type { RecordsParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<RecordsParamList>;
@@ -26,25 +26,31 @@ export default function UploadPreview() {
   const nav = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { params } = useRoute<R>();
+  const [providers, setProviders] = useState<RecordProvider[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const uploadDone = useRef(false);
 
-  // Block any dismissal while an upload is in flight — Android hardware back,
-  // programmatic goBack, gesture (none on fullScreenModal but defense in
-  // depth). The in-screen Retake/Cancel buttons are already `disabled` while
-  // uploading; this catches every other dismissal path so the XHR isn't
-  // orphaned and the success-path popToTop has a screen to pop from.
+  useEffect(() => {
+    listMyRecordProviders().then(setProviders).catch(() => {});
+  }, []);
+
+  // Block user-initiated dismissal (back gesture, hardware back) while an
+  // upload is in flight. The ref lets the success-path popToTop() through
+  // without being blocked by this same listener.
   useEffect(() => {
     if (!uploading) return;
     const sub = nav.addListener("beforeRemove", (e) => {
-      e.preventDefault();
+      if (!uploadDone.current) e.preventDefault();
     });
     return sub;
   }, [uploading, nav]);
 
   const onConfirm = async () => {
     setUploading(true);
+    uploadDone.current = false;
     setError(null);
     setProgress(0);
     try {
@@ -54,14 +60,13 @@ export default function UploadPreview() {
         name: params.name,
         onProgress: setProgress,
       });
-      // /api/records/upload stores fileType as the bare extension (matches web).
       await registerRecord({
         fileURL: url,
         fileType: extFromMime(params.mimeType),
         originalName: params.name,
+        userProviderId: selectedProviderId ?? undefined,
       });
-      // Drop the upload modal stack and surface RecordsList — its useFocusEffect
-      // refetches and the new record appears.
+      uploadDone.current = true;
       nav.popToTop();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed");
@@ -99,6 +104,41 @@ export default function UploadPreview() {
           resizeMode="contain"
         />
       </View>
+
+      {providers.length > 0 && !uploading ? (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+          <Text style={{ color: "#FFFFFFAA", fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>
+            Provider (optional)
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <Pressable
+              onPress={() => setSelectedProviderId(null)}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor: selectedProviderId === null ? t.colors.primary : "#FFFFFF22",
+              }}
+            >
+              <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "600" }}>None</Text>
+            </Pressable>
+            {providers.map((p) => (
+              <Pressable
+                key={p.id}
+                onPress={() => setSelectedProviderId(p.id)}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  backgroundColor: selectedProviderId === p.id ? t.colors.primary : "#FFFFFF22",
+                }}
+              >
+                <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "600" }}>{p.name}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       {error ? (
         <View

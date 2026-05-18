@@ -1,8 +1,7 @@
 import { useCallback, useState } from "react";
-import { Alert, Modal, Pressable, Text, View, ActivityIndicator } from "react-native";
+import { Alert, Pressable, Text, View, ActivityIndicator } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Check, ChevronDown } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Input } from "@/components/Input";
@@ -63,7 +62,6 @@ export default function AddProvider() {
   const [providerEmail, setProviderEmail] = useState(existing?.providerEmail ?? "");
   const [membershipIdFront, setMembershipIdFront] = useState<string | null>(existing?.membershipIdFront ?? null);
   const [membershipIdBack, setMembershipIdBack] = useState<string | null>(existing?.membershipIdBack ?? null);
-  const [typePicker, setTypePicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const save = useCallback(async () => {
@@ -141,22 +139,35 @@ export default function AddProvider() {
         {/* Type picker */}
         <View style={{ gap: 6 }}>
           <Text style={t.type.rowLabel}>PROVIDER TYPE</Text>
-          <Pressable
-            onPress={() => setTypePicker(true)}
+          <View
             style={{
-              backgroundColor: t.colors.surface,
-              borderColor: t.colors.border,
-              borderWidth: 1,
-              borderRadius: t.radius.button,
-              paddingHorizontal: 14,
-              height: 48,
               flexDirection: "row",
-              alignItems: "center",
+              backgroundColor: t.colors.surfaceSubtle,
+              borderRadius: t.radius.button,
+              padding: 4,
             }}
           >
-            <Text style={[t.type.body, { flex: 1, fontWeight: "600" }]}>{providerType}</Text>
-            <ChevronDown size={18} color={t.colors.textSecondary} />
-          </Pressable>
+            {PROVIDER_TYPES.map((type) => {
+              const on = providerType === type;
+              return (
+                <Pressable
+                  key={type}
+                  onPress={() => setProviderType(type)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    alignItems: "center",
+                    backgroundColor: on ? t.colors.primary : "transparent",
+                  }}
+                >
+                  <Text style={{ color: on ? "#FFFFFF" : t.colors.textPrimary, fontWeight: "600", fontSize: 13 }}>
+                    {type}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
         {providerType === "Insurance" ? (
@@ -255,47 +266,6 @@ export default function AddProvider() {
           onChangeText={setProviderEmail}
         />
       </Screen>
-
-      {/* Type picker modal */}
-      <Modal transparent visible={typePicker} animationType="fade" onRequestClose={() => setTypePicker(false)}>
-        <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
-          onPress={() => setTypePicker(false)}
-        >
-          <Pressable>
-            <View
-              style={{
-                backgroundColor: t.colors.surface,
-                borderTopLeftRadius: t.radius.card,
-                borderTopRightRadius: t.radius.card,
-                paddingBottom: 32,
-                overflow: "hidden",
-              }}
-            >
-              <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: t.colors.divider }}>
-                <Text style={t.type.bodyStrong}>Provider Type</Text>
-              </View>
-              {PROVIDER_TYPES.map((type, i) => (
-                <Pressable
-                  key={type}
-                  onPress={() => { setProviderType(type); setTypePicker(false); }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingHorizontal: 20,
-                    paddingVertical: 16,
-                    borderTopWidth: i === 0 ? 0 : 1,
-                    borderTopColor: t.colors.divider,
-                  }}
-                >
-                  <Text style={[t.type.body, { flex: 1 }]}>{type}</Text>
-                  {providerType === type && <Check size={18} color={t.colors.primary} />}
-                </Pressable>
-              ))}
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
 
       {saving && (
         <View style={{

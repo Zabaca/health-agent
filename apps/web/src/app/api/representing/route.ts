@@ -18,6 +18,7 @@ export async function GET(req: Request) {
       releasePermission: patientDesignatedAgents.releasePermission,
       firstName: users.firstName,
       lastName: users.lastName,
+      avatarUrl: users.avatarUrl,
     })
     .from(patientDesignatedAgents)
     .innerJoin(users, eq(users.id, patientDesignatedAgents.patientId))

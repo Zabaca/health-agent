@@ -210,7 +210,7 @@ export type UserProvider = {
   userId: string;
   order: number;
   providerName: string;
-  providerType: string;
+  providerType: "Hospital" | "Facility" | "Insurance";
   physicianName: string | null;
   patientId: string | null;
   insurance: string | null;
@@ -369,6 +369,14 @@ export type ReleaseProvider = {
   address: string | null;
   membershipIdFront: string | null;
   membershipIdBack: string | null;
+  benefitsCoverage: boolean;
+  claimsPayment: boolean;
+  eligibilityEnrollment: boolean;
+  financialBilling: boolean;
+  medicalRecords: boolean;
+  dentalRecords: boolean;
+  otherNonSpecific: boolean;
+  otherNonSpecificDesc: string | null;
   historyPhysical: boolean;
   diagnosticResults: boolean;
   treatmentProcedure: boolean;
@@ -377,6 +385,14 @@ export type ReleaseProvider = {
   dischargeSummaries: boolean;
   specificRecords: boolean;
   specificRecordsDesc: string | null;
+  sensitiveCommDiseases: boolean;
+  sensitiveReproductiveHealth: boolean;
+  sensitiveHivAids: boolean;
+  sensitiveMentalHealth: boolean;
+  sensitiveSubstanceUse: boolean;
+  sensitivePsychotherapy: boolean;
+  sensitiveOther: boolean;
+  sensitiveOtherDesc: string | null;
   dateRangeFrom: string | null;
   dateRangeTo: string | null;
   allAvailableDates: boolean;
@@ -477,11 +493,11 @@ export type RepresentingReleaseSummary = {
   providerNames: (string | null | undefined)[];
 };
 
-export type CreateRepresentingReleaseInput = Omit<CreateReleaseInput, "authSignatureImage" | "authPrintedName" | "authDate" | "authExpirationDate"> & {
-  authSignatureImage?: string;
+export type CreateRepresentingReleaseInput = {
+  providers: ReleaseProviderInput[];
+  authExpirationDate?: string;
   authPrintedName?: string;
   authDate?: string;
-  authExpirationDate?: string;
 };
 
 export async function listRepresentingProviders(patientId: string): Promise<UserProvider[]> {
@@ -492,12 +508,39 @@ export async function listRepresentingProviders(patientId: string): Promise<User
   )) as UserProvider[];
 }
 
+export async function replaceRepresentingProviders(
+  patientId: string,
+  providers: MyProviderInput[],
+): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/providers`,
+    { method: "PUT", body: JSON.stringify({ providers }) },
+    { auth: true },
+  )) as { success: boolean };
+}
+
 export async function listRepresentingReleases(patientId: string): Promise<RepresentingReleaseSummary[]> {
   return (await apiFetch(
     `/api/representing/${encodeURIComponent(patientId)}/releases`,
     {},
     { auth: true }
   )) as RepresentingReleaseSummary[];
+}
+
+export async function getRepresentingRelease(patientId: string, releaseId: string): Promise<ReleaseDetail> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/releases/${encodeURIComponent(releaseId)}`,
+    {},
+    { auth: true }
+  )) as ReleaseDetail;
+}
+
+export async function voidRepresentingRelease(patientId: string, releaseId: string): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/releases/${encodeURIComponent(releaseId)}`,
+    { method: "DELETE" },
+    { auth: true }
+  )) as { success: boolean };
 }
 
 export async function createRepresentingRelease(
@@ -519,13 +562,79 @@ export type RepresentedPatient = {
   releasePermission: "viewer" | "editor" | null;
   firstName: string | null;
   lastName: string | null;
+  avatarUrl: string | null;
 };
+
+export type RepresentingRecord = {
+  id: string;
+  fileURL: string;
+  fileType: string;
+  source: string;
+  createdAt: string;
+  userProviderId: string | null;
+  pagecount: number | null;
+  originalName: string | null;
+  uploadedBy: { id: string; firstName: string | null; lastName: string | null } | null;
+};
+
+export type RepresentingRecordsResponse = {
+  files: RepresentingRecord[];
+  permission: "viewer" | "editor";
+  canUpload: boolean;
+};
+
+export async function listRepresentingRecords(patientId: string): Promise<RepresentingRecordsResponse> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/records`,
+    {},
+    { auth: true }
+  )) as RepresentingRecordsResponse;
+}
+
+export async function listRepresentingRecordProviders(patientId: string): Promise<RecordProvider[]> {
+  const res = (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/records/providers`,
+    {},
+    { auth: true }
+  )) as { providers: RecordProvider[] };
+  return res.providers;
+}
 
 export async function listRepresentedPatients(): Promise<RepresentedPatient[]> {
   const res = (await apiFetch("/api/representing", {}, { auth: true })) as {
     patients: RepresentedPatient[];
   };
   return res.patients;
+}
+
+export type PendingRepresentingInvite = {
+  id: string;
+  relationship: string | null;
+  healthRecordsPermission: "viewer" | "editor" | null;
+  manageProvidersPermission: "viewer" | "editor" | null;
+  releasePermission: "viewer" | "editor" | null;
+  createdAt: string;
+  patientFirstName: string | null;
+  patientLastName: string | null;
+  patientEmail: string;
+};
+
+export async function listPendingRepresentingInvites(): Promise<PendingRepresentingInvite[]> {
+  const res = (await apiFetch("/api/representing/pending", {}, { auth: true })) as {
+    invites: PendingRepresentingInvite[];
+  };
+  return res.invites;
+}
+
+export async function respondToRepresentingInvite(
+  id: string,
+  action: "accept" | "decline",
+): Promise<{ ok: true }> {
+  return (await apiFetch(
+    `/api/representing/pending/${encodeURIComponent(id)}`,
+    { method: "PATCH", body: JSON.stringify({ action }) },
+    { auth: true },
+  )) as { ok: true };
 }
 
 // ─── Records ──────────────────────────────────────────────────────────────────
@@ -537,7 +646,7 @@ export type IncomingFile = {
   source: string;
   incomingFaxLogId: string | null;
   patientId: string | null;
-  releaseCode: string | null;
+  userProviderId: string | null;
   createdAt: string;
   deletedAt: string | null;
   deletedById: string | null;
@@ -555,7 +664,7 @@ export async function listMyRecords(opts?: { cursor?: string | null; limit?: num
   return (await apiFetch(`/api/my-records${qs ? `?${qs}` : ""}`, {}, { auth: true })) as RecordsPage;
 }
 
-export type RecordProvider = { name: string; releaseCodes: string[] };
+export type RecordProvider = { id: string; name: string };
 
 export async function listMyRecordProviders(): Promise<RecordProvider[]> {
   const res = (await apiFetch("/api/my-records/providers", {}, { auth: true })) as {
@@ -564,12 +673,23 @@ export async function listMyRecordProviders(): Promise<RecordProvider[]> {
   return res.providers;
 }
 
+export async function patchRecord(
+  id: string,
+  data: { originalName?: string; userProviderId?: string | null },
+): Promise<{ ok: true }> {
+  return (await apiFetch(
+    `/api/documents/${encodeURIComponent(id)}`,
+    { method: "PATCH", body: JSON.stringify(data) },
+    { auth: true },
+  )) as { ok: true };
+}
+
 export async function registerRecord(input: {
   fileURL: string;
   fileType: string;
   originalName: string;
   patientId?: string;
-  releaseCode?: string;
+  userProviderId?: string;
 }): Promise<{ id: string }> {
   return (await apiFetch("/api/records/upload", {
     method: "POST",

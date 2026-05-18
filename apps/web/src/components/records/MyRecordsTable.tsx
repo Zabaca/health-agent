@@ -16,28 +16,19 @@ export interface MyRecordRow {
   fileType: string;
   fileURL: string;
   originalName: string | null;
-  releaseCode: string | null;
+  userProviderId: string | null;
+  providerName: string | null;
   pagecount: number | null;
   uploadedBy: string | null;
 }
 
-interface ReleaseOption {
-  id: string;
-  releaseCode: string;
-  providerNames: string[];
-}
-
 export interface ProviderOption {
-  /** Display name (insurance/insurance plan or provider name). */
+  id: string;
   name: string;
-  /** Release codes that include this provider — selecting the option matches
-      records tagged with any of these codes. */
-  releaseCodes: string[];
 }
 
 interface Props {
   rows: MyRecordRow[];
-  releases?: ReleaseOption[];
   providers?: ProviderOption[];
   readOnly?: boolean;
 }
@@ -59,13 +50,13 @@ function comboFuzzy(query: string, target: string): boolean {
   return qi === q.length;
 }
 
-interface ReleaseSelectProps {
+interface ProviderSelectProps {
   value: string | null;
   onChange: (val: string | null) => void;
-  options: ReleaseOption[];
+  options: ProviderOption[];
 }
 
-function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
+function ProviderSelect({ value, onChange, options }: ProviderSelectProps) {
   const [search, setSearch] = useState('');
   const combobox = useCombobox({
     onDropdownClose: () => { combobox.resetSelectedOption(); setSearch(''); },
@@ -73,27 +64,21 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
 
   const filtered = useMemo(() => {
     if (!search.trim()) return options;
-    return options.filter(o => {
-      const combined = [o.releaseCode, ...o.providerNames].join(' ');
-      return comboFuzzy(search, combined);
-    });
+    return options.filter(o => comboFuzzy(search, o.name ?? ''));
   }, [search, options]);
 
-  const selected = options.find(o => o.releaseCode === value);
-  const displayValue = selected
-    ? `${selected.releaseCode}${selected.providerNames.length ? ` — ${selected.providerNames.join(', ')}` : ''}`
-    : '';
+  const selected = options.find(o => o.id === value);
 
   return (
     <Combobox
       store={combobox}
-      onOptionSubmit={val => { onChange(val); combobox.closeDropdown(); }}
+      onOptionSubmit={val => { onChange(val === '__none__' ? null : val); combobox.closeDropdown(); }}
     >
       <Combobox.Target>
         <InputBase
-          label="Associate with Release (optional)"
-          placeholder="Search by code or provider…"
-          value={combobox.dropdownOpened ? search : displayValue}
+          label="Associate with Provider (optional)"
+          placeholder="Search providers…"
+          value={combobox.dropdownOpened ? search : (selected?.name ?? '')}
           onChange={e => { setSearch(e.currentTarget.value); combobox.openDropdown(); }}
           onClick={() => combobox.openDropdown()}
           onFocus={() => combobox.openDropdown()}
@@ -104,16 +89,14 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
       <Combobox.Dropdown>
         <Combobox.Options>
           <ScrollArea.Autosize mah={200} type="scroll">
+            <Combobox.Option value="__none__" active={value === null}>
+              <Text size="sm" c="dimmed">None</Text>
+            </Combobox.Option>
             {filtered.length === 0 ? (
-              <Combobox.Empty>No releases found</Combobox.Empty>
+              <Combobox.Empty>No providers found</Combobox.Empty>
             ) : filtered.map(o => (
-              <Combobox.Option key={o.releaseCode} value={o.releaseCode} active={value === o.releaseCode}>
-                <Group gap="xs" wrap="nowrap">
-                  <Text size="sm" fw={500} ff="monospace">{o.releaseCode}</Text>
-                  {o.providerNames.length > 0 && (
-                    <Text size="xs" c="dimmed" truncate>{o.providerNames.join(', ')}</Text>
-                  )}
-                </Group>
+              <Combobox.Option key={o.id} value={o.id} active={value === o.id}>
+                <Text size="sm">{o.name}</Text>
               </Combobox.Option>
             ))}
           </ScrollArea.Autosize>
@@ -123,7 +106,7 @@ function ReleaseSelect({ value, onChange, options }: ReleaseSelectProps) {
   );
 }
 
-export default function MyRecordsTable({ rows, releases = [], providers = [], readOnly = false }: Props) {
+export default function MyRecordsTable({ rows, providers = [], readOnly = false }: Props) {
   const router = useRouter();
 
   const [search, setSearch] = useState('');
@@ -138,25 +121,28 @@ export default function MyRecordsTable({ rows, releases = [], providers = [], re
     [rows],
   );
 
-  // Provider name → set of releaseCodes. A provider may appear across multiple
-  // releases; selecting one option matches files tagged with any of those
-  // codes (mirrors the mobile filter).
-  const providerReleaseCodes = useMemo(() => {
-    if (providerFilter.length === 0) return null;
-    const selected = new Set(providerFilter);
-    const codes = new Set<string>();
-    for (const p of providers) {
-      if (selected.has(p.name)) {
-        for (const c of p.releaseCodes) codes.add(c);
+  // Filter chips: only providers actually tagged on a record (derived from rows).
+  const taggedProviders = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const r of rows) {
+      if (r.userProviderId && r.providerName && !seen.has(r.userProviderId)) {
+        seen.set(r.userProviderId, r.providerName);
       }
     }
-    return codes;
-  }, [providerFilter, providers]);
+    return Array.from(seen.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows]);
+
+  const selectedProviderIds = useMemo(() => {
+    if (providerFilter.length === 0) return null;
+    return new Set(providerFilter);
+  }, [providerFilter]);
 
   const filtered = useMemo(() => {
     const [from, to] = dateRange;
     return rows.filter(r => {
-      if (!fuzzyMatch(search, r.originalName, r.uploadedBy, r.releaseCode)) return false;
+      if (!fuzzyMatch(search, r.originalName, r.uploadedBy, r.providerName)) return false;
 
       const created = new Date(r.createdAt);
       if (from) { const s = new Date(from); s.setHours(0, 0, 0, 0); if (created < s) return false; }
@@ -164,11 +150,11 @@ export default function MyRecordsTable({ rows, releases = [], providers = [], re
 
       if (fileTypeFilter.length > 0 && !fileTypeFilter.includes(r.fileType.toUpperCase())) return false;
 
-      if (providerReleaseCodes && (!r.releaseCode || !providerReleaseCodes.has(r.releaseCode))) return false;
+      if (selectedProviderIds && (!r.userProviderId || !selectedProviderIds.has(r.userProviderId))) return false;
 
       return true;
     });
-  }, [rows, search, dateRange, fileTypeFilter, providerReleaseCodes]);
+  }, [rows, search, dateRange, fileTypeFilter, selectedProviderIds]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -176,7 +162,7 @@ export default function MyRecordsTable({ rows, releases = [], providers = [], re
 
   const [editRow, setEditRow] = useState<MyRecordRow | null>(null);
   const [editName, setEditName] = useState('');
-  const [editReleaseCode, setEditReleaseCode] = useState<string | null>(null);
+  const [editProviderId, setEditProviderId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
 
@@ -187,7 +173,7 @@ export default function MyRecordsTable({ rows, releases = [], providers = [], re
   function handleEditClick(row: MyRecordRow) {
     setEditRow(row);
     setEditName(row.originalName ?? '');
-    setEditReleaseCode(row.releaseCode);
+    setEditProviderId(row.userProviderId);
     openEdit();
   }
 
@@ -203,7 +189,7 @@ export default function MyRecordsTable({ rows, releases = [], providers = [], re
       const res = await fetch(`/api/documents/${editRow.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ originalName: editName.trim() || editRow.originalName, releaseCode: editReleaseCode }),
+        body: JSON.stringify({ originalName: editName.trim() || editRow.originalName, userProviderId: editProviderId }),
       });
       if (!res.ok) throw new Error('Failed to save');
       closeEdit();
@@ -234,15 +220,15 @@ export default function MyRecordsTable({ rows, releases = [], providers = [], re
     <>
       <Stack gap="sm" mb="md">
         <TextInput
-          placeholder="Search file name, uploaded by, or release code…"
+          placeholder="Search file name, uploaded by, or provider…"
           leftSection={<IconSearch size={16} />}
           value={search}
           onChange={(e) => { setSearch(e.currentTarget.value); setPage(1); }}
         />
-        {providers.length > 0 ? (
+        {taggedProviders.length > 0 ? (
           <MultiSelect
             placeholder="Filter by provider"
-            data={providers.map(p => ({ value: p.name, label: p.name }))}
+            data={taggedProviders.map(p => ({ value: p.id, label: p.name ?? '' }))}
             value={providerFilter}
             onChange={(val) => { setProviderFilter(val); setPage(1); }}
             clearable
@@ -274,7 +260,7 @@ export default function MyRecordsTable({ rows, releases = [], providers = [], re
             <Table.Th>File Name</Table.Th>
             <Table.Th>Date</Table.Th>
             <Table.Th>Type</Table.Th>
-            <Table.Th>Release Code</Table.Th>
+            <Table.Th>Provider</Table.Th>
             <Table.Th>Uploaded By</Table.Th>
             <Table.Th className={classes.hideOnMobile}>Pages</Table.Th>
             <Table.Th />
@@ -313,8 +299,8 @@ export default function MyRecordsTable({ rows, releases = [], providers = [], re
                 <Badge variant="light" size="sm">{r.fileType.toUpperCase()}</Badge>
               </Table.Td>
               <Table.Td>
-                {r.releaseCode
-                  ? <Badge variant="outline" size="sm" color="blue">{r.releaseCode}</Badge>
+                {r.providerName
+                  ? <Badge variant="outline" size="sm" color="blue">{r.providerName}</Badge>
                   : '—'
                 }
               </Table.Td>
@@ -363,11 +349,11 @@ export default function MyRecordsTable({ rows, releases = [], providers = [], re
             onChange={e => setEditName(e.currentTarget.value)}
             placeholder="Enter file name"
           />
-          {releases.length > 0 && (
-            <ReleaseSelect
-              value={editReleaseCode}
-              onChange={setEditReleaseCode}
-              options={releases}
+          {providers.length > 0 && (
+            <ProviderSelect
+              value={editProviderId}
+              onChange={setEditProviderId}
+              options={providers}
             />
           )}
           <Group justify="flex-end" gap="sm">

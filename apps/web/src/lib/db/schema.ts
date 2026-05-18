@@ -328,6 +328,7 @@ export const incomingFiles = sqliteTable('IncomingFile', {
   incomingFaxLogId: text('incomingFaxLogId').references(() => incomingFaxLog.id),
   patientId:        text('patientId').references(() => users.id),
   releaseCode:      text('releaseCode'),
+  userProviderId:   text('userProviderId').references(() => userProviders.id, { onDelete: 'set null' }),
   createdAt:        text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
   deletedAt:        text('deletedAt'),
   deletedById:      text('deletedById').references(() => users.id),
@@ -360,10 +361,11 @@ export const fileUploadLog = sqliteTable('FileUploadLog', {
 });
 
 export const incomingFilesRelations = relations(incomingFiles, ({ one }) => ({
-  faxLog:    one(incomingFaxLog, { fields: [incomingFiles.incomingFaxLogId], references: [incomingFaxLog.id] }),
-  patient:   one(users, { fields: [incomingFiles.patientId], references: [users.id] }),
-  uploadLog: one(fileUploadLog, { fields: [incomingFiles.id], references: [fileUploadLog.incomingFileId] }),
-  deletedBy: one(users, { fields: [incomingFiles.deletedById], references: [users.id], relationName: 'deletedFiles' }),
+  faxLog:        one(incomingFaxLog, { fields: [incomingFiles.incomingFaxLogId], references: [incomingFaxLog.id] }),
+  patient:       one(users, { fields: [incomingFiles.patientId], references: [users.id] }),
+  uploadLog:     one(fileUploadLog, { fields: [incomingFiles.id], references: [fileUploadLog.incomingFileId] }),
+  deletedBy:     one(users, { fields: [incomingFiles.deletedById], references: [users.id], relationName: 'deletedFiles' }),
+  userProvider:  one(userProviders, { fields: [incomingFiles.userProviderId], references: [userProviders.id] }),
 }));
 
 export const fileUploadLogRelations = relations(fileUploadLog, ({ one }) => ({

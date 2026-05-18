@@ -28,8 +28,7 @@ export type RecordsFilters = {
   providers: string[]; // selected provider names, empty = no filter
 };
 
-/** Provider chip data: name displayed + release codes the name corresponds to. */
-export type AvailableProvider = { name: string; releaseCodes: string[] };
+export type AvailableProvider = { id: string; name: string };
 
 export type RecordsParamList = {
   RecordsList: { filters?: RecordsFilters } | undefined;
@@ -44,10 +43,13 @@ export type RecordsParamList = {
       }
     | undefined;
   DocumentViewer: {
+    fileId: string;
     fileURL: string;
     fileType: string;
     title: string;
     createdAt: string;
+    source: string;
+    userProviderId: string | null;
   };
   CameraCapture: { source: "camera" } | { source: "library" };
   UploadPreview: {
@@ -95,6 +97,7 @@ export type ProfileParamList = {
   InviteRepresentative: undefined;
   RepresentativeDetail: { agent: import("@/lib/api").DesignatedAgent };
   ActiveDevices: undefined;
+  RoleSwitcher: undefined;
 };
 
 export type TabsParamList = {
@@ -107,26 +110,55 @@ export type TabsParamList = {
 
 // PDA flow
 
+export type PdaRecordsFilters = {
+  dateFrom: string | null;
+  dateTo: string | null;
+  fileTypes: string[];
+  providers: string[];
+};
+
 export type PdaHomeParamList = {
   PdaHome: undefined;
 };
 
 export type PdaRecordsParamList = {
-  PdaRecords: undefined;
-  PdaRecordDetail: { recordId: string };
+  PdaRecords: { filters?: PdaRecordsFilters } | undefined;
+  PdaRecordDetail: {
+    fileId: string;
+    fileURL: string;
+    fileType: string;
+    source: string;
+    createdAt: string;
+    pagecount: number | null;
+    originalName: string | null;
+    userProviderId: string | null;
+    patientId: string;
+    permission: "viewer" | "editor";
+  };
+  PdaFilterSheet: { current?: PdaRecordsFilters; availableProviders?: AvailableProvider[] } | undefined;
+  PdaUploadSheet: { patientId: string };
+  PdaCameraCapture: { patientId: string };
+  PdaUploadPreview: {
+    uri: string;
+    mimeType: string;
+    name: string;
+    width?: number;
+    height?: number;
+    patientId: string;
+  };
 };
 
 export type PdaProvidersParamList = {
   PdaProviders: undefined;
-  PdaAddProvider: undefined;
-  PdaProviderDetail: { providerId: string };
+  PdaAddProvider: { provider?: import("@/lib/api").UserProvider } | undefined;
+  PdaProviderDetail: { provider: import("@/lib/api").UserProvider };
 };
 
 export type PdaReleasesParamList = {
   PdaReleases: undefined;
   PdaReleaseDetail: { releaseId: string };
   PdaWizardStep1: undefined;
-  PdaWizardStep2: undefined;
+  PdaWizardStep2: { providerType: string; providerId: string };
   PdaWizardStep3: undefined;
   PdaWizardStep4: undefined;
 };
@@ -136,7 +168,8 @@ export type PdaProfileParamList = {
   PdaEditProfile: undefined;
   PdaPeopleIRepresent: undefined;
   RoleSwitcher: undefined;
-  PdaInvite: undefined;
+  ActiveDevices: undefined;
+  PdaInvite: { invite: import("@/lib/api").PendingRepresentingInvite };
 };
 
 export type PdaTabsParamList = {

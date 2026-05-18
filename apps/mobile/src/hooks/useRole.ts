@@ -26,7 +26,7 @@ export function RoleProvider({ children }: PropsWithChildren) {
 
   const switchTo = useCallback((next: Role, rep: string | null = null) => {
     setRole(next);
-    setRepresenting(next === "pda" ? rep ?? "marcus" : null);
+    setRepresenting(next === "pda" ? rep : null);
   }, []);
 
   const value = useMemo<RoleState>(() => ({ role, representing, switchTo }), [role, representing, switchTo]);

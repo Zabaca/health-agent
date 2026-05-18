@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { nanoid } from "nanoid";
 import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, userProviders } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
+import { myProviderSchema } from "@/lib/schemas/release";
+
+const replaceProvidersBodySchema = z.object({
+  providers: z.array(myProviderSchema),
+});
 
 // GET /api/representing/[patientId]/providers
 export async function GET(
@@ -53,30 +60,34 @@ export async function PUT(
   if (!relation) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (relation.manageProvidersPermission !== 'editor') return NextResponse.json({ error: "No write access to providers" }, { status: 403 });
 
-  const { providers } = await req.json() as { providers: Array<Record<string, unknown>> };
+  const parsed = replaceProvidersBodySchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+  const { providers } = parsed.data;
 
   await db.transaction(async (tx) => {
     await tx.delete(userProviders).where(eq(userProviders.userId, patientId));
     if (providers.length > 0) {
       await tx.insert(userProviders).values(
         providers.map((p, i) => ({
-          id: crypto.randomUUID(),
+          id: nanoid(),
           userId: patientId,
           order: i,
-          providerName: (p.providerName as string) ?? "",
-          providerType: (p.providerType as string) ?? null,
-          physicianName: (p.physicianName as string) ?? null,
-          patientId: (p.patientId as string) ?? null,
-          insurance: (p.insurance as string) ?? null,
-          patientMemberId: (p.patientMemberId as string) ?? null,
-          groupId: (p.groupId as string) ?? null,
-          planName: (p.planName as string) ?? null,
-          phone: (p.phone as string) ?? null,
-          fax: (p.fax as string) ?? null,
-          providerEmail: (p.providerEmail as string) ?? null,
-          address: (p.address as string) ?? null,
-          membershipIdFront: (p.membershipIdFront as string) ?? null,
-          membershipIdBack: (p.membershipIdBack as string) ?? null,
+          providerName: p.providerName ?? "",
+          providerType: p.providerType ?? null,
+          physicianName: p.physicianName ?? null,
+          patientId: p.patientId ?? null,
+          insurance: p.insurance ?? null,
+          patientMemberId: p.patientMemberId ?? null,
+          groupId: p.groupId ?? null,
+          planName: p.planName ?? null,
+          phone: p.phone ?? null,
+          fax: p.fax ?? null,
+          providerEmail: p.providerEmail ?? null,
+          address: p.address ?? null,
+          membershipIdFront: p.membershipIdFront ?? null,
+          membershipIdBack: p.membershipIdBack ?? null,
         }))
       );
     }

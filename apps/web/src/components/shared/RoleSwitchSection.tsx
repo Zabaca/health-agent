@@ -17,7 +17,7 @@ export default function RoleSwitchSection({ href, label }: Props) {
       p="md"
       radius="md"
       withBorder
-      mt="md"
+      mb="md"
       style={{ display: "block", textDecoration: "none", cursor: "pointer" }}
     >
       <Group gap="sm">

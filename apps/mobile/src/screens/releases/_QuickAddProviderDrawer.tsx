@@ -182,10 +182,17 @@ export function QuickAddProviderDrawer({ visible, onClose, onSaved }: Props) {
             contentContainerStyle={{ padding: t.spacing.gutter, gap: 16 }}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Provider Type chips */}
+            {/* Provider Type */}
             <View style={{ gap: 6 }}>
               <Text style={t.type.rowLabel}>PROVIDER TYPE</Text>
-              <View style={{ flexDirection: "row", gap: 8 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  backgroundColor: t.colors.surfaceSubtle,
+                  borderRadius: t.radius.button,
+                  padding: 4,
+                }}
+              >
                 {TYPES.map((type) => {
                   const on = type === providerType;
                   return (
@@ -194,22 +201,13 @@ export function QuickAddProviderDrawer({ visible, onClose, onSaved }: Props) {
                       onPress={() => setProviderType(type)}
                       style={{
                         flex: 1,
-                        height: 38,
-                        borderRadius: t.radius.pill,
-                        borderWidth: 1,
-                        borderColor: on ? t.colors.primary : t.colors.border,
-                        backgroundColor: on ? t.colors.primaryBg : t.colors.surface,
+                        paddingVertical: 10,
+                        borderRadius: 10,
                         alignItems: "center",
-                        justifyContent: "center",
+                        backgroundColor: on ? t.colors.primary : "transparent",
                       }}
                     >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: "600",
-                          color: on ? t.colors.primary : t.colors.textSecondary,
-                        }}
-                      >
+                      <Text style={{ fontSize: 13, fontWeight: "600", color: on ? "#FFFFFF" : t.colors.textPrimary }}>
                         {type}
                       </Text>
                     </Pressable>

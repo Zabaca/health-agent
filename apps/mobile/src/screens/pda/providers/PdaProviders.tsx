@@ -1,27 +1,69 @@
-import { Pressable, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ChevronRight, Plus, Eye, Pencil, ShieldOff, Stethoscope } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
+import { ProviderAvatar } from "@/components/ProviderAvatar";
 import { useTheme } from "@/theme/ThemeProvider";
-import { useRole } from "@/hooks/useRole";
-import { findPatient } from "@/mock/pda";
-import { mockProviders } from "@/mock/providers";
+import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
+import { listRepresentingProviders, type UserProvider } from "@/lib/api";
 import type { PdaProvidersParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaProvidersParamList>;
 
+function providerDisplayName(p: UserProvider): string {
+  return p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName;
+}
+
+function providerSubtitle(p: UserProvider): string {
+  if (p.providerType === "Insurance") {
+    return p.patientMemberId ? `Member #${p.patientMemberId}` : "Insurance";
+  }
+  return p.physicianName ? p.physicianName : p.providerType;
+}
+
+function providerDetail(p: UserProvider): string | null {
+  if (p.providerType === "Insurance") return p.planName || null;
+  if (p.phone) return p.phone;
+  if (p.address) return p.address.split(",")[0].trim();
+  return null;
+}
+
 export default function PdaProviders() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { representing } = useRole();
-  const patient = findPatient(representing);
-  const perm = patient.permissions.providers;
+  const { currentPatient, loading: patientsLoading } = useRepresentedPatients();
+  const perm = currentPatient?.manageProvidersPermission ?? null;
   const isEditor = perm === "editor";
-  const firstName = patient.name.split(" ")[0];
-  const items = mockProviders.slice(0, 2);
-  const empty = items.length === 0;
+  const firstName = currentPatient?.firstName ?? "the patient";
+  const patientName = currentPatient
+    ? `${currentPatient.firstName ?? ""} ${currentPatient.lastName ?? ""}`.trim()
+    : "";
+
+  const [providers, setProviders] = useState<UserProvider[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!currentPatient || !perm) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await listRepresentingProviders(currentPatient.patientId);
+      setProviders(list);
+    } catch {
+      setError("Could not load providers.");
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPatient, perm]);
+
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const headerRow = (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -29,27 +71,61 @@ export default function PdaProviders() {
         Providers
       </Text>
       {isEditor ? (
-        <Pressable hitSlop={8} onPress={() => nav.navigate("PdaAddProvider")}>
-          <Plus size={24} color={t.colors.primary} />
+        <Pressable
+          onPress={() => nav.navigate("PdaAddProvider")}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            backgroundColor: t.colors.primary,
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            borderRadius: t.radius.pill,
+          }}
+        >
+          <Plus size={16} color="#FFFFFF" />
+          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Add</Text>
         </Pressable>
       ) : null}
     </View>
   );
 
-  if (perm === "none") {
+  if (patientsLoading || loading) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color={t.colors.primary} />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!perm) {
     return (
       <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
         {headerRow}
         <EmptyState
           icon={<ShieldOff size={32} color={t.colors.textSecondary} />}
           title="No access to providers"
-          subtitle={`${patient.name} hasn't granted you access to manage their providers. Ask them to update your permissions from their account settings.`}
+          subtitle={`${patientName || "This patient"} hasn't granted you access to manage their providers. Ask them to update your permissions from their account settings.`}
         />
       </Screen>
     );
   }
 
-  if (empty) {
+  if (error) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <View style={{ paddingVertical: 40, alignItems: "center" }}>
+          <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (providers.length === 0) {
     return (
       <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
         {headerRow}
@@ -96,32 +172,35 @@ export default function PdaProviders() {
         </Text>
       </View>
 
-      {items.map((p) => (
-        <Pressable key={p.id} onPress={() => nav.navigate("PdaProviderDetail", { providerId: p.id })}>
-          <View
-            style={{
-              backgroundColor: t.colors.surface,
-              borderRadius: t.radius.card,
-              borderWidth: 1,
-              borderColor: t.colors.border,
-              padding: 14,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={t.type.bodyStrong}>{p.physician ?? p.organization}</Text>
-              <Text style={t.type.caption}>
-                {p.physician
-                  ? `${p.specialty ?? (p.type === "Insurance" ? "Insurance" : "Primary Care")} · ${p.organization}`
-                  : p.type}
-              </Text>
+      {providers.map((p) => {
+        const detail = providerDetail(p);
+        return (
+          <Pressable key={p.id} onPress={() => nav.navigate("PdaProviderDetail", { provider: p })}>
+            <View
+              style={{
+                backgroundColor: t.colors.surface,
+                borderRadius: t.radius.card,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+                padding: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <ProviderAvatar type={p.providerType} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={t.type.bodyStrong} numberOfLines={1}>{providerDisplayName(p)}</Text>
+                <Text style={t.type.caption} numberOfLines={1}>{providerSubtitle(p)}</Text>
+                {detail ? (
+                  <Text style={[t.type.caption, { marginTop: 2 }]} numberOfLines={1}>{detail}</Text>
+                ) : null}
+              </View>
+              <ChevronRight size={18} color={t.colors.textSecondary} />
             </View>
-            <ChevronRight size={16} color={t.colors.textSecondary} />
-          </View>
-        </Pressable>
-      ))}
+          </Pressable>
+        );
+      })}
     </Screen>
   );
 }

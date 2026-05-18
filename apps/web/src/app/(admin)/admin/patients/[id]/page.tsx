@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, releases as releasesTable, patientAssignments, userProviders, incomingFiles, providers as releaseProvidersTable, zabacaAgentRoles, patientDesignatedAgents } from "@/lib/db/schema";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { users, releases as releasesTable, patientAssignments, userProviders, incomingFiles, zabacaAgentRoles, patientDesignatedAgents } from "@/lib/db/schema";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { Title, Text, Stack, Group, Badge, Paper, Divider } from "@mantine/core";
 import PatientDetailTabs from "@/components/staff/PatientDetailTabs";
 import { decryptPii } from "@/lib/crypto";
@@ -65,22 +65,14 @@ export default async function AdminPatientPage({
     .where(eq(releasesTable.userId, patientId))
     .orderBy(desc(releasesTable.updatedAt));
 
-  const releaseIds = releases.map(r => r.id);
-  const releaseProviders = releaseIds.length
-    ? await db.select({ releaseId: releaseProvidersTable.releaseId, providerName: releaseProvidersTable.providerName, insurance: releaseProvidersTable.insurance, providerType: releaseProvidersTable.providerType })
-        .from(releaseProvidersTable)
-        .where(inArray(releaseProvidersTable.releaseId, releaseIds))
-    : [];
-  const providersByRelease = new Map<string, string[]>();
-  for (const p of releaseProviders) {
-    const names = providersByRelease.get(p.releaseId) ?? [];
-    const displayName = p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName;
-    names.push(displayName);
-    providersByRelease.set(p.releaseId, names);
-  }
-
   const activeReleases = releases.filter((r) => !r.voided).map((r) => ({ ...r, providerNames: [] as string[] }));
   const voidedReleases = releases.filter((r) => r.voided).map((r) => ({ ...r, providerNames: [] as string[] }));
+
+  const providerOptions = providers.map((p) => ({
+    id: p.id,
+    name: (p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName) ?? '',
+  }));
+  const providerById = new Map(providerOptions.map(p => [p.id, p.name]));
 
   const documentRows = documents.map(d => {
     const uploader = d.uploadLog?.uploadedBy;
@@ -90,7 +82,8 @@ export default async function AdminPatientPage({
       fileType: d.fileType,
       fileURL: d.fileURL,
       originalName: d.uploadLog?.originalName ?? null,
-      releaseCode: d.releaseCode ?? null,
+      userProviderId: d.userProviderId ?? null,
+      providerName: d.userProviderId ? (providerById.get(d.userProviderId) ?? null) : null,
       source: d.source,
       uploadedBy: uploader
         ? [uploader.firstName, uploader.lastName].filter(Boolean).join(" ") || uploader.email
@@ -149,7 +142,7 @@ export default async function AdminPatientPage({
         releaseHrefBase={`/admin/patients/${patientId}/releases`}
         onVoid={voidRelease}
         documents={documentRows}
-        releases={releases.map(r => ({ id: r.id, releaseCode: r.releaseCode ?? null, providerNames: providersByRelease.get(r.id) ?? [] }))}
+        userProviders={providerOptions}
         recordsBasePath="/admin/records"
         pdas={pdaRows.map(p => ({ id: p.id, inviteeEmail: p.inviteeEmail, relationship: p.relationship, status: p.status, agentUser: p.agentUser ?? null }))}
       />

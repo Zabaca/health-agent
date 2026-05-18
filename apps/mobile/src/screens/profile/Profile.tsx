@@ -87,7 +87,7 @@ export default function Profile() {
             style={{
               width: 44,
               height: 44,
-              borderRadius: 12,
+              borderRadius: 22,
               backgroundColor: t.colors.primaryBg,
               alignItems: "center",
               justifyContent: "center",
@@ -210,7 +210,13 @@ export default function Profile() {
       {/* Switch to Representative View — only shown when the user is a PDA with at least one accepted patient */}
       {representedPatients.length > 0 ? (
         <Pressable
-          onPress={() => switchTo("pda", representedPatients[0].patientId)}
+          onPress={() => {
+            if (representedPatients.length === 1) {
+              switchTo("pda", representedPatients[0].patientId);
+            } else {
+              nav.navigate("RoleSwitcher");
+            }
+          }}
           style={{
             backgroundColor: "#EAF1FB",
             borderRadius: t.radius.card,

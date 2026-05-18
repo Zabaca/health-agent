@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Pencil } from "lucide-react-native";
 import ImageView from "react-native-image-viewing";
 import { WebView } from "react-native-webview";
 import { API_URL, getSessionToken } from "@/lib/api";
+import { EditRecordForm } from "@/screens/records/EditRecordSheet";
 import type { RecordsParamList } from "@/navigation/types";
 
 type R = RouteProp<RecordsParamList, "DocumentViewer">;
@@ -27,11 +28,10 @@ export default function DocumentViewer() {
   const { params } = useRoute<R>();
   const [token, setToken] = useState<string | null>(null);
   const [tokenReady, setTokenReady] = useState(false);
-  // ImageView wraps a native <Modal>. Driving `visible` via state lets the
-  // modal play its dismiss animation cleanly; calling nav.goBack() while
-  // `visible` was hard-coded to `true` left the native Modal half-mounted
-  // on iOS and ate touches on the underlying screen.
   const [imageVisible, setImageVisible] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [localTitle, setLocalTitle] = useState(params.title);
+  const [localUserProviderId, setLocalUserProviderId] = useState(params.userProviderId);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,15 +40,13 @@ export default function DocumentViewer() {
       setToken(t);
       setTokenReady(true);
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  // Pop the screen once the Modal has been told to dismiss.
+  // Natural swipe-to-close on image viewer → go back (only when not in edit mode)
   useEffect(() => {
-    if (!imageVisible) nav.goBack();
-  }, [imageVisible, nav]);
+    if (!imageVisible && !editMode) nav.goBack();
+  }, [imageVisible, editMode, nav]);
 
   const closeImage = useCallback(() => setImageVisible(false), []);
 
@@ -57,9 +55,26 @@ export default function DocumentViewer() {
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
   // ─── Image viewer ──────────────────────────────────────────────────────────
-  // ImageView renders its own X button + swipe-to-close, and its native Modal
-  // covers any custom header we'd render here, so we don't add one.
   if (image) {
+    // Render the edit form inline — ImageView is unmounted so its native modal
+    // is gone before the form appears, avoiding any iOS modal conflict.
+    if (editMode) {
+      return (
+        <EditRecordForm
+          fileId={params.fileId}
+          name={localTitle}
+          userProviderId={localUserProviderId}
+          source={params.source}
+          onClose={() => nav.goBack()}
+          onSaved={(name, providerId) => {
+            setLocalTitle(name);
+            setLocalUserProviderId(providerId);
+            nav.goBack();
+          }}
+        />
+      );
+    }
+
     return (
       <View style={{ flex: 1, backgroundColor: "#000000" }}>
         {tokenReady ? (
@@ -71,6 +86,25 @@ export default function DocumentViewer() {
             swipeToCloseEnabled
             doubleTapToZoomEnabled
             backgroundColor="#000000"
+            FooterComponent={() => (
+              <View style={{ alignItems: "flex-end", paddingHorizontal: 20, paddingBottom: insets.bottom + 16 }}>
+                <Pressable
+                  onPress={() => setEditMode(true)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    backgroundColor: "#FFFFFF22",
+                    paddingVertical: 8,
+                    paddingHorizontal: 14,
+                    borderRadius: 20,
+                  }}
+                >
+                  <Pencil size={14} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "600" }}>Edit details</Text>
+                </Pressable>
+              </View>
+            )}
           />
         ) : (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -82,6 +116,23 @@ export default function DocumentViewer() {
   }
 
   // ─── Document viewer (PDF / other via WebView) ────────────────────────────
+  if (editMode) {
+    return (
+      <EditRecordForm
+        fileId={params.fileId}
+        name={localTitle}
+        userProviderId={localUserProviderId}
+        source={params.source}
+        onClose={() => setEditMode(false)}
+        onSaved={(name, providerId) => {
+          setLocalTitle(name);
+          setLocalUserProviderId(providerId);
+          setEditMode(false);
+        }}
+      />
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: "#1F1F1F" }}>
       <View style={{ paddingTop: insets.top, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", minHeight: 56 }}>
@@ -90,10 +141,17 @@ export default function DocumentViewer() {
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600" }} numberOfLines={1}>
-            {params.title}
+            {localTitle}
           </Text>
         </View>
+        <Pressable
+          onPress={() => setEditMode(true)}
+          style={{ width: 40, height: 40, justifyContent: "center", alignItems: "center" }}
+        >
+          <Pencil size={18} color="#FFFFFF" />
+        </Pressable>
       </View>
+
       {tokenReady ? (
         <WebView
           source={{ uri: url, headers }}

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { patientDesignatedAgents, incomingFiles, releases, users } from "@/lib/db/schema";
-import { eq, and, isNull, inArray } from "drizzle-orm";
+import { patientDesignatedAgents, incomingFiles, userProviders } from "@/lib/db/schema";
+import { eq, and, isNull } from "drizzle-orm";
 import { Breadcrumbs, Anchor, Text } from "@mantine/core";
 import Link from "next/link";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
@@ -32,43 +32,28 @@ export default async function RepresentingRecordsPage({
 
   if (!relation || !relation.healthRecordsPermission) notFound();
 
-  const files = await db.query.incomingFiles.findMany({
-    where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt)),
-    with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
-    orderBy: (f, { desc }) => [desc(f.createdAt)],
-  });
+  const [files, patientProviders] = await Promise.all([
+    db.query.incomingFiles.findMany({
+      where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt)),
+      with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
+      orderBy: (f, { desc }) => [desc(f.createdAt)],
+    }),
+    db.select({ id: userProviders.id, providerName: userProviders.providerName, providerType: userProviders.providerType, insurance: userProviders.insurance })
+      .from(userProviders)
+      .where(eq(userProviders.userId, patientId)),
+  ]);
 
   const patientName =
     [relation.patient?.firstName, relation.patient?.lastName].filter(Boolean).join(' ') ||
     relation.patient?.email ||
     'Patient';
 
-  // Fetch releases where this PDA is the authorized agent
-  const pdaUser = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
-    columns: { firstName: true, lastName: true, email: true },
-  });
-  const pdaFullName = [pdaUser?.firstName, pdaUser?.lastName].filter(Boolean).join(' ') || pdaUser?.email || '';
+  const providerOptions = patientProviders.map((p) => ({
+    id: p.id,
+    name: (p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName) ?? "",
+  }));
 
-  const allReleases = await db.query.releases.findMany({
-    where: and(
-      eq(releases.userId, patientId),
-      eq(releases.releaseAuthAgent, true),
-    ),
-    with: { providers: { columns: { providerName: true, insurance: true, providerType: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
-  });
-
-  const releaseOptions = allReleases
-    .filter(r => {
-      const agentName = [r.authAgentFirstName, r.authAgentLastName].filter(Boolean).join(' ');
-      return agentName === pdaFullName || r.authAgentEmail === pdaUser?.email;
-    })
-    .filter(r => r.releaseCode)
-    .map(r => ({
-      id: r.id,
-      releaseCode: r.releaseCode!,
-      providerNames: r.providers.map(p => p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName),
-    }));
+  const providerById = new Map(providerOptions.map(p => [p.id, p.name]));
 
   const rows = files.map(f => ({
     id: f.id,
@@ -76,50 +61,13 @@ export default async function RepresentingRecordsPage({
     fileType: f.fileType,
     fileURL: f.fileURL,
     originalName: f.uploadLog?.originalName ?? null,
-    releaseCode: f.releaseCode ?? null,
+    userProviderId: f.userProviderId ?? null,
+    providerName: f.userProviderId ? (providerById.get(f.userProviderId) ?? null) : null,
     pagecount: f.faxLog?.pagecount ?? null,
     uploadedBy: f.uploadLog?.uploadedBy
       ? [f.uploadLog.uploadedBy.firstName, f.uploadLog.uploadedBy.lastName].filter(Boolean).join(' ') || f.uploadLog.uploadedBy.email
       : null,
   }));
-
-  // Provider chips: derived from any release tagged on the patient's records
-  // (broader than `allReleases` above, which is restricted to auth-agent
-  // releases). Same dedup-then-union semantics as the patient `/my-records`
-  // page so the PDA sees the same filter affordance.
-  const taggedReleaseCodes = Array.from(
-    new Set(files.map(f => f.releaseCode).filter((c): c is string => !!c)),
-  );
-  const taggedReleases = taggedReleaseCodes.length > 0
-    ? await db.query.releases.findMany({
-        where: and(
-          eq(releases.userId, patientId),
-          inArray(releases.releaseCode, taggedReleaseCodes),
-        ),
-        with: {
-          providers: {
-            columns: { providerName: true, insurance: true, providerType: true },
-          },
-        },
-      })
-    : [];
-  const providerMap = new Map<string, Set<string>>();
-  for (const r of taggedReleases) {
-    if (!r.releaseCode) continue;
-    for (const p of r.providers) {
-      const name = p.providerType === 'Insurance' ? (p.insurance || p.providerName) : p.providerName;
-      if (!name) continue;
-      let codes = providerMap.get(name);
-      if (!codes) {
-        codes = new Set();
-        providerMap.set(name, codes);
-      }
-      codes.add(r.releaseCode);
-    }
-  }
-  const providerOptions = Array.from(providerMap.entries())
-    .map(([name, codes]) => ({ name, releaseCodes: Array.from(codes).sort() }))
-    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <>
@@ -131,13 +79,12 @@ export default async function RepresentingRecordsPage({
           </Breadcrumbs>
         }
         action={relation.healthRecordsPermission === 'editor'
-          ? <UploadFileButton patientId={patientId} releases={releaseOptions} />
+          ? <UploadFileButton patientId={patientId} providers={providerOptions} />
           : undefined}
         mb="lg"
       />
       <MyRecordsTable
         rows={rows}
-        releases={releaseOptions}
         providers={providerOptions}
         readOnly={relation.healthRecordsPermission !== 'editor'}
       />

@@ -81,6 +81,9 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
 
   return (
     <div style={{ maxWidth: maw, width: "100%" }}>
+    {!onComplete && isPda && (
+      <RoleSwitchSection href="/representing" label="Switch to Representative View" />
+    )}
     <form onSubmit={handleSubmit(onSubmit)}>
       <PageHeader
         title="My Profile"
@@ -182,9 +185,6 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
     </form>
     {!onComplete && <ChangePasswordSection />}
     {!onComplete && <ActiveDevicesSection />}
-    {!onComplete && isPda && (
-      <RoleSwitchSection href="/representing" label="Switch to Representative View" />
-    )}
     </div>
   );
 }
