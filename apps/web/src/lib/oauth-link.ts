@@ -23,20 +23,27 @@ export type OAuthProfile = { firstName?: string | null; lastName?: string | null
 export async function upsertOAuthUser(
   provider: OAuthProvider,
   providerSub: string,
-  email: string,
+  email: string | null,
   profile?: OAuthProfile,
 ) {
   const idColumn = provider === "google" ? users.googleId : users.appleId;
   const idKey = provider === "google" ? "googleId" : "appleId";
 
+  // Returning user: found by provider sub — email not needed.
   const byProvider = await db.query.users.findFirst({ where: eq(idColumn, providerSub) });
   if (byProvider) return byProvider;
 
-  const byEmail = await db.query.users.findFirst({ where: eq(users.email, email) });
-  if (byEmail) {
-    await db.update(users).set({ [idKey]: providerSub }).where(eq(users.id, byEmail.id));
-    return { ...byEmail, [idKey]: providerSub };
+  // Known email: link provider id to the existing account.
+  if (email) {
+    const byEmail = await db.query.users.findFirst({ where: eq(users.email, email) });
+    if (byEmail) {
+      await db.update(users).set({ [idKey]: providerSub }).where(eq(users.id, byEmail.id));
+      return { ...byEmail, [idKey]: providerSub };
+    }
   }
+
+  // New user: email is required (Apple always provides it on first authorization).
+  if (!email) throw new Error("Email is required to create a new account but was not provided by the identity provider");
 
   const id = randomUUID();
   await db.insert(users).values({

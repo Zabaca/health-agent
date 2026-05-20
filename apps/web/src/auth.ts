@@ -20,9 +20,8 @@ import { generateAppleClientSecret } from "@/lib/apple-secret";
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-// Computed once per process (node runtime). Lazily derives the Sign in with
-// Apple client secret JWT from the raw .p8 key material in env.
-const appleClientSecret = await generateAppleClientSecret();
+// Computed once per process. Synchronous — no top-level await needed.
+const appleClientSecret = generateAppleClientSecret();
 
 /**
  * Builds the role flags + session payload that we attach to the JWT.

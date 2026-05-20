@@ -6,7 +6,7 @@ const GOOGLE_JWKS = createRemoteJWKSet(new URL("https://www.googleapis.com/oauth
 const APPLE_ISSUER = "https://appleid.apple.com";
 const GOOGLE_ISSUERS = new Set(["https://accounts.google.com", "accounts.google.com"]);
 
-export type VerifiedToken = { sub: string; email: string };
+export type VerifiedToken = { sub: string; email: string | null };
 
 /**
  * Verify an Apple identity token (JWT) by checking the signature against
@@ -31,8 +31,10 @@ export async function verifyAppleIdentityToken(identityToken: string): Promise<V
   });
 
   const sub = payload.sub;
-  const email = (payload.email as string | undefined) ?? "";
-  if (!sub || !email) throw new Error("Apple token missing sub or email");
+  if (!sub) throw new Error("Apple token missing sub");
+  // Apple only includes `email` on the first authorization; returning users
+  // have no email claim — look them up by sub (appleId) instead.
+  const email = (payload.email as string | undefined) ?? null;
   return { sub, email };
 }
 
