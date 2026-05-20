@@ -34,20 +34,31 @@ export async function generateAppleClientSecret(): Promise<string> {
   // throwing at module load and taking down all auth.
   if (!rawKey || !teamId || !keyId || !servicesId) return "";
 
-  const pkcs8 = rawKey.replace(/\\n/g, "\n");
-  const key = await importPKCS8(pkcs8, "ES256");
+  // A malformed key must NOT take down the whole auth module (which is
+  // imported at startup via top-level await in auth.ts). Degrade to Apple-only
+  // failure: log and return "" so email/password + Google still work.
+  try {
+    const pkcs8 = rawKey.replace(/\\n/g, "\n");
+    const key = await importPKCS8(pkcs8, "ES256");
 
-  const now = Math.floor(Date.now() / 1000);
-  const SIX_MONTHS_SECONDS = 15777000; // Apple's maximum allowed validity.
+    const now = Math.floor(Date.now() / 1000);
+    const SIX_MONTHS_SECONDS = 15777000; // Apple's maximum allowed validity.
 
-  cached = await new SignJWT({})
-    .setProtectedHeader({ alg: "ES256", kid: keyId })
-    .setIssuer(teamId)
-    .setIssuedAt(now)
-    .setExpirationTime(now + SIX_MONTHS_SECONDS)
-    .setAudience("https://appleid.apple.com")
-    .setSubject(servicesId)
-    .sign(key);
+    cached = await new SignJWT({})
+      .setProtectedHeader({ alg: "ES256", kid: keyId })
+      .setIssuer(teamId)
+      .setIssuedAt(now)
+      .setExpirationTime(now + SIX_MONTHS_SECONDS)
+      .setAudience("https://appleid.apple.com")
+      .setSubject(servicesId)
+      .sign(key);
 
-  return cached;
+    return cached;
+  } catch (err) {
+    console.error(
+      "[apple-secret] failed to generate Sign in with Apple client secret; Apple sign-in disabled (other providers unaffected)",
+      err,
+    );
+    return "";
+  }
 }

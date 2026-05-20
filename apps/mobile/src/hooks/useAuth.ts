@@ -196,7 +196,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (!credential.identityToken) {
         return { ok: false, error: "Apple did not return an identity token. Please try again." };
       }
-      const { user: nextUser, sessionToken } = await loginApple(credential.identityToken);
+      // fullName is only populated on the user's first authorization.
+      const { user: nextUser, sessionToken } = await loginApple(
+        credential.identityToken,
+        credential.fullName
+          ? { givenName: credential.fullName.givenName, familyName: credential.fullName.familyName }
+          : undefined,
+      );
       await persistSession(sessionToken, nextUser);
       return { ok: true };
     } catch (e) {

@@ -100,10 +100,13 @@ export async function loginEmail(email: string, password: string): Promise<Login
   })) as LoginResponse;
 }
 
-export async function loginApple(identityToken: string): Promise<LoginResponse> {
+/** Apple returns the name only on the first authorization; forward it so a new account gets one. */
+export type AppleFullName = { givenName?: string | null; familyName?: string | null };
+
+export async function loginApple(identityToken: string, fullName?: AppleFullName | null): Promise<LoginResponse> {
   return (await apiFetch("/api/auth/apple/mobile", {
     method: "POST",
-    body: JSON.stringify({ identityToken, device: getDeviceInfo() }),
+    body: JSON.stringify({ identityToken, fullName: fullName ?? undefined, device: getDeviceInfo() }),
   })) as LoginResponse;
 }
 
