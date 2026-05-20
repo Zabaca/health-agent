@@ -28,7 +28,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="com.zabaca.healthagent"/>
+        <data android:scheme="com.zabaca.veladon"/>
       </intent-filter>
       <intent-filter>
         <action android:name="android.intent.action.VIEW"/>

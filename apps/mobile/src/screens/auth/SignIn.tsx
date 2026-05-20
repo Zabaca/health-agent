@@ -43,7 +43,7 @@ export default function SignIn() {
         <View style={[styles.logoTile, { backgroundColor: t.colors.primary }]}>
           <Sprout size={28} color="#FFFFFF" />
         </View>
-        <Text style={t.type.h2}>Zabaca</Text>
+        <Text style={t.type.h2}>Veladon</Text>
         <Text style={t.type.caption}>Your health, in your hands.</Text>
       </View>
 

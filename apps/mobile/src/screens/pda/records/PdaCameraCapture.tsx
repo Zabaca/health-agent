@@ -45,7 +45,7 @@ export default function PdaCameraCapture() {
           Camera access needed
         </Text>
         <Text style={{ color: "#FFFFFFAA", fontSize: 14, textAlign: "center" }}>
-          HealthAgent needs camera permission to capture photos of your health documents.
+          Veladon needs camera permission to capture photos of your health documents.
         </Text>
         <Pressable
           onPress={permission.canAskAgain ? requestPermission : openSettings}

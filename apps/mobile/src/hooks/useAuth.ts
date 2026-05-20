@@ -258,7 +258,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const enableBiometric = useCallback<AuthState["enableBiometric"]>(async () => {
-    const result = await authenticate("Enable biometric unlock for HealthAgent");
+    const result = await authenticate("Enable biometric unlock for Veladon");
     if (!result.ok) {
       return { ok: false, error: result.cancelled ? "Cancelled" : "Authentication failed" };
     }
@@ -278,7 +278,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const unlock = useCallback<AuthState["unlock"]>(async () => {
-    const result = await authenticate("Unlock HealthAgent");
+    const result = await authenticate("Unlock Veladon");
     if (!result.ok) {
       return { ok: false, error: result.cancelled ? "Cancelled" : "Authentication failed" };
     }
