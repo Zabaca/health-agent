@@ -11,11 +11,14 @@ import {
 } from "react";
 import { AppState } from "react-native";
 import * as SecureStore from "expo-secure-store";
+import * as AppleAuthentication from "expo-apple-authentication";
 import {
   ApiError,
   SESSION_TOKEN_KEY,
   listSessions,
+  loginApple,
   loginEmail,
+  loginGoogle,
   registerEmail,
   requestPasswordReset as apiRequestPasswordReset,
   revokeCurrentSession,
@@ -39,6 +42,10 @@ type AuthState = {
   /** True when biometric reveal is required to view the app. */
   locked: boolean;
   signInEmail: (email: string, password: string) => Promise<Result>;
+  /** Native Sign in with Apple (iOS only). Runs the native sheet, then exchanges the identity token. */
+  signInApple: () => Promise<Result>;
+  /** Exchange a Google id_token (obtained by the screen's auth-session prompt) for a session. */
+  signInGoogle: (idToken: string) => Promise<Result>;
   register: (email: string, password: string) => Promise<Result>;
   requestPasswordReset: (email: string) => Promise<Result>;
   signOut: () => Promise<void>;
@@ -178,6 +185,39 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [persistSession]);
 
+  const signInApple = useCallback<AuthState["signInApple"]>(async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        return { ok: false, error: "Apple did not return an identity token. Please try again." };
+      }
+      const { user: nextUser, sessionToken } = await loginApple(credential.identityToken);
+      await persistSession(sessionToken, nextUser);
+      return { ok: true };
+    } catch (e) {
+      // User-cancelled the native sheet — benign, no error surfaced.
+      if (e instanceof Error && "code" in e && (e as { code?: string }).code === "ERR_REQUEST_CANCELED") {
+        return { ok: false, error: "" };
+      }
+      return { ok: false, error: e instanceof ApiError ? e.message : "Apple sign-in failed. Please try again." };
+    }
+  }, [persistSession]);
+
+  const signInGoogle = useCallback<AuthState["signInGoogle"]>(async (idToken) => {
+    try {
+      const { user: nextUser, sessionToken } = await loginGoogle(idToken);
+      await persistSession(sessionToken, nextUser);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof ApiError ? e.message : "Google sign-in failed. Please try again." };
+    }
+  }, [persistSession]);
+
   const register = useCallback<AuthState["register"]>(async (email, password) => {
     try {
       await registerEmail(email, password);
@@ -253,6 +293,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       needsBioSetup,
       locked: locked && signedIn,
       signInEmail,
+      signInApple,
+      signInGoogle,
       register,
       requestPasswordReset,
       signOut,
@@ -270,6 +312,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       needsBioSetup,
       locked,
       signInEmail,
+      signInApple,
+      signInGoogle,
       register,
       requestPasswordReset,
       signOut,

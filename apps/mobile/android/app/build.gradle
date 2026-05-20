@@ -88,7 +88,7 @@ android {
 
     namespace 'com.zabaca.healthagent'
     defaultConfig {
-        applicationId 'com.zabaca.healthagent'
+        applicationId 'com.zabaca.veladon'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

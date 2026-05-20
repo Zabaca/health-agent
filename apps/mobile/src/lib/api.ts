@@ -100,6 +100,20 @@ export async function loginEmail(email: string, password: string): Promise<Login
   })) as LoginResponse;
 }
 
+export async function loginApple(identityToken: string): Promise<LoginResponse> {
+  return (await apiFetch("/api/auth/apple/mobile", {
+    method: "POST",
+    body: JSON.stringify({ identityToken, device: getDeviceInfo() }),
+  })) as LoginResponse;
+}
+
+export async function loginGoogle(idToken: string): Promise<LoginResponse> {
+  return (await apiFetch("/api/auth/google/mobile", {
+    method: "POST",
+    body: JSON.stringify({ idToken, device: getDeviceInfo() }),
+  })) as LoginResponse;
+}
+
 export async function registerEmail(email: string, password: string): Promise<{ id: string; email: string }> {
   return (await apiFetch("/api/register", {
     method: "POST",

@@ -18,14 +18,15 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.zabaca.healthagent",
+      "bundleIdentifier": "com.zabaca.veladon",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSHealthShareUsageDescription": "HealthAgent reads your health data to display vitals, activity, sleep, and lab results on your dashboard.",
         "NSHealthUpdateUsageDescription": "HealthAgent writes health data to keep your records in sync."
       }
     },
     "android": {
-      "package": "com.zabaca.healthagent",
+      "package": "com.zabaca.veladon",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#3D8A5A"
@@ -37,6 +38,7 @@
     },
     "plugins": [
       "expo-updates",
+      "expo-apple-authentication",
       [
         "expo-camera",
         {
