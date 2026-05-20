@@ -10,12 +10,20 @@ export type VerifiedToken = { sub: string; email: string };
 
 /**
  * Verify an Apple identity token (JWT) by checking the signature against
- * Apple's JWKS, the issuer, the audience (your Apple service id), and the
- * expiry. Returns `{ sub, email }`.
+ * Apple's JWKS, the issuer, the audience, and the expiry. Returns `{ sub, email }`.
+ *
+ * The `aud` differs by client: the web (Auth.js) flow uses the Services ID
+ * (`AUTH_APPLE_ID`, e.g. com.zabaca.veladon.web), while the native mobile flow
+ * uses the app's bundle ID (`AUTH_APPLE_BUNDLE_ID`, e.g. com.zabaca.veladon).
+ * Accept either so one deployment serves both surfaces.
  */
 export async function verifyAppleIdentityToken(identityToken: string): Promise<VerifiedToken> {
-  const audience = process.env.AUTH_APPLE_ID;
-  if (!audience) throw new Error("AUTH_APPLE_ID is not configured");
+  const audience = [process.env.AUTH_APPLE_ID, process.env.AUTH_APPLE_BUNDLE_ID].filter(
+    (a): a is string => !!a,
+  );
+  if (audience.length === 0) {
+    throw new Error("Neither AUTH_APPLE_ID nor AUTH_APPLE_BUNDLE_ID is configured");
+  }
 
   const { payload } = await jwtVerify(identityToken, APPLE_JWKS, {
     issuer: APPLE_ISSUER,
@@ -31,11 +39,22 @@ export async function verifyAppleIdentityToken(identityToken: string): Promise<V
 /**
  * Verify a Google ID token (JWT) by checking the signature against Google's
  * JWKS, the issuer (Google may use either the `https://`-prefixed or bare
- * form), the audience (your Google client id), and the expiry.
+ * form), the audience, and the expiry.
+ *
+ * The `aud` is whichever OAuth client initiated the flow: the web client
+ * (`AUTH_GOOGLE_ID`) for web sign-in, or the iOS/Android client
+ * (`GOOGLE_IOS_CLIENT_ID` / `GOOGLE_ANDROID_CLIENT_ID`) for the native mobile
+ * flow. Accept any configured client so one deployment serves all surfaces.
  */
 export async function verifyGoogleIdToken(idToken: string): Promise<VerifiedToken> {
-  const audience = process.env.AUTH_GOOGLE_ID;
-  if (!audience) throw new Error("AUTH_GOOGLE_ID is not configured");
+  const audience = [
+    process.env.AUTH_GOOGLE_ID,
+    process.env.GOOGLE_IOS_CLIENT_ID,
+    process.env.GOOGLE_ANDROID_CLIENT_ID,
+  ].filter((a): a is string => !!a);
+  if (audience.length === 0) {
+    throw new Error("No Google client IDs configured (AUTH_GOOGLE_ID / GOOGLE_IOS_CLIENT_ID / GOOGLE_ANDROID_CLIENT_ID)");
+  }
 
   const { payload } = await jwtVerify(idToken, GOOGLE_JWKS, { audience });
 

@@ -23,9 +23,15 @@ export function useOAuthButtons() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // One Google OAuth client for both platforms. The env var keeps its
+  // `_IOS_` name (matches secrets.yaml) but the client is used for iOS AND
+  // Android. This works as long as the client is configured to accept both
+  // (e.g. a Web-type client); a strictly iOS-type client would be rejected by
+  // Google for Android requests — that's a Google Cloud config concern, not code.
+  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    iosClientId: googleClientId,
+    androidClientId: googleClientId,
   });
 
   useEffect(() => {

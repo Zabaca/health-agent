@@ -16,8 +16,13 @@ import { eq, and } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth-helpers";
 import { parseDeviceName } from "@/lib/device-name";
 import { extractRequestGeo } from "@/lib/request-geo";
+import { generateAppleClientSecret } from "@/lib/apple-secret";
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Computed once per process (node runtime). Lazily derives the Sign in with
+// Apple client secret JWT from the raw .p8 key material in env.
+const appleClientSecret = await generateAppleClientSecret();
 
 /**
  * Builds the role flags + session payload that we attach to the JWT.
@@ -154,7 +159,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     Apple({
       clientId: process.env.AUTH_APPLE_ID,
-      clientSecret: process.env.AUTH_APPLE_SECRET,
+      clientSecret: appleClientSecret,
       allowDangerousEmailAccountLinking: true,
     }),
     Credentials({
