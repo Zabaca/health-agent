@@ -48,8 +48,20 @@ export async function linkProviderSub(
     columns: { id: true },
   });
   if (existing && existing.id !== userId) return { ok: false, reason: "conflict" };
-  await db.update(users).set({ [idKey]: sub }).where(eq(users.id, userId));
+  try {
+    await db.update(users).set({ [idKey]: sub }).where(eq(users.id, userId));
+  } catch (err) {
+    // A concurrent link could claim the same sub between the check above and
+    // this write; the unique index catches it. Surface as a conflict, not a 500.
+    if (isUniqueViolation(err)) return { ok: false, reason: "conflict" };
+    throw err;
+  }
   return { ok: true };
+}
+
+/** True for a libsql/SQLite UNIQUE constraint violation. */
+export function isUniqueViolation(err: unknown): boolean {
+  return err instanceof Error && /UNIQUE constraint failed/i.test(err.message);
 }
 
 export type UnlinkResult = { ok: true } | { ok: false; reason: "not_linked" | "last_method" };

@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { decrypt, encryptPii, extractLast4Ssn } from "@/lib/crypto";
+import { isUniqueViolation } from "@/lib/account-connections";
 import { z } from "zod";
 
 export const GET = contractRoute(contract.profile.get, async ({ req }) => {
@@ -91,11 +92,20 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: EMAIL_TAKEN_MESSAGE }, { status: 409 });
   }
 
-  await db.update(users).set({
-    ...rest,
-    ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl || null } : {}),
-    ...emailUpdate.set,
-  }).where(eq(users.id, result.userId));
+  try {
+    await db.update(users).set({
+      ...rest,
+      ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl || null } : {}),
+      ...emailUpdate.set,
+    }).where(eq(users.id, result.userId));
+  } catch (err) {
+    // A concurrent request could claim this email between resolveEmailUpdate's
+    // check and this write; the unique index catches it. Surface as 409.
+    if (emailUpdate.set.email && isUniqueViolation(err)) {
+      return NextResponse.json({ error: EMAIL_TAKEN_MESSAGE }, { status: 409 });
+    }
+    throw err;
+  }
 
   return NextResponse.json({ success: true });
 }
@@ -116,15 +126,22 @@ export const PUT = contractRoute(contract.profile.update, async ({ req, body }) 
   const finalEmail = emailUpdate.finalEmail;
 
   const normalized = { ...rest, ssn: ssn ? extractLast4Ssn(ssn) : null };
-  await db
-    .update(users)
-    .set({
-      ...encryptPii(normalized),
-      profileComplete: !!finalEmail,
-      avatarUrl: avatarUrl || null,
-      ...emailUpdate.set,
-    })
-    .where(eq(users.id, result.userId));
+  try {
+    await db
+      .update(users)
+      .set({
+        ...encryptPii(normalized),
+        profileComplete: !!finalEmail,
+        avatarUrl: avatarUrl || null,
+        ...emailUpdate.set,
+      })
+      .where(eq(users.id, result.userId));
+  } catch (err) {
+    if (emailUpdate.set.email && isUniqueViolation(err)) {
+      return NextResponse.json({ error: EMAIL_TAKEN_MESSAGE }, { status: 409 });
+    }
+    throw err;
+  }
 
   revalidatePath('/profile');
   revalidatePath('/dashboard');

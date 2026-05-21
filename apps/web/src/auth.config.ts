@@ -32,6 +32,13 @@ export const authConfig = {
         if (nonce) {
           // Land back on the page that started the link (e.g. /profile or /account).
           const returnTo = safeReturnPath(jar.get(LINK_RETURN_COOKIE)?.value);
+          // Clear the one-shot cookies on every exit path. Otherwise a stale
+          // cookie (still within its 10-min TTL) would be treated as a pending
+          // link on the user's NEXT same-provider OAuth sign-in — its intent row
+          // is already consumed, so that legitimate sign-in would be rejected
+          // with linkError=expired instead of signing the user in.
+          jar.delete(LINK_NONCE_COOKIE);
+          jar.delete(LINK_RETURN_COOKIE);
           const intent = await consumeLinkIntent(nonce, account.provider);
           if (!intent) return `${returnTo}?linkError=expired`;
           const res = await linkProviderSub(intent.userId, account.provider, sub);
