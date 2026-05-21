@@ -18,8 +18,17 @@ WebBrowser.maybeCompleteAuthSession();
  * Client IDs come from EXPO_PUBLIC_GOOGLE_{IOS,ANDROID}_CLIENT_ID. Without
  * them the Google request never becomes ready (googleReady stays false).
  */
-export function useOAuthButtons() {
-  const { signInApple, signInGoogle } = useAuth();
+type Options = {
+  /** "signin" exchanges the provider token for a session; "link" attaches it to the current account. */
+  mode?: "signin" | "link";
+  /** Called after a successful link (mode="link") so the screen can refresh status. */
+  onLinked?: () => void;
+};
+
+export function useOAuthButtons({ mode = "signin", onLinked }: Options = {}) {
+  const { signInApple, signInGoogle, linkApple, linkGoogle } = useAuth();
+  const appleAction = mode === "link" ? linkApple : signInApple;
+  const googleAction = mode === "link" ? linkGoogle : signInGoogle;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -43,23 +52,25 @@ export function useOAuthButtons() {
         return;
       }
       setBusy(true);
-      signInGoogle(idToken)
+      googleAction(idToken)
         .then((r) => {
           if (!r.ok && r.error) setError(r.error);
+          else if (r.ok && mode === "link") onLinked?.();
         })
         .finally(() => setBusy(false));
     } else if (response.type === "error") {
       setError("Google sign-in failed. Please try again.");
     }
     // "dismiss" / "cancel" → benign, no error surfaced.
-  }, [response, signInGoogle]);
+  }, [response, googleAction, mode, onLinked]);
 
   const onApple = async () => {
     setError(null);
     setBusy(true);
-    const r = await signInApple();
+    const r = await appleAction();
     setBusy(false);
     if (!r.ok && r.error) setError(r.error);
+    else if (r.ok && mode === "link") onLinked?.();
   };
 
   const onGoogle = async () => {

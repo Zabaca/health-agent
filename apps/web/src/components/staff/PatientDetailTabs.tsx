@@ -17,7 +17,7 @@ interface StaffMember {
   id: string;
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email: string | null;
   type: "admin" | "agent";
 }
 
@@ -26,7 +26,7 @@ interface Pda {
   inviteeEmail: string;
   relationship: string | null;
   status: 'pending' | 'accepted' | 'revoked';
-  agentUser: { firstName: string | null; lastName: string | null; email: string } | null;
+  agentUser: { firstName: string | null; lastName: string | null; email: string | null } | null;
 }
 
 interface PatientProviderOption {

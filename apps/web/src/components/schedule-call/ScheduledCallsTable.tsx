@@ -10,7 +10,7 @@ interface Agent {
   id: string;
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email: string | null;
   phoneNumber: string | null;
   address: string | null;
 }

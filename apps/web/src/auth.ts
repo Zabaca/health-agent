@@ -20,8 +20,9 @@ import { generateAppleClientSecret } from "@/lib/apple-secret";
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-// Computed once per process. Synchronous — no top-level await needed.
-const appleClientSecret = generateAppleClientSecret();
+// Computed once per process (node runtime). Lazily derives the Sign in with
+// Apple client secret JWT from the raw .p8 key material in env.
+const appleClientSecret = await generateAppleClientSecret();
 
 /**
  * Builds the role flags + session payload that we attach to the JWT.
@@ -154,12 +155,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
-      allowDangerousEmailAccountLinking: true,
+      // Linking to an existing account by email is handled manually in
+      // upsertOAuthUser, gated on the provider asserting email_verified.
     }),
     Apple({
       clientId: process.env.AUTH_APPLE_ID,
       clientSecret: appleClientSecret,
-      allowDangerousEmailAccountLinking: true,
+      // Apple defaults to response_mode=form_post (POST callback with body params)
+      // but oauth4webapi reads from URL query params. Request query mode so the
+      // code+state come back in the redirect URL where Auth.js can find them.
+      // response_mode stays as form_post (Apple's default + required for email
+      // scope). A custom POST handler at /api/auth/callback/apple converts
+      // Apple's POST body into a GET redirect so oauth4webapi can read the
+      // state from URL params as it expects.
     }),
     Credentials({
       name: "credentials",

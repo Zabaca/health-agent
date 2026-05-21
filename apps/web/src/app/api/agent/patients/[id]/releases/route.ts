@@ -112,7 +112,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
         where: eq(users.id, session.user.id),
         columns: { firstName: true, lastName: true, email: true },
       });
-      if (patient) {
+      if (patient?.email) {
         const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
         const agentName = [agent?.firstName, agent?.lastName].filter(Boolean).join(' ') || 'Your agent';
         await sendReleaseSignatureRequiredEmail({
@@ -120,7 +120,7 @@ export const POST = contractRoute(contract.agent.patientReleases.create, async (
           patientName,
           createdByName: agentName,
           releasesUrl: `${getSiteBaseUrl()}/releases`,
-          contact: { name: agentName, email: agent?.email },
+          contact: { name: agentName, email: agent?.email ?? undefined },
         });
       }
     } catch {

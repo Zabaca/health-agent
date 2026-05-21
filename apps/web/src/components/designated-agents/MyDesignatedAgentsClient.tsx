@@ -36,7 +36,7 @@ interface DesignatedAgent {
   releasePermission: 'viewer' | 'editor' | null;
   createdAt: string;
   tokenExpiresAt: string | null;
-  agentUser: { id: string; email: string; firstName: string | null; lastName: string | null; avatarUrl: string | null } | null;
+  agentUser: { id: string; email: string | null; firstName: string | null; lastName: string | null; avatarUrl: string | null } | null;
 }
 
 interface Props {

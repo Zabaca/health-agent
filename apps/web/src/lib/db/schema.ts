@@ -3,7 +3,20 @@ import { relations } from 'drizzle-orm';
 
 export const users = sqliteTable('User', {
   id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
+  /**
+   * Nullable: Apple/Google may not return an email (Apple omits it on returning
+   * auth; either provider can withhold it). Such users are created without an
+   * email and must supply one during onboarding before `onboarded` is set.
+   * Still unique — two accounts can never share an email.
+   */
+  email: text('email').unique(),
+  /**
+   * Whether the current `email` was asserted as verified by a trusted source
+   * (Apple/Google `email_verified`, or email/password registration). Self-entered
+   * emails at onboarding are stored as false until verified. Drives whether an
+   * OAuth sign-in may auto-link to an existing account by email match.
+   */
+  emailVerified: integer('emailVerified', { mode: 'boolean' }).notNull().default(false),
   /**
    * Nullable so OAuth-only users (Apple / Google) don't carry a password row.
    * Email/password users still set this on register.
@@ -33,6 +46,20 @@ export const users = sqliteTable('User', {
   onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
   avatarUrl: text('avatarUrl'),
   disabled: integer('disabled', { mode: 'boolean' }).notNull().default(false),
+});
+
+/**
+ * One-shot intents for linking an OAuth provider to an already-signed-in web
+ * user. Issued (auth-required) when the user clicks "Link Apple/Google"; the
+ * random `nonce` is carried in an httpOnly cookie and consumed (deleted) in the
+ * sign-in callback after the provider redirects back — so a leaked cookie can
+ * be used at most once and only within the short TTL.
+ */
+export const linkIntents = sqliteTable('LinkIntent', {
+  nonce: text('nonce').primaryKey(),
+  userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider: text('provider', { enum: ['google', 'apple'] }).notNull(),
+  expiresAt: integer('expiresAt', { mode: 'timestamp_ms' }).notNull(),
 });
 
 /**

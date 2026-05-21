@@ -92,14 +92,16 @@ export const POST = contractRoute(contract.scheduledCalls.create, async ({ body 
     });
     const patientName = [patient?.firstName, patient?.lastName].filter(Boolean).join(' ') || 'Your patient';
     const agentName = [assignment.assignedTo.firstName, assignment.assignedTo.lastName].filter(Boolean).join(' ') || 'Agent';
-    await sendScheduledCallEmail({
-      to: assignment.assignedTo.email,
-      recipientName: agentName,
-      schedulerName: patientName,
-      scheduledAt: body.scheduledAt,
-      callId: id,
-      contact: null, // patient-originated → no footer for agent recipient
-    });
+    if (assignment.assignedTo.email) {
+      await sendScheduledCallEmail({
+        to: assignment.assignedTo.email,
+        recipientName: agentName,
+        schedulerName: patientName,
+        scheduledAt: body.scheduledAt,
+        callId: id,
+        contact: null, // patient-originated → no footer for agent recipient
+      });
+    }
   } catch {
     // swallow — do not block the response
   }

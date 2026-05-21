@@ -135,7 +135,7 @@ function buildHtml(release: ReturnType<typeof decryptPii> & { providers: Paramet
     ssn: string | null;
     dateOfBirth: string;
     firstName: string; middleName: string | null; lastName: string;
-    mailingAddress: string; phoneNumber: string; email: string;
+    mailingAddress: string; phoneNumber: string; email: string | null;
     releaseAuthAgent: boolean;
     authAgentFirstName: string | null; authAgentLastName: string | null;
     authAgentOrganization: string | null; authAgentAddress: string | null;

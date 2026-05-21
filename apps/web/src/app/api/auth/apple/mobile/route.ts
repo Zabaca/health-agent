@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     lastName: typeof fullName?.familyName === "string" ? fullName.familyName : null,
   };
 
-  const dbUser = await upsertOAuthUser("apple", verified.sub, verified.email, profile);
+  const dbUser = await upsertOAuthUser("apple", verified.sub, verified.email, verified.emailVerified, profile);
   const fresh = await db.query.users.findFirst({ where: eq(users.id, dbUser.id) });
   if (!fresh) return NextResponse.json({ error: "User not found after upsert" }, { status: 500 });
 

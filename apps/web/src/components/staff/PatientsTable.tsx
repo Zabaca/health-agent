@@ -9,12 +9,12 @@ interface Patient {
   id: string;
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email: string | null;
   phoneNumber: string | null;
   ssnLast4: string | null;
   disabled: boolean | number;
   createdAt: string;
-  assignedTo?: { firstName: string | null; lastName: string | null; email: string } | null;
+  assignedTo?: { firstName: string | null; lastName: string | null; email: string | null } | null;
 }
 
 interface Props {
@@ -37,7 +37,7 @@ export default function PatientsTable({ patients, basePath, showAssignedTo }: Pr
         (p.firstName ?? "").toLowerCase().includes(q) ||
         (p.lastName ?? "").toLowerCase().includes(q) ||
         fullName.includes(q) ||
-        p.email.toLowerCase().includes(q) ||
+        (p.email ?? "").toLowerCase().includes(q) ||
         (p.phoneNumber ?? "").replace(/\D/g, "").includes(q.replace(/\D/g, "")) ||
         (p.ssnLast4 ?? "").includes(q)
       );

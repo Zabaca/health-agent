@@ -6,7 +6,7 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import DashboardSummary from "@/components/dashboard/DashboardSummary";
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: "Dashboard — Medical Record Release" };
+export const metadata = { title: "Dashboard — Veladon" };
 
 export default async function DashboardPage() {
   const session = await auth();

@@ -18,6 +18,7 @@ import { apiClient } from "@/lib/api/client";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import PageHeader from "@/components/shared/PageHeader";
 import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
+import ConnectedAccountsSection from "@/components/shared/ConnectedAccountsSection";
 import ActiveDevicesSection from "@/components/shared/ActiveDevicesSection";
 import RoleSwitchSection from "@/components/shared/RoleSwitchSection";
 
@@ -27,9 +28,13 @@ interface ProfileFormProps {
   redirectTo?: string;
   maw?: number | string;
   isPda?: boolean;
+  /** When the account has no email yet (OAuth sign-up), require one here. */
+  needsEmail?: boolean;
+  /** The account's current email, shown read-only when present. */
+  currentEmail?: string | null;
 }
 
-export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw = 700, isPda }: ProfileFormProps) {
+export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw = 700, isPda, needsEmail, currentEmail }: ProfileFormProps) {
   const router = useRouter();
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -41,6 +46,7 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
     reset,
     control,
     watch,
+    setError,
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -52,6 +58,12 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
   const nameForInitials = [firstName, lastName].filter(Boolean).join(" ");
 
   const onSubmit = async (data: ProfileFormData) => {
+    // The shared schema keeps email optional; enforce required-when-missing here.
+    if (needsEmail && !data.email) {
+      setError("email", { message: "Email is required" });
+      return;
+    }
+
     setLoading(true);
     setSuccess(false);
     setServerError("");
@@ -59,7 +71,11 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
     try {
       const result = await apiClient.profile.update({ body: data });
 
-      if (result.status !== 200) {
+      if (result.status === 409) {
+        setError("email", {
+          message: (result.body as { error?: string })?.error ?? "This email is already in use.",
+        });
+      } else if (result.status !== 200) {
         setServerError("Failed to save profile. Please try again.");
       } else if (onComplete) {
         onComplete(data);
@@ -113,6 +129,25 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
             />
           )}
         />
+
+        {needsEmail ? (
+          <TextInput
+            label="Email"
+            type="email"
+            required
+            description="We couldn't get an email from your sign-in provider. Add one so we can reach you."
+            error={errors.email?.message}
+            {...register("email")}
+          />
+        ) : currentEmail ? (
+          <TextInput
+            label="Email"
+            value={currentEmail}
+            readOnly
+            description="To change your email, contact support."
+            styles={{ input: { background: "var(--mantine-color-default-hover)" } }}
+          />
+        ) : null}
 
         <SimpleGrid cols={{ base: 1, sm: 3 }}>
           <TextInput
@@ -183,6 +218,7 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
         />
       </Stack>
     </form>
+    {!onComplete && <ConnectedAccountsSection />}
     {!onComplete && <ChangePasswordSection />}
     {!onComplete && <ActiveDevicesSection />}
     </div>

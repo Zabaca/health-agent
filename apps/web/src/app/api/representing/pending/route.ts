@@ -13,7 +13,8 @@ export async function GET(req: Request) {
     where: eq(users.id, result.userId),
     columns: { email: true },
   });
-  if (!me) return NextResponse.json({ invites: [] });
+  // No invite can match a user without an email address.
+  if (!me?.email) return NextResponse.json({ invites: [] });
 
   const rows = await db
     .select({

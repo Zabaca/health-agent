@@ -16,6 +16,8 @@ import {
   ApiError,
   SESSION_TOKEN_KEY,
   listSessions,
+  linkAppleAccount,
+  linkGoogleAccount,
   loginApple,
   loginEmail,
   loginGoogle,
@@ -46,6 +48,10 @@ type AuthState = {
   signInApple: () => Promise<Result>;
   /** Exchange a Google id_token (obtained by the screen's auth-session prompt) for a session. */
   signInGoogle: (idToken: string) => Promise<Result>;
+  /** Link Apple to the CURRENT account (native sheet). Does not switch sessions. */
+  linkApple: () => Promise<Result>;
+  /** Link a Google id_token to the CURRENT account. Does not switch sessions. */
+  linkGoogle: (idToken: string) => Promise<Result>;
   register: (email: string, password: string) => Promise<Result>;
   requestPasswordReset: (email: string) => Promise<Result>;
   signOut: () => Promise<void>;
@@ -224,6 +230,36 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [persistSession]);
 
+  const linkApple = useCallback<AuthState["linkApple"]>(async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        return { ok: false, error: "Apple did not return an identity token. Please try again." };
+      }
+      await linkAppleAccount(credential.identityToken);
+      return { ok: true };
+    } catch (e) {
+      if (e instanceof Error && "code" in e && (e as { code?: string }).code === "ERR_REQUEST_CANCELED") {
+        return { ok: false, error: "" };
+      }
+      return { ok: false, error: e instanceof ApiError ? e.message : "Could not link Apple. Please try again." };
+    }
+  }, []);
+
+  const linkGoogle = useCallback<AuthState["linkGoogle"]>(async (idToken) => {
+    try {
+      await linkGoogleAccount(idToken);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof ApiError ? e.message : "Could not link Google. Please try again." };
+    }
+  }, []);
+
   const register = useCallback<AuthState["register"]>(async (email, password) => {
     try {
       await registerEmail(email, password);
@@ -301,6 +337,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       signInEmail,
       signInApple,
       signInGoogle,
+      linkApple,
+      linkGoogle,
       register,
       requestPasswordReset,
       signOut,
@@ -320,6 +358,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       signInEmail,
       signInApple,
       signInGoogle,
+      linkApple,
+      linkGoogle,
       register,
       requestPasswordReset,
       signOut,

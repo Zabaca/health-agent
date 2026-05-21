@@ -50,6 +50,9 @@ export default function EditProfile() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [ssn, setSsn] = useState("");
+  const [email, setEmail] = useState("");
+  // When the account has no email (OAuth sign-up), require one here.
+  const [needsEmail, setNeedsEmail] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -66,6 +69,7 @@ export default function EditProfile() {
         setAddress(p.address);
         setSsn(p.ssn ?? "");
         setAvatarUrl(p.avatarUrl);
+        setNeedsEmail(p.email === null);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -147,6 +151,10 @@ export default function EditProfile() {
       setError("Phone number and address are required.");
       return;
     }
+    if (needsEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("A valid email address is required.");
+      return;
+    }
     setSaving(true);
     try {
       await updateProfile({
@@ -158,6 +166,7 @@ export default function EditProfile() {
         phoneNumber: phoneNumber.trim(),
         ssn: ssn.trim() || undefined,
         avatarUrl: avatarUrl ?? undefined,
+        ...(needsEmail ? { email: email.trim() } : {}),
       });
       nav.goBack();
     } catch (e) {
@@ -240,6 +249,16 @@ export default function EditProfile() {
             <Input label="First Name" value={firstName} onChangeText={setFirstName} />
             <Input label="Middle Name" placeholder="Optional" value={middleName} onChangeText={setMiddleName} />
             <Input label="Last Name" value={lastName} onChangeText={setLastName} />
+            {needsEmail ? (
+              <Input
+                label="Email"
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            ) : null}
             <View style={{ gap: 6 }}>
               <Text style={t.type.rowLabel}>DATE OF BIRTH</Text>
               <Pressable

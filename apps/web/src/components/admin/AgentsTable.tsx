@@ -13,7 +13,7 @@ interface Agent {
   id: string;
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email: string | null;
   type: string;
   mustChangePassword: boolean;
   disabled: boolean;

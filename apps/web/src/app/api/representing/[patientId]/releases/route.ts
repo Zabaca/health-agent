@@ -132,7 +132,7 @@ export async function POST(
     dateOfBirth: patient.dateOfBirth ?? '',
     mailingAddress: patient.address ?? '',
     phoneNumber: patient.phoneNumber ?? '',
-    email: patient.email,
+    email: patient.email ?? '',
     ssn: patient.ssn ? extractLast4Ssn(patient.ssn) : "",
     releaseAuthAgent: true,
     releaseAuthZabaca: false,
@@ -140,7 +140,7 @@ export async function POST(
     authAgentLastName: pda.lastName ?? '',
     authAgentAddress: pda.address ?? '',
     authAgentPhone: pda.phoneNumber ?? '',
-    authAgentEmail: pda.email,
+    authAgentEmail: pda.email ?? '',
     authExpirationDate: data.authExpirationDate || null,
     authExpirationEvent: null,
     authPrintedName: '',
@@ -210,15 +210,17 @@ export async function POST(
 
   // Notify patient that a release was created and requires their signature
   try {
-    const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
-    const pdaName = [pda.firstName, pda.lastName].filter(Boolean).join(' ') || pda.email;
-    await sendReleaseSignatureRequiredEmail({
-      to: patient.email,
-      patientName,
-      createdByName: pdaName,
-      releasesUrl: `${getSiteBaseUrl()}/releases`,
-      contact: { name: pdaName, email: pda.email },
-    });
+    const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email || 'Patient';
+    const pdaName = [pda.firstName, pda.lastName].filter(Boolean).join(' ') || pda.email || 'Your agent';
+    if (patient.email) {
+      await sendReleaseSignatureRequiredEmail({
+        to: patient.email,
+        patientName,
+        createdByName: pdaName,
+        releasesUrl: `${getSiteBaseUrl()}/releases`,
+        contact: { name: pdaName, email: pda.email ?? undefined },
+      });
+    }
   } catch {
     // swallow — do not block the response
   }

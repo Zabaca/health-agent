@@ -1,29 +1,24 @@
-import { createPrivateKey, createSign } from "crypto";
+import { SignJWT, importPKCS8 } from "jose";
 
 /**
  * Sign in with Apple requires the web OAuth client secret to be an ES256 JWT
- * derived from the .p8 key. Computed synchronously using Node's built-in crypto
- * so auth.ts can call this at module level without a top-level await.
+ * derived from the .p8 key. Rather than pre-generating and storing it (it
+ * expires within 6 months and would need manual rotation), we compute it
+ * lazily at runtime from the raw key material:
  *
- * Env vars:
- *   AUTH_APPLE_SIGNIN_KEY     — contents of the Sign in with Apple .p8 (PEM; newlines may be \n-escaped)
- *   AUTH_APPLE_TEAM_ID        — Apple Team ID (JWT iss)
- *   AUTH_APPLE_SIGNIN_KEY_ID  — Key ID of the .p8 (JWT header kid)
- *   AUTH_APPLE_ID             — Services ID (JWT sub / OAuth client id)
+ *   AUTH_APPLE_SIGNIN_KEY     — contents of the Sign in with Apple .p8
+ *                               (PEM; newlines may be `\n`-escaped)
+ *   AUTH_APPLE_TEAM_ID        — Apple Team ID (the JWT `iss`); shared team-wide
+ *   AUTH_APPLE_SIGNIN_KEY_ID  — Key ID of the sign-in .p8 (the JWT header `kid`)
+ *   AUTH_APPLE_ID             — Services ID (the JWT `sub` / OAuth client id)
  *
- * Memoized per process — computed once on first call and reused. A deploy /
- * cold start regenerates it, so it never approaches the 6-month maximum validity.
+ * Memoized per process: computed once on first use and reused for the
+ * process lifetime. A deploy / cold start regenerates it, so it never
+ * approaches the 6-month maximum validity.
  */
 let cached: string | null = null;
 
-function b64url(data: string | Buffer): string {
-  const b64 = Buffer.isBuffer(data)
-    ? data.toString("base64")
-    : Buffer.from(data).toString("base64");
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
-
-export function generateAppleClientSecret(): string {
+export async function generateAppleClientSecret(): Promise<string> {
   if (cached) return cached;
 
   const rawKey = process.env.AUTH_APPLE_SIGNIN_KEY;
@@ -31,31 +26,30 @@ export function generateAppleClientSecret(): string {
   const keyId = process.env.AUTH_APPLE_SIGNIN_KEY_ID;
   const servicesId = process.env.AUTH_APPLE_ID;
 
+  // Graceful no-op when unconfigured (e.g. local dev without Apple set up):
+  // return "" so the Apple provider is simply non-functional instead of
+  // throwing at module load and taking down all auth.
   if (!rawKey || !teamId || !keyId || !servicesId) return "";
 
+  // A malformed key must NOT take down the whole auth module (which is
+  // imported at startup via top-level await in auth.ts). Degrade to Apple-only
+  // failure: log and return "" so email/password + Google still work.
   try {
     const pkcs8 = rawKey.replace(/\\n/g, "\n");
-    const key = createPrivateKey({ key: pkcs8, format: "pem" });
+    const key = await importPKCS8(pkcs8, "ES256");
 
     const now = Math.floor(Date.now() / 1000);
-    const SIX_MONTHS_SECONDS = 15777000;
+    const SIX_MONTHS_SECONDS = 15777000; // Apple's maximum allowed validity.
 
-    const header = b64url(JSON.stringify({ alg: "ES256", kid: keyId }));
-    const payload = b64url(JSON.stringify({
-      iss: teamId,
-      iat: now,
-      exp: now + SIX_MONTHS_SECONDS,
-      aud: "https://appleid.apple.com",
-      sub: servicesId,
-    }));
+    cached = await new SignJWT({})
+      .setProtectedHeader({ alg: "ES256", kid: keyId })
+      .setIssuer(teamId)
+      .setIssuedAt(now)
+      .setExpirationTime(now + SIX_MONTHS_SECONDS)
+      .setAudience("https://appleid.apple.com")
+      .setSubject(servicesId)
+      .sign(key);
 
-    const signingInput = `${header}.${payload}`;
-    const signer = createSign("SHA256");
-    signer.update(signingInput);
-    // ieee-p1363 gives raw r||s (64 bytes) — required by JWT ES256.
-    const sig = signer.sign({ key, dsaEncoding: "ieee-p1363" });
-
-    cached = `${signingInput}.${b64url(sig)}`;
     return cached;
   } catch (err) {
     console.error(

@@ -11,6 +11,10 @@ export const profileSchema = z.object({
   phoneNumber: z.string().min(1, "Phone number is required"),
   ssn:         z.string().optional().refine(val => !val || val.replace(/\D/g, '').length === 4, "Please enter the last 4 digits of your SSN"),
   avatarUrl:   z.string().optional(),
+  // Only collected during onboarding when the OAuth provider returned no email.
+  // Optional here; required-when-missing is enforced client-side and the server
+  // refuses to mark the profile complete without an email on file.
+  email:       z.string().email("Please enter a valid email address").optional().or(z.literal("")),
 });
 
 export type ProfileFormData = z.infer<typeof profileSchema>;

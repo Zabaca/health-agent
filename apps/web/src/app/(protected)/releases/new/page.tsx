@@ -6,7 +6,7 @@ import ReleaseForm from "@/components/release-form/ReleaseForm";
 import { decrypt } from "@/lib/crypto";
 import type { RecipientOption } from "@/components/release-form/AuthorizationSection";
 
-export const metadata = { title: "New Release — Medical Record Release" };
+export const metadata = { title: "New Release — Veladon" };
 
 export default async function NewReleasePage({ searchParams }: { searchParams: { redirect?: string } }) {
   const redirectTo = searchParams.redirect;
@@ -32,7 +32,7 @@ export default async function NewReleasePage({ searchParams }: { searchParams: {
     recipients.push({
       id: rel.id,
       type: 'pda',
-      label: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email,
+      label: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || 'Designated agent',
       relationship: rel.relationship ?? undefined,
       firstName: u.firstName,
       lastName: u.lastName,

@@ -18,7 +18,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     where: eq(users.id, result.userId),
     columns: { email: true },
   });
-  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // No invite can match a user without an email address.
+  if (!me?.email) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const invite = await db.query.patientDesignatedAgents.findFirst({
     where: and(

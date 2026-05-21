@@ -17,7 +17,7 @@ export interface RecipientOption {
   relationship?: string;
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email: string | null;
   phoneNumber: string | null;
   address: string | null;
 }
@@ -30,7 +30,7 @@ interface StaffModeProps {
     organization?: string;
     address: string;
     phone: string;
-    email: string;
+    email: string | null;
     relationship?: string | null;
   };
 }
@@ -55,7 +55,7 @@ function populateRecipient(recipient: RecipientOption, setValue: UseFormSetValue
   setValue("authAgentLastName", recipient.lastName ?? "");
   setValue("authAgentAddress", recipient.address ?? "");
   setValue("authAgentPhone", recipient.phoneNumber ?? "");
-  setValue("authAgentEmail", recipient.email);
+  setValue("authAgentEmail", recipient.email ?? "");
 }
 
 export default function AuthorizationSection({ recipients, staffMode }: Props) {
@@ -115,7 +115,7 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
     setValue("authAgentOrganization", staffMode.agentInfo.organization ?? "");
     setValue("authAgentAddress", staffMode.agentInfo.address);
     setValue("authAgentPhone", staffMode.agentInfo.phone);
-    setValue("authAgentEmail", staffMode.agentInfo.email);
+    setValue("authAgentEmail", staffMode.agentInfo.email ?? "");
     setValue("authSignatureImage", "");
     if (staffMode.mode === 'admin') {
       setValue("releaseAuthZabaca", true);

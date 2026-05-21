@@ -6,7 +6,13 @@ const GOOGLE_JWKS = createRemoteJWKSet(new URL("https://www.googleapis.com/oauth
 const APPLE_ISSUER = "https://appleid.apple.com";
 const GOOGLE_ISSUERS = new Set(["https://accounts.google.com", "accounts.google.com"]);
 
-export type VerifiedToken = { sub: string; email: string | null };
+export type VerifiedToken = {
+  sub: string;
+  email: string | null;
+  /** True when the provider asserts the email is verified. Gates account linking. */
+  emailVerified: boolean;
+  picture: string | null;
+};
 
 /**
  * Verify an Apple identity token (JWT) by checking the signature against
@@ -35,7 +41,13 @@ export async function verifyAppleIdentityToken(identityToken: string): Promise<V
   // Apple only includes `email` on the first authorization; returning users
   // have no email claim — look them up by sub (appleId) instead.
   const email = (payload.email as string | undefined) ?? null;
-  return { sub, email };
+  // Apple verifies both real and relay emails it issues. The claim is a string
+  // ("true"/"false") or boolean depending on the token; treat absence as
+  // verified since Apple only emits emails it controls.
+  const ev = payload.email_verified;
+  const emailVerified = email ? ev === undefined || ev === true || ev === "true" : false;
+  // Sign in with Apple never returns a profile picture.
+  return { sub, email, emailVerified, picture: null };
 }
 
 /**
@@ -68,7 +80,11 @@ export async function verifyGoogleIdToken(idToken: string): Promise<VerifiedToke
   const sub = payload.sub;
   const email = (payload.email as string | undefined) ?? "";
   if (!sub || !email) throw new Error("Google token missing sub or email");
-  return { sub, email };
+  // Google encodes email_verified as a boolean (or "true"/"false" string).
+  const ev = payload.email_verified;
+  const emailVerified = ev === true || ev === "true";
+  const picture = (payload.picture as string | undefined) ?? null;
+  return { sub, email, emailVerified, picture };
 }
 
 /**

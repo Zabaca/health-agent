@@ -81,7 +81,8 @@ function safeJson(text: string): unknown {
 
 export type SessionUser = {
   id: string;
-  email: string;
+  // null when the OAuth provider returned no email (collected at onboarding).
+  email: string | null;
   type: string;
   isAgent: boolean;
   isPda: boolean;
@@ -191,6 +192,8 @@ export type ProfileData = {
   phoneNumber: string;
   ssn: string;
   avatarUrl: string | null;
+  // null when the OAuth provider returned no email — the client must collect one.
+  email: string | null;
 };
 
 export async function getProfile(): Promise<ProfileData> {
@@ -206,10 +209,52 @@ export type UpdateProfileInput = {
   phoneNumber: string;
   ssn?: string;
   avatarUrl?: string;
+  // Only sent during onboarding when the account has no email yet.
+  email?: string;
 };
 
 export async function updateProfile(data: UpdateProfileInput): Promise<{ success: boolean }> {
   return (await apiFetch("/api/profile", { method: "PUT", body: JSON.stringify(data) }, { auth: true })) as { success: boolean };
+}
+
+// ─── Connected accounts (link/unlink OAuth providers) ──────────────────────────
+
+export type Connections = {
+  email: string | null;
+  hasPassword: boolean;
+  apple: boolean;
+  google: boolean;
+};
+
+export async function getConnections(): Promise<Connections> {
+  return (await apiFetch("/api/account/connections", {}, { auth: true })) as Connections;
+}
+
+/** Attach an Apple identity (native) to the current account. Throws ApiError(409) on conflict. */
+export async function linkAppleAccount(identityToken: string): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    "/api/auth/apple/link",
+    { method: "POST", body: JSON.stringify({ identityToken }) },
+    { auth: true },
+  )) as { success: boolean };
+}
+
+/** Attach a Google identity (native) to the current account. Throws ApiError(409) on conflict. */
+export async function linkGoogleAccount(idToken: string): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    "/api/auth/google/link",
+    { method: "POST", body: JSON.stringify({ idToken }) },
+    { auth: true },
+  )) as { success: boolean };
+}
+
+/** Unlink a provider. Throws ApiError(400) if it's the only remaining sign-in method. */
+export async function unlinkConnection(provider: "apple" | "google"): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/account/connections/${provider}`,
+    { method: "DELETE" },
+    { auth: true },
+  )) as { success: boolean };
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: boolean }> {

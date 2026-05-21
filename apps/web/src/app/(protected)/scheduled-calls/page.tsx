@@ -9,7 +9,7 @@ import Link from "next/link";
 import ScheduledCallsTable from "@/components/schedule-call/ScheduledCallsTable";
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: "Scheduled Calls — Medical Record Release" };
+export const metadata = { title: "Scheduled Calls — Veladon" };
 
 // Feature temporarily hidden (JAM-282). Flip to true to re-enable.
 const FEATURE_ENABLED: boolean = false;

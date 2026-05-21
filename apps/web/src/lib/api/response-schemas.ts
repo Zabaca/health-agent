@@ -195,4 +195,6 @@ export const profileResponseSchema = z.object({
   phoneNumber: z.string(),
   ssn: z.string().nullable(),
   avatarUrl: z.string().nullable(),
+  // null when the OAuth provider returned no email — the client must collect one.
+  email: z.string().nullable(),
 });

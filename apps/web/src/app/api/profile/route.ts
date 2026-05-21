@@ -26,16 +26,55 @@ export const GET = contractRoute(contract.profile.get, async ({ req }) => {
     phoneNumber: user?.phoneNumber ?? "",
     ssn:         user?.ssn         ? decrypt(user.ssn) : "",
     avatarUrl:   user?.avatarUrl   ?? null,
+    email:       user?.email       ?? null,
   });
 });
 
-// PATCH — partial update (name, phone, address, avatar — used by PDA onboarding and account page)
+const EMAIL_TAKEN_MESSAGE =
+  "An account with this email already exists. Sign in with your password to link it.";
+
+/**
+ * Resolves a self-asserted onboarding email into a column update. This is a
+ * COLLECT-WHEN-MISSING path only: if the account already has an email, the
+ * submitted value is ignored (this endpoint must never change or unverify an
+ * existing email — the client `needsEmail` flag is advisory and bypassable).
+ *
+ * When the account has no email and one is supplied, it is stored as unverified
+ * and uniqueness is enforced across all accounts — a collision means the email
+ * belongs to someone else and we won't silently link it. Returns the resulting
+ * email so callers can gate `profileComplete` on it.
+ */
+async function resolveEmailUpdate(
+  email: string | undefined,
+  userId: string,
+): Promise<
+  | { conflict: true }
+  | { conflict: false; set: Partial<typeof users.$inferInsert>; finalEmail: string | null }
+> {
+  const current = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { email: true },
+  });
+  // Already has an email — never overwrite it through this path.
+  if (current?.email) return { conflict: false, set: {}, finalEmail: current.email };
+  if (!email) return { conflict: false, set: {}, finalEmail: null };
+
+  const existing = await db.query.users.findFirst({
+    where: eq(users.email, email),
+    columns: { id: true },
+  });
+  if (existing && existing.id !== userId) return { conflict: true };
+  return { conflict: false, set: { email, emailVerified: false }, finalEmail: email };
+}
+
+// PATCH — partial update (name, phone, address, avatar, onboarding email — used by PDA onboarding and account page)
 const partialProfileSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   phoneNumber: z.string().optional(),
   address: z.string().optional(),
   avatarUrl: z.string().nullable().optional(),
+  email: z.string().email().optional().or(z.literal("")),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -45,10 +84,17 @@ export async function PATCH(req: NextRequest) {
   const body = partialProfileSchema.safeParse(await req.json());
   if (!body.success) return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
 
-  const { avatarUrl, ...rest } = body.data;
+  const { avatarUrl, email, ...rest } = body.data;
+
+  const emailUpdate = await resolveEmailUpdate(email || undefined, result.userId);
+  if (emailUpdate.conflict) {
+    return NextResponse.json({ error: EMAIL_TAKEN_MESSAGE }, { status: 409 });
+  }
+
   await db.update(users).set({
     ...rest,
     ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl || null } : {}),
+    ...emailUpdate.set,
   }).where(eq(users.id, result.userId));
 
   return NextResponse.json({ success: true });
@@ -58,11 +104,26 @@ export const PUT = contractRoute(contract.profile.update, async ({ req, body }) 
   const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
-  const { avatarUrl, ssn, ...rest } = body;
+  const { avatarUrl, ssn, email, ...rest } = body;
+
+  const emailUpdate = await resolveEmailUpdate(email || undefined, result.userId);
+  if (emailUpdate.conflict) {
+    return NextResponse.json({ error: EMAIL_TAKEN_MESSAGE }, { status: 409 });
+  }
+
+  // Never mark the profile complete while the account has no email on file —
+  // the onboarding-complete gate relies on this invariant.
+  const finalEmail = emailUpdate.finalEmail;
+
   const normalized = { ...rest, ssn: ssn ? extractLast4Ssn(ssn) : null };
   await db
     .update(users)
-    .set({ ...encryptPii(normalized), profileComplete: true, avatarUrl: avatarUrl || null })
+    .set({
+      ...encryptPii(normalized),
+      profileComplete: !!finalEmail,
+      avatarUrl: avatarUrl || null,
+      ...emailUpdate.set,
+    })
     .where(eq(users.id, result.userId));
 
   revalidatePath('/profile');

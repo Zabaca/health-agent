@@ -5,7 +5,7 @@ import { eq, asc } from "drizzle-orm";
 import MyProvidersForm from "@/components/my-providers/MyProvidersForm";
 import type { MyProviderFormData } from "@/lib/schemas/release";
 
-export const metadata = { title: "My Providers — Medical Record Release" };
+export const metadata = { title: "My Providers — Veladon" };
 
 export default async function MyProvidersPage({ searchParams }: { searchParams: { redirect?: string } }) {
   const { redirect } = searchParams;

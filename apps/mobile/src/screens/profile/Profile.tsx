@@ -106,9 +106,10 @@ export default function Profile() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={t.type.bodyStrong}>
-              {profileLoading ? "Loading…" : (displayName ?? user?.email ?? "")}
+              {profileLoading ? "Loading…" : (displayName ?? profile?.email ?? user?.email ?? "")}
             </Text>
-            <Text style={t.type.caption}>{user?.email}</Text>
+            {/* Prefer the fresh profile email (the session JWT can lag until re-login). */}
+            <Text style={t.type.caption}>{profile?.email ?? user?.email ?? ""}</Text>
           </View>
           <ChevronRight size={18} color={t.colors.textSecondary} />
         </View>
