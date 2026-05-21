@@ -3,7 +3,20 @@ import { relations } from 'drizzle-orm';
 
 export const users = sqliteTable('User', {
   id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
+  /**
+   * Nullable: Apple/Google may not return an email (Apple omits it on returning
+   * auth; either provider can withhold it). Such users are created without an
+   * email and must supply one during onboarding before `onboarded` is set.
+   * Still unique — two accounts can never share an email.
+   */
+  email: text('email').unique(),
+  /**
+   * Whether the current `email` was asserted as verified by a trusted source
+   * (Apple/Google `email_verified`, or email/password registration). Self-entered
+   * emails at onboarding are stored as false until verified. Drives whether an
+   * OAuth sign-in may auto-link to an existing account by email match.
+   */
+  emailVerified: integer('emailVerified', { mode: 'boolean' }).notNull().default(false),
   /**
    * Nullable so OAuth-only users (Apple / Google) don't carry a password row.
    * Email/password users still set this on register.
@@ -33,6 +46,36 @@ export const users = sqliteTable('User', {
   onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
   avatarUrl: text('avatarUrl'),
   disabled: integer('disabled', { mode: 'boolean' }).notNull().default(false),
+  /**
+   * Account deletion (soft-delete). `deactivatedAt` is the single source of
+   * truth for "deleted" — distinct from `disabled` (admin suspend/reinstate).
+   * On deactivation the unique login keys (email/appleId/googleId/password) are
+   * nulled to free re-registration; the original email is preserved here in the
+   * NON-UNIQUE `deletedEmail` for audit (so delete→re-signup-same-email→delete
+   * again can produce multiple retained rows sharing a deletedEmail, while the
+   * unique `email` column is NULL on all of them — libsql UNIQUE allows multiple
+   * NULLs). Identifiable PHI is retained for HIPAA; a cron hard-deletes after
+   * `purgeAfter`.
+   */
+  deactivatedAt: text('deactivatedAt'),
+  purgeAfter: text('purgeAfter'),
+  deletedEmail: text('deletedEmail'),
+  /** Apple refresh token (encrypted) captured at sign-in; used to call Apple's /auth/revoke on deletion. */
+  appleRefreshToken: text('appleRefreshToken'),
+});
+
+/**
+ * One-shot intents for linking an OAuth provider to an already-signed-in web
+ * user. Issued (auth-required) when the user clicks "Link Apple/Google"; the
+ * random `nonce` is carried in an httpOnly cookie and consumed (deleted) in the
+ * sign-in callback after the provider redirects back — so a leaked cookie can
+ * be used at most once and only within the short TTL.
+ */
+export const linkIntents = sqliteTable('LinkIntent', {
+  nonce: text('nonce').primaryKey(),
+  userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider: text('provider', { enum: ['google', 'apple'] }).notNull(),
+  expiresAt: integer('expiresAt', { mode: 'timestamp_ms' }).notNull(),
 });
 
 /**

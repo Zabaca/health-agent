@@ -91,7 +91,7 @@ export default async function AdminPatientPage({
     };
   });
 
-  const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(" ") || patient.email;
+  const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(" ") || patient.email || 'Patient';
 
   async function voidRelease(releaseId: string) {
     "use server";

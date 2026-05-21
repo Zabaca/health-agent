@@ -16,7 +16,7 @@ import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: "View Release — Medical Record Release" };
+export const metadata = { title: "View Release — Veladon" };
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (

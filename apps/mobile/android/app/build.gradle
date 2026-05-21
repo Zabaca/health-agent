@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.zabaca.healthagent'
+    namespace 'com.zabaca.veladon'
     defaultConfig {
-        applicationId 'com.zabaca.healthagent'
+        applicationId 'com.zabaca.veladon'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -10,7 +10,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
+import ConnectedAccountsSection from "@/components/shared/ConnectedAccountsSection";
 import ActiveDevicesSection from "@/components/shared/ActiveDevicesSection";
+import DeleteAccountSection from "@/components/shared/DeleteAccountSection";
 import RoleSwitchSection from "@/components/shared/RoleSwitchSection";
 
 const schema = z.object({
@@ -127,8 +129,10 @@ export default function PdaAccountForm({ defaultValues, isPatient }: Props) {
         </Stack>
       </Paper>
     </form>
+    <ConnectedAccountsSection returnTo="/account" />
     <ChangePasswordSection />
     <ActiveDevicesSection />
+    <DeleteAccountSection />
     </>
   );
 }

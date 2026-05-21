@@ -21,6 +21,7 @@ const schema = z.object({
   phoneNumber: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Mailing address is required"),
   avatarUrl: z.string().nullable().optional(),
+  email: z.string().email("Please enter a valid email address").optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -28,19 +29,27 @@ type FormData = z.infer<typeof schema>;
 interface Props {
   firstName: string | null;
   lastName: string | null;
+  /** When the account has no email yet (OAuth sign-up), require one here. */
+  needsEmail?: boolean;
 }
 
-export default function PdaOnboardingModal({ firstName, lastName }: Props) {
+export default function PdaOnboardingModal({ firstName, lastName, needsEmail }: Props) {
   const router = useRouter();
   const { update } = useSession();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
 
-  const { register, control, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, control, handleSubmit, setError, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: FormData) => {
+    // The schema keeps email optional; enforce required-when-missing here.
+    if (needsEmail && !data.email) {
+      setError("email", { message: "Email is required" });
+      return;
+    }
+
     setLoading(true);
     setServerError("");
     try {
@@ -51,8 +60,14 @@ export default function PdaOnboardingModal({ firstName, lastName }: Props) {
           phoneNumber: data.phoneNumber,
           address: data.address,
           avatarUrl: data.avatarUrl ?? null,
+          ...(data.email ? { email: data.email } : {}),
         }),
       });
+      if (profileRes.status === 409) {
+        const body = await profileRes.json().catch(() => null);
+        setError("email", { message: body?.error ?? "This email is already in use." });
+        return;
+      }
       if (!profileRes.ok) {
         setServerError("Failed to save profile. Please try again.");
         return;
@@ -105,6 +120,18 @@ export default function PdaOnboardingModal({ firstName, lastName }: Props) {
               )}
             />
           </Center>
+
+          {needsEmail && (
+            <TextInput
+              label="Email"
+              type="email"
+              placeholder="you@example.com"
+              required
+              description="We couldn't get an email from your sign-in provider. Add one so we can reach you."
+              error={errors.email?.message}
+              {...register("email")}
+            />
+          )}
 
           <TextInput
             label="Phone number"

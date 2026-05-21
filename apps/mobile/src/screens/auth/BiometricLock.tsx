@@ -42,7 +42,7 @@ export default function BiometricLock() {
       <Screen contentContainerStyle={{ alignItems: "center", justifyContent: "center", flexGrow: 1, gap: 16 }}>
         <View style={{ alignItems: "center", gap: 12, marginTop: 80 }}>
           <ScanFace size={72} color={t.colors.primary} strokeWidth={2} />
-          <Text style={t.type.h2}>Unlock HealthAgent</Text>
+          <Text style={t.type.h2}>Unlock Veladon</Text>
           <Text style={[t.type.caption, { textAlign: "center", paddingHorizontal: 32 }]}>
             Use Face ID or your device passcode to continue.
           </Text>

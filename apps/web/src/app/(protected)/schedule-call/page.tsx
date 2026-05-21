@@ -8,7 +8,7 @@ import { IconInfoCircle } from "@tabler/icons-react";
 import ScheduleCallForm from "@/components/schedule-call/ScheduleCallForm";
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: "Schedule a Call — Medical Record Release" };
+export const metadata = { title: "Schedule a Call — Veladon" };
 
 // Feature temporarily hidden (JAM-282). Flip to true to re-enable.
 const FEATURE_ENABLED: boolean = false;

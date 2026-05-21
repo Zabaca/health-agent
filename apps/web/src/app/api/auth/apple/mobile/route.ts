@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAppleIdentityToken, signMobileSessionToken } from "@/lib/oauth-verify";
 import { upsertOAuthUser } from "@/lib/oauth-link";
+import { captureAppleRefreshTokenFromCode } from "@/lib/apple-refresh";
 import { buildUserSessionPayload } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -37,7 +38,24 @@ export async function POST(req: Request) {
     );
   }
 
-  const dbUser = await upsertOAuthUser("apple", verified.sub, verified.email);
+  // Apple only returns the user's name on the FIRST authorization, client-side
+  // (it isn't in the identity token). Pass it through so a new account gets a
+  // name; existing accounts are unaffected (see upsertOAuthUser).
+  const fullName = (body as { fullName?: { givenName?: unknown; familyName?: unknown } })?.fullName;
+  const profile = {
+    firstName: typeof fullName?.givenName === "string" ? fullName.givenName : null,
+    lastName: typeof fullName?.familyName === "string" ? fullName.familyName : null,
+  };
+
+  const dbUser = await upsertOAuthUser("apple", verified.sub, verified.email, verified.emailVerified, profile);
+
+  // Capture the Apple refresh token (native code → bundle ID client) so we can
+  // revoke it at account deletion. Best-effort; doesn't block sign-in.
+  const authorizationCode = (body as { authorizationCode?: unknown })?.authorizationCode;
+  if (typeof authorizationCode === "string" && authorizationCode) {
+    await captureAppleRefreshTokenFromCode(dbUser.id, authorizationCode, process.env.AUTH_APPLE_BUNDLE_ID);
+  }
+
   const fresh = await db.query.users.findFirst({ where: eq(users.id, dbUser.id) });
   if (!fresh) return NextResponse.json({ error: "User not found after upsert" }, { status: 500 });
 

@@ -1,6 +1,6 @@
 import RegisterForm from "@/components/auth/RegisterForm";
 
-export const metadata = { title: "Register — Medical Record Release" };
+export const metadata = { title: "Register — Veladon" };
 
 export default function RegisterPage() {
   return <RegisterForm />;

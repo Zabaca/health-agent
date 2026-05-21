@@ -45,7 +45,7 @@ export default async function AgentProfilePage({
   if (!agent) notFound();
 
   const name = [agent.firstName, agent.middleName, agent.lastName].filter(Boolean).join(" ") || "—";
-  const displayName = [agent.firstName, agent.lastName].filter(Boolean).join(" ") || agent.email;
+  const displayName = [agent.firstName, agent.lastName].filter(Boolean).join(" ") || agent.email || 'Agent';
 
   const assignedPatients = await db
     .select({

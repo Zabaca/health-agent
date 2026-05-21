@@ -63,7 +63,7 @@ export default async function RepresentingNewReleasePage({
         dateOfBirth: patient.dateOfBirth ? decrypt(patient.dateOfBirth) : "",
         mailingAddress: patient.address ?? "",
         phoneNumber: patient.phoneNumber ?? "",
-        email: patient.email,
+        email: patient.email ?? undefined,
         ssn: patient.ssn ? decrypt(patient.ssn) : "",
       }}
     />

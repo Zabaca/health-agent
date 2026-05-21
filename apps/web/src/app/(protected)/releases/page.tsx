@@ -10,7 +10,7 @@ import ReleasePrerequisites from "@/components/releases/ReleasePrerequisites";
 import type { ReleaseSummary } from "@/types/release";
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: "Releases — Medical Record Release" };
+export const metadata = { title: "Releases — Veladon" };
 
 export default async function ReleasesPage() {
   const session = await auth();

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "NEXTAUTH_URL=http://localhost:3000 next dev",
     "build": "next build",
     "start": "next start",
     "db:migrate": "drizzle-kit migrate",

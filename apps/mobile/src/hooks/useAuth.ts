@@ -11,11 +11,16 @@ import {
 } from "react";
 import { AppState } from "react-native";
 import * as SecureStore from "expo-secure-store";
+import * as AppleAuthentication from "expo-apple-authentication";
 import {
   ApiError,
   SESSION_TOKEN_KEY,
   listSessions,
+  linkAppleAccount,
+  linkGoogleAccount,
+  loginApple,
   loginEmail,
+  loginGoogle,
   registerEmail,
   requestPasswordReset as apiRequestPasswordReset,
   revokeCurrentSession,
@@ -39,6 +44,14 @@ type AuthState = {
   /** True when biometric reveal is required to view the app. */
   locked: boolean;
   signInEmail: (email: string, password: string) => Promise<Result>;
+  /** Native Sign in with Apple (iOS only). Runs the native sheet, then exchanges the identity token. */
+  signInApple: () => Promise<Result>;
+  /** Exchange a Google id_token (obtained by the screen's auth-session prompt) for a session. */
+  signInGoogle: (idToken: string) => Promise<Result>;
+  /** Link Apple to the CURRENT account (native sheet). Does not switch sessions. */
+  linkApple: () => Promise<Result>;
+  /** Link a Google id_token to the CURRENT account. Does not switch sessions. */
+  linkGoogle: (idToken: string) => Promise<Result>;
   register: (email: string, password: string) => Promise<Result>;
   requestPasswordReset: (email: string) => Promise<Result>;
   signOut: () => Promise<void>;
@@ -178,6 +191,76 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [persistSession]);
 
+  const signInApple = useCallback<AuthState["signInApple"]>(async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        return { ok: false, error: "Apple did not return an identity token. Please try again." };
+      }
+      // fullName is only populated on the user's first authorization.
+      const { user: nextUser, sessionToken } = await loginApple(
+        credential.identityToken,
+        credential.fullName
+          ? { givenName: credential.fullName.givenName, familyName: credential.fullName.familyName }
+          : undefined,
+        credential.authorizationCode,
+      );
+      await persistSession(sessionToken, nextUser);
+      return { ok: true };
+    } catch (e) {
+      // User-cancelled the native sheet — benign, no error surfaced.
+      if (e instanceof Error && "code" in e && (e as { code?: string }).code === "ERR_REQUEST_CANCELED") {
+        return { ok: false, error: "" };
+      }
+      return { ok: false, error: e instanceof ApiError ? e.message : "Apple sign-in failed. Please try again." };
+    }
+  }, [persistSession]);
+
+  const signInGoogle = useCallback<AuthState["signInGoogle"]>(async (idToken) => {
+    try {
+      const { user: nextUser, sessionToken } = await loginGoogle(idToken);
+      await persistSession(sessionToken, nextUser);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof ApiError ? e.message : "Google sign-in failed. Please try again." };
+    }
+  }, [persistSession]);
+
+  const linkApple = useCallback<AuthState["linkApple"]>(async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        return { ok: false, error: "Apple did not return an identity token. Please try again." };
+      }
+      await linkAppleAccount(credential.identityToken, credential.authorizationCode);
+      return { ok: true };
+    } catch (e) {
+      if (e instanceof Error && "code" in e && (e as { code?: string }).code === "ERR_REQUEST_CANCELED") {
+        return { ok: false, error: "" };
+      }
+      return { ok: false, error: e instanceof ApiError ? e.message : "Could not link Apple. Please try again." };
+    }
+  }, []);
+
+  const linkGoogle = useCallback<AuthState["linkGoogle"]>(async (idToken) => {
+    try {
+      await linkGoogleAccount(idToken);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof ApiError ? e.message : "Could not link Google. Please try again." };
+    }
+  }, []);
+
   const register = useCallback<AuthState["register"]>(async (email, password) => {
     try {
       await registerEmail(email, password);
@@ -212,7 +295,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const enableBiometric = useCallback<AuthState["enableBiometric"]>(async () => {
-    const result = await authenticate("Enable biometric unlock for HealthAgent");
+    const result = await authenticate("Enable biometric unlock for Veladon");
     if (!result.ok) {
       return { ok: false, error: result.cancelled ? "Cancelled" : "Authentication failed" };
     }
@@ -232,7 +315,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const unlock = useCallback<AuthState["unlock"]>(async () => {
-    const result = await authenticate("Unlock HealthAgent");
+    const result = await authenticate("Unlock Veladon");
     if (!result.ok) {
       return { ok: false, error: result.cancelled ? "Cancelled" : "Authentication failed" };
     }
@@ -253,6 +336,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       needsBioSetup,
       locked: locked && signedIn,
       signInEmail,
+      signInApple,
+      signInGoogle,
+      linkApple,
+      linkGoogle,
       register,
       requestPasswordReset,
       signOut,
@@ -270,6 +357,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       needsBioSetup,
       locked,
       signInEmail,
+      signInApple,
+      signInGoogle,
+      linkApple,
+      linkGoogle,
       register,
       requestPasswordReset,
       signOut,

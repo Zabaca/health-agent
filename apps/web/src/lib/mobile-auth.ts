@@ -66,12 +66,14 @@ export async function requireMobileSession(req: Request): Promise<MobileAuthSucc
   if (row.expires < new Date()) return { ok: false, status: 401, error: "Session expired" };
   if (row.userId !== userId) return { ok: false, status: 401, error: "Session/user mismatch" };
 
-  // Account-suspension check (matches requireActiveSession behavior).
+  // Account-suspension / deletion check (matches requireActiveSession behavior).
   const user = await db
-    .select({ disabled: users.disabled })
+    .select({ disabled: users.disabled, deactivatedAt: users.deactivatedAt })
     .from(users)
     .where(eq(users.id, userId))
     .get();
+  // Deleted accounts → 401 so the mobile client's unauthorized handler signs out.
+  if (user?.deactivatedAt) return { ok: false, status: 401, error: "Account deleted" };
   if (user?.disabled) return { ok: false, status: 403, error: "Account suspended" };
 
   // Fire-and-forget lastSeenAt bump.

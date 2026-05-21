@@ -30,6 +30,9 @@ export async function POST(req: NextRequest) {
     // Only patients and PDAs — admins and agents use admin-managed resets
     if (user.type === 'admin') return NextResponse.json({ ok: true });
 
+    // OAuth-only accounts have no email/password to reset.
+    if (!user.email) return NextResponse.json({ ok: true });
+
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 

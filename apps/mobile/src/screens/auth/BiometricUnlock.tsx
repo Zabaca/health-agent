@@ -42,7 +42,7 @@ export default function BiometricUnlock() {
           <ScanFace size={72} color={t.colors.primary} strokeWidth={2} />
           <Text style={t.type.h2}>Enable Face ID</Text>
           <Text style={[t.type.caption, { textAlign: "center", paddingHorizontal: 32 }]}>
-            Quickly and securely unlock HealthAgent with Face ID instead of your password.
+            Quickly and securely unlock Veladon with Face ID instead of your password.
           </Text>
         </View>
 

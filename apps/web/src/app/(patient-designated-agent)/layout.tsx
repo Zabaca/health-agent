@@ -19,7 +19,7 @@ export default async function PatientDesignatedAgentLayout({
 
   const currentUser = isOnboarded ? null : await db.query.users.findFirst({
     where: eq(users.id, userId),
-    columns: { firstName: true, lastName: true },
+    columns: { firstName: true, lastName: true, email: true },
   });
 
   const [relations, patientAssignment] = await Promise.all([
@@ -95,6 +95,7 @@ export default async function PatientDesignatedAgentLayout({
         <PdaOnboardingModal
           firstName={currentUser?.firstName ?? null}
           lastName={currentUser?.lastName ?? null}
+          needsEmail={!currentUser?.email}
         />
       )}
       {children}

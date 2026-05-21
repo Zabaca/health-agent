@@ -5,7 +5,7 @@ import { eq, and } from "drizzle-orm";
 import ProfileForm from "@/components/profile/ProfileForm";
 import { decrypt } from "@/lib/crypto";
 
-export const metadata = { title: "My Profile — Medical Record Release" };
+export const metadata = { title: "My Profile — Veladon" };
 
 export default async function ProfilePage({ searchParams }: { searchParams: { redirect?: string } }) {
   const { redirect } = searchParams;
@@ -29,6 +29,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: { re
       maw="100%"
       redirectTo={redirect}
       isPda={!!pdaRelation}
+      needsEmail={!user?.email}
+      currentEmail={user?.email ?? null}
       defaultValues={{
         firstName:   user?.firstName   ?? "",
         middleName:  user?.middleName  ?? "",

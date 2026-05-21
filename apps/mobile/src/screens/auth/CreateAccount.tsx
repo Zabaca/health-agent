@@ -9,6 +9,7 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
+import { useOAuthButtons } from "@/hooks/useOAuthButtons";
 import type { AuthParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<AuthParamList>;
@@ -17,6 +18,7 @@ export default function CreateAccount() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const { register } = useAuth();
+  const { onApple, onGoogle, error: oauthError, busy: oauthBusy, appleAvailable, googleReady } = useOAuthButtons();
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -48,15 +50,28 @@ export default function CreateAccount() {
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
       <Header title="Create Account" onBack={() => nav.goBack()} />
       <Screen contentContainerStyle={{ gap: 16 }}>
-        <Pressable style={[styles.providerBtn, { backgroundColor: "#000000" }]}>
-          <Apple size={18} color="#FFFFFF" />
-          <Text style={[styles.providerLabel, { color: "#FFFFFF" }]}>Sign in with Apple</Text>
-        </Pressable>
+        {appleAvailable ? (
+          <Pressable
+            style={[styles.providerBtn, { backgroundColor: "#000000", opacity: oauthBusy ? 0.6 : 1 }]}
+            onPress={onApple}
+            disabled={oauthBusy}
+          >
+            <Apple size={18} color="#FFFFFF" />
+            <Text style={[styles.providerLabel, { color: "#FFFFFF" }]}>Sign in with Apple</Text>
+          </Pressable>
+        ) : null}
         <Pressable
           style={[
             styles.providerBtn,
-            { backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.border },
+            {
+              backgroundColor: t.colors.surface,
+              borderWidth: 1,
+              borderColor: t.colors.border,
+              opacity: !googleReady || oauthBusy ? 0.6 : 1,
+            },
           ]}
+          onPress={onGoogle}
+          disabled={!googleReady || oauthBusy}
         >
           <Text style={{ fontSize: 18, fontWeight: "700", color: "#DB4437" }}>G</Text>
           <Text style={[styles.providerLabel, { color: t.colors.textPrimary }]}>Sign in with Google</Text>
@@ -72,8 +87,8 @@ export default function CreateAccount() {
         <Input label="Password" placeholder="Min 8 characters" secureTextEntry value={pw} onChangeText={setPw} />
         <Input label="Confirm Password" placeholder="Repeat password" secureTextEntry value={confirm} onChangeText={setConfirm} />
 
-        {error ? (
-          <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
+        {error || oauthError ? (
+          <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error || oauthError}</Text>
         ) : null}
 
         <Button

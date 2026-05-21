@@ -37,7 +37,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const dbUser = await upsertOAuthUser("google", verified.sub, verified.email);
+  const dbUser = await upsertOAuthUser("google", verified.sub, verified.email, verified.emailVerified, {
+    avatarUrl: verified.picture,
+  });
   const fresh = await db.query.users.findFirst({ where: eq(users.id, dbUser.id) });
   if (!fresh) return NextResponse.json({ error: "User not found after upsert" }, { status: 500 });
 

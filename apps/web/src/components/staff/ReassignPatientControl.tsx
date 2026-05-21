@@ -10,7 +10,7 @@ interface StaffMember {
   id: string;
   firstName: string | null;
   lastName: string | null;
-  email: string;
+  email: string | null;
   type: "admin" | "agent";
 }
 

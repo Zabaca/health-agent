@@ -115,7 +115,7 @@ export const contract = c.router({
       method: 'PUT',
       path: '/api/profile',
       body: profileSchema,
-      responses: { 200: successSchema, 400: errorSchema, 401: errorSchema },
+      responses: { 200: successSchema, 400: errorSchema, 401: errorSchema, 409: errorSchema },
     },
   }),
   admin: c.router({
@@ -286,7 +286,7 @@ export const contract = c.router({
       method: 'PATCH',
       path: '/api/onboarding/complete',
       body: c.noBody(),
-      responses: { 200: successSchema, 401: errorSchema },
+      responses: { 200: successSchema, 400: errorSchema, 401: errorSchema },
     },
   }),
   agent: c.router({

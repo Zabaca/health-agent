@@ -31,10 +31,15 @@ export async function requirePageSession(): Promise<Session> {
   }
 
   const userRow = await db
-    .select({ disabled: users.disabled })
+    .select({ disabled: users.disabled, deactivatedAt: users.deactivatedAt })
     .from(users)
     .where(eq(users.id, session.user.id))
     .get();
+  // Deleted (deactivated) accounts: clear the cookie and bounce to login — a
+  // valid JWT cookie would otherwise keep working until expiry.
+  if (userRow?.deactivatedAt) {
+    redirect(CLEAR_SESSION_REDIRECT);
+  }
   if (userRow?.disabled) {
     redirect("/suspended");
   }

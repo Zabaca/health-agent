@@ -66,7 +66,7 @@ export default function AccountSetup() {
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
       <Header title="Account Setup" onBack={() => nav.goBack()} />
       <Screen contentContainerStyle={{ gap: 16 }}>
-        <Text style={t.type.caption}>Complete these steps to get the most from Health Agent.</Text>
+        <Text style={t.type.caption}>Complete these steps to get the most from Veladon.</Text>
 
         {steps.map((s) => (
           <Pressable

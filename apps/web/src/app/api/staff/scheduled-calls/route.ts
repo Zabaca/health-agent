@@ -75,14 +75,16 @@ export const POST = contractRoute(contract.staffScheduledCalls.create, async ({ 
   const decryptedPatient = decryptPii(patient);
   const patientName = [decryptedPatient.firstName, decryptedPatient.lastName].filter(Boolean).join(' ') || 'Patient';
   const agentName = [agent?.firstName, agent?.lastName].filter(Boolean).join(' ') || 'Your care team';
-  await sendScheduledCallEmail({
-    to: patient.email,
-    recipientName: patientName,
-    schedulerName: agentName,
-    scheduledAt: body.scheduledAt,
-    callId: id,
-    contact: { name: agentName, email: agent?.email },
-  });
+  if (patient.email) {
+    await sendScheduledCallEmail({
+      to: patient.email,
+      recipientName: patientName,
+      schedulerName: agentName,
+      scheduledAt: body.scheduledAt,
+      callId: id,
+      contact: { name: agentName, email: agent?.email ?? undefined },
+    });
+  }
 
   return NextResponse.json(
     {

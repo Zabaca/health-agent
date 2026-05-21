@@ -74,22 +74,26 @@ export const POST = contractRoute(contract.admin.patientScheduledCalls.create, a
   const adminName = 'Admin';
 
   await Promise.all([
-    sendScheduledCallEmail({
-      to: patient.email,
-      recipientName: patientName,
-      schedulerName: adminName,
-      scheduledAt: body.scheduledAt,
-      callId: id,
-      contact: null, // admin has no personal contact to show
-    }),
-    sendScheduledCallEmail({
-      to: assignment.assignedTo.email,
-      recipientName: agentName,
-      schedulerName: adminName,
-      scheduledAt: body.scheduledAt,
-      callId: id,
-      contact: null,
-    }),
+    patient.email
+      ? sendScheduledCallEmail({
+          to: patient.email,
+          recipientName: patientName,
+          schedulerName: adminName,
+          scheduledAt: body.scheduledAt,
+          callId: id,
+          contact: null, // admin has no personal contact to show
+        })
+      : null,
+    assignment.assignedTo.email
+      ? sendScheduledCallEmail({
+          to: assignment.assignedTo.email,
+          recipientName: agentName,
+          schedulerName: adminName,
+          scheduledAt: body.scheduledAt,
+          callId: id,
+          contact: null,
+        })
+      : null,
   ]);
 
   return NextResponse.json(

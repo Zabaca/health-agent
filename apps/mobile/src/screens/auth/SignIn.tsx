@@ -8,6 +8,7 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
+import { useOAuthButtons } from "@/hooks/useOAuthButtons";
 import type { AuthParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<AuthParamList>;
@@ -16,6 +17,7 @@ export default function SignIn() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
   const { signInEmail } = useAuth();
+  const { onApple, onGoogle, error: oauthError, busy: oauthBusy, appleAvailable, googleReady } = useOAuthButtons();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -41,19 +43,32 @@ export default function SignIn() {
         <View style={[styles.logoTile, { backgroundColor: t.colors.primary }]}>
           <Sprout size={28} color="#FFFFFF" />
         </View>
-        <Text style={t.type.h2}>Zabaca</Text>
+        <Text style={t.type.h2}>Veladon</Text>
         <Text style={t.type.caption}>Your health, in your hands.</Text>
       </View>
 
-      <Pressable style={[styles.providerBtn, { backgroundColor: "#000000" }]}>
-        <Apple size={18} color="#FFFFFF" />
-        <Text style={[styles.providerLabel, { color: "#FFFFFF" }]}>Sign in with Apple</Text>
-      </Pressable>
+      {appleAvailable ? (
+        <Pressable
+          style={[styles.providerBtn, { backgroundColor: "#000000", opacity: oauthBusy ? 0.6 : 1 }]}
+          onPress={onApple}
+          disabled={oauthBusy}
+        >
+          <Apple size={18} color="#FFFFFF" />
+          <Text style={[styles.providerLabel, { color: "#FFFFFF" }]}>Sign in with Apple</Text>
+        </Pressable>
+      ) : null}
       <Pressable
         style={[
           styles.providerBtn,
-          { backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.border },
+          {
+            backgroundColor: t.colors.surface,
+            borderWidth: 1,
+            borderColor: t.colors.border,
+            opacity: !googleReady || oauthBusy ? 0.6 : 1,
+          },
         ]}
+        onPress={onGoogle}
+        disabled={!googleReady || oauthBusy}
       >
         <Text style={{ fontSize: 18, fontWeight: "700", color: "#DB4437" }}>G</Text>
         <Text style={[styles.providerLabel, { color: t.colors.textPrimary }]}>Sign in with Google</Text>
@@ -76,8 +91,8 @@ export default function SignIn() {
         </Pressable>
       </View>
 
-      {error ? (
-        <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
+      {error || oauthError ? (
+        <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error || oauthError}</Text>
       ) : null}
 
       <Button label={submitting ? "Signing in…" : "Sign In"} onPress={onSubmit} disabled={submitting} fullWidth />

@@ -33,11 +33,17 @@ export async function requireActiveSession(): Promise<ActiveSessionResult> {
   }
 
   const row = await db
-    .select({ disabled: users.disabled })
+    .select({ disabled: users.disabled, deactivatedAt: users.deactivatedAt })
     .from(users)
     .where(eq(users.id, session.user.id))
     .get();
 
+  if (row?.deactivatedAt) {
+    return {
+      session: null,
+      error: NextResponse.json({ error: "Account deleted" }, { status: 401 }),
+    };
+  }
   if (row?.disabled) {
     return {
       session: null,

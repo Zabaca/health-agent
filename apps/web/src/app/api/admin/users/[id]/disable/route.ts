@@ -33,12 +33,14 @@ export async function PATCH(
 
   await db.update(users).set({ disabled }).where(eq(users.id, id));
 
-  const firstName = target.firstName || target.email;
+  const firstName = target.firstName || target.email || 'there';
   try {
-    if (disabled) {
-      await sendAccountSuspendedEmail({ to: target.email, firstName });
-    } else {
-      await sendAccountReinstatedEmail({ to: target.email, firstName });
+    if (target.email) {
+      if (disabled) {
+        await sendAccountSuspendedEmail({ to: target.email, firstName });
+      } else {
+        await sendAccountReinstatedEmail({ to: target.email, firstName });
+      }
     }
   } catch {
     // Email failure should not block the response

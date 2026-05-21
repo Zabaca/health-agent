@@ -16,10 +16,60 @@ export const authConfig = {
       // JWT carries our DB id (not the provider id).
       if (account?.provider === "google" || account?.provider === "apple") {
         const sub = account.providerAccountId;
-        const email = (profile?.email as string | undefined) ?? user.email;
-        if (!sub || !email) return false;
+        if (!sub) return false;
 
-        const dbUser = await upsertOAuthUser(account.provider, sub, email);
+        // Link flow: when a one-shot link intent is pending, the user is ALREADY
+        // signed in and attaching this provider — not signing in. Consume the
+        // intent and attach the sub to that user. Returning a redirect string
+        // short-circuits Auth.js BEFORE a new session is minted, so the existing
+        // session is left untouched (no account switch). Lazy imports keep `db`
+        // and `next/headers` out of the edge-middleware bundle.
+        const { cookies } = await import("next/headers");
+        const { consumeLinkIntent, linkProviderSub, safeReturnPath, LINK_NONCE_COOKIE, LINK_RETURN_COOKIE } =
+          await import("@/lib/account-connections");
+        const jar = await cookies();
+        const nonce = jar.get(LINK_NONCE_COOKIE)?.value;
+        if (nonce) {
+          // Land back on the page that started the link (e.g. /profile or /account).
+          const returnTo = safeReturnPath(jar.get(LINK_RETURN_COOKIE)?.value);
+          // Clear the one-shot cookies on every exit path. Otherwise a stale
+          // cookie (still within its 10-min TTL) would be treated as a pending
+          // link on the user's NEXT same-provider OAuth sign-in — its intent row
+          // is already consumed, so that legitimate sign-in would be rejected
+          // with linkError=expired instead of signing the user in.
+          jar.delete(LINK_NONCE_COOKIE);
+          jar.delete(LINK_RETURN_COOKIE);
+          const intent = await consumeLinkIntent(nonce, account.provider);
+          if (!intent) return `${returnTo}?linkError=expired`;
+          const res = await linkProviderSub(intent.userId, account.provider, sub);
+          if (!res.ok) return `${returnTo}?linkError=conflict`;
+          if (account.provider === "apple" && account.refresh_token) {
+            const { storeAppleRefreshToken } = await import("@/lib/apple-refresh");
+            await storeAppleRefreshToken(intent.userId, account.refresh_token);
+          }
+          return `${returnTo}?linked=1`;
+        }
+
+        const email = (profile?.email as string | undefined) ?? user.email ?? null;
+
+        // Auth.js's Google provider maps `picture` → `user.image`; the Apple
+        // provider sets `image: null` (Apple has no avatar). So this is uniform.
+        const avatarUrl = (user.image as string | undefined) ?? null;
+
+        // email_verified is a raw provider claim: Google sends a boolean, Apple
+        // a "true"/"false" string. Only verified emails may auto-link (handled
+        // inside upsertOAuthUser).
+        const ev = (profile as Record<string, unknown> | undefined)?.email_verified;
+        const emailVerified = ev === true || ev === "true";
+
+        const dbUser = await upsertOAuthUser(account.provider, sub, email, emailVerified, { avatarUrl });
+        // Capture the Apple refresh token (web flow already exchanged the code)
+        // so account deletion can revoke it. Lazy import keeps Node `crypto` out
+        // of the edge-middleware bundle.
+        if (account.provider === "apple" && account.refresh_token) {
+          const { storeAppleRefreshToken } = await import("@/lib/apple-refresh");
+          await storeAppleRefreshToken(dbUser.id, account.refresh_token);
+        }
         // Lazy import to avoid circular dep with auth.ts
         const { buildUserSessionPayload } = await import("./auth");
         const payload = await buildUserSessionPayload(dbUser);

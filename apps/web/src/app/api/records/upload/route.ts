@@ -70,7 +70,7 @@ export async function POST(req: Request) {
         where: eq(users.id, result.userId),
         columns: { firstName: true, lastName: true, email: true },
       });
-      if (patient) {
+      if (patient?.email) {
         const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ') || patient.email;
         const uploaderName = [uploader?.firstName, uploader?.lastName].filter(Boolean).join(' ') || 'Your care team';
         await sendNewRecordUploadEmail({
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
           patientName,
           uploadedByName: uploaderName,
           recordsUrl: `${getSiteBaseUrl()}/my-records`,
-          contact: { name: uploaderName, email: uploader?.email },
+          contact: { name: uploaderName, email: uploader?.email ?? undefined },
         });
       }
     }
