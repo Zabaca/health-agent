@@ -208,6 +208,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         credential.fullName
           ? { givenName: credential.fullName.givenName, familyName: credential.fullName.familyName }
           : undefined,
+        credential.authorizationCode,
       );
       await persistSession(sessionToken, nextUser);
       return { ok: true };
@@ -241,7 +242,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (!credential.identityToken) {
         return { ok: false, error: "Apple did not return an identity token. Please try again." };
       }
-      await linkAppleAccount(credential.identityToken);
+      await linkAppleAccount(credential.identityToken, credential.authorizationCode);
       return { ok: true };
     } catch (e) {
       if (e instanceof Error && "code" in e && (e as { code?: string }).code === "ERR_REQUEST_CANCELED") {

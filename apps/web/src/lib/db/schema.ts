@@ -46,6 +46,22 @@ export const users = sqliteTable('User', {
   onboarded: integer('onboarded', { mode: 'boolean' }).notNull().default(false),
   avatarUrl: text('avatarUrl'),
   disabled: integer('disabled', { mode: 'boolean' }).notNull().default(false),
+  /**
+   * Account deletion (soft-delete). `deactivatedAt` is the single source of
+   * truth for "deleted" — distinct from `disabled` (admin suspend/reinstate).
+   * On deactivation the unique login keys (email/appleId/googleId/password) are
+   * nulled to free re-registration; the original email is preserved here in the
+   * NON-UNIQUE `deletedEmail` for audit (so delete→re-signup-same-email→delete
+   * again can produce multiple retained rows sharing a deletedEmail, while the
+   * unique `email` column is NULL on all of them — libsql UNIQUE allows multiple
+   * NULLs). Identifiable PHI is retained for HIPAA; a cron hard-deletes after
+   * `purgeAfter`.
+   */
+  deactivatedAt: text('deactivatedAt'),
+  purgeAfter: text('purgeAfter'),
+  deletedEmail: text('deletedEmail'),
+  /** Apple refresh token (encrypted) captured at sign-in; used to call Apple's /auth/revoke on deletion. */
+  appleRefreshToken: text('appleRefreshToken'),
 });
 
 /**

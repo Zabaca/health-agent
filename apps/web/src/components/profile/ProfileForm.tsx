@@ -20,6 +20,7 @@ import PageHeader from "@/components/shared/PageHeader";
 import ChangePasswordSection from "@/components/shared/ChangePasswordSection";
 import ConnectedAccountsSection from "@/components/shared/ConnectedAccountsSection";
 import ActiveDevicesSection from "@/components/shared/ActiveDevicesSection";
+import DeleteAccountSection from "@/components/shared/DeleteAccountSection";
 import RoleSwitchSection from "@/components/shared/RoleSwitchSection";
 
 interface ProfileFormProps {
@@ -221,6 +222,7 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
     {!onComplete && <ConnectedAccountsSection />}
     {!onComplete && <ChangePasswordSection />}
     {!onComplete && <ActiveDevicesSection />}
+    {!onComplete && <DeleteAccountSection />}
     </div>
   );
 }

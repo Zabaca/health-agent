@@ -9,7 +9,7 @@ import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { useOAuthButtons } from "@/hooks/useOAuthButtons";
-import { getConnections, unlinkConnection, type Connections } from "@/lib/api";
+import { getConnections, unlinkConnection, deleteAccount, ApiError, type Connections } from "@/lib/api";
 import type { ProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
@@ -58,6 +58,20 @@ export default function AccountSettings() {
     } else {
       await disableBiometric();
     }
+  };
+
+  const onDeleteAccount = async () => {
+    setDeleteOpen(false);
+    try {
+      await deleteAccount();
+    } catch (e) {
+      Alert.alert(
+        "Couldn't delete account",
+        e instanceof ApiError ? e.message : "Please try again.",
+      );
+      return;
+    }
+    await signOut(); // clears the stored session token + signs out
   };
 
   return (
@@ -139,10 +153,10 @@ export default function AccountSettings() {
       <ConfirmDrawer
         visible={deleteOpen}
         title="Delete your account?"
-        message="This permanently removes your profile, records, releases, and access permissions. This can't be undone."
+        message="This signs you out everywhere and permanently closes your account. Medical records are retained only as long as the law requires, then deleted. This can't be undone."
         confirmLabel="Delete Account"
         onCancel={() => setDeleteOpen(false)}
-        onConfirm={() => { setDeleteOpen(false); signOut(); }}
+        onConfirm={onDeleteAccount}
       />
     </View>
   );

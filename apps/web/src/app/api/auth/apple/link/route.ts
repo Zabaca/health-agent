@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { resolveUserSession } from "@/lib/session-resolver";
 import { verifyAppleIdentityToken } from "@/lib/oauth-verify";
 import { linkProviderSub } from "@/lib/account-connections";
+import { captureAppleRefreshTokenFromCode } from "@/lib/apple-refresh";
 
 /**
  * Links an Apple identity to the *current* signed-in user (mobile, native flow).
@@ -12,7 +13,9 @@ export async function POST(req: Request) {
   const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
-  const body = (await req.json().catch(() => null)) as { identityToken?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as
+    | { identityToken?: unknown; authorizationCode?: unknown }
+    | null;
   const identityToken = body?.identityToken;
   if (typeof identityToken !== "string" || !identityToken) {
     return NextResponse.json({ error: "identityToken is required" }, { status: 400 });
@@ -35,5 +38,12 @@ export async function POST(req: Request) {
       { status: 409 },
     );
   }
+
+  // Capture the Apple refresh token so deletion can revoke it. Best-effort.
+  const authorizationCode = body?.authorizationCode;
+  if (typeof authorizationCode === "string" && authorizationCode) {
+    await captureAppleRefreshTokenFromCode(result.userId, authorizationCode, process.env.AUTH_APPLE_BUNDLE_ID);
+  }
+
   return NextResponse.json({ success: true });
 }

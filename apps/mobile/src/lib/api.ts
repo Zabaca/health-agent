@@ -104,10 +104,20 @@ export async function loginEmail(email: string, password: string): Promise<Login
 /** Apple returns the name only on the first authorization; forward it so a new account gets one. */
 export type AppleFullName = { givenName?: string | null; familyName?: string | null };
 
-export async function loginApple(identityToken: string, fullName?: AppleFullName | null): Promise<LoginResponse> {
+export async function loginApple(
+  identityToken: string,
+  fullName?: AppleFullName | null,
+  authorizationCode?: string | null,
+): Promise<LoginResponse> {
   return (await apiFetch("/api/auth/apple/mobile", {
     method: "POST",
-    body: JSON.stringify({ identityToken, fullName: fullName ?? undefined, device: getDeviceInfo() }),
+    body: JSON.stringify({
+      identityToken,
+      fullName: fullName ?? undefined,
+      // Lets the backend exchange it for a refresh token (revocable at deletion).
+      authorizationCode: authorizationCode ?? undefined,
+      device: getDeviceInfo(),
+    }),
   })) as LoginResponse;
 }
 
@@ -231,10 +241,13 @@ export async function getConnections(): Promise<Connections> {
 }
 
 /** Attach an Apple identity (native) to the current account. Throws ApiError(409) on conflict. */
-export async function linkAppleAccount(identityToken: string): Promise<{ success: boolean }> {
+export async function linkAppleAccount(
+  identityToken: string,
+  authorizationCode?: string | null,
+): Promise<{ success: boolean }> {
   return (await apiFetch(
     "/api/auth/apple/link",
-    { method: "POST", body: JSON.stringify({ identityToken }) },
+    { method: "POST", body: JSON.stringify({ identityToken, authorizationCode: authorizationCode ?? undefined }) },
     { auth: true },
   )) as { success: boolean };
 }
@@ -255,6 +268,11 @@ export async function unlinkConnection(provider: "apple" | "google"): Promise<{ 
     { method: "DELETE" },
     { auth: true },
   )) as { success: boolean };
+}
+
+/** Permanently delete the current account (soft-delete + retention). Throws ApiError(403) for staff. */
+export async function deleteAccount(): Promise<{ success: boolean }> {
+  return (await apiFetch("/api/account", { method: "DELETE" }, { auth: true })) as { success: boolean };
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: boolean }> {

@@ -36,6 +36,10 @@ export const authConfig = {
           if (!intent) return `${returnTo}?linkError=expired`;
           const res = await linkProviderSub(intent.userId, account.provider, sub);
           if (!res.ok) return `${returnTo}?linkError=conflict`;
+          if (account.provider === "apple" && account.refresh_token) {
+            const { storeAppleRefreshToken } = await import("@/lib/apple-refresh");
+            await storeAppleRefreshToken(intent.userId, account.refresh_token);
+          }
           return `${returnTo}?linked=1`;
         }
 
@@ -52,6 +56,13 @@ export const authConfig = {
         const emailVerified = ev === true || ev === "true";
 
         const dbUser = await upsertOAuthUser(account.provider, sub, email, emailVerified, { avatarUrl });
+        // Capture the Apple refresh token (web flow already exchanged the code)
+        // so account deletion can revoke it. Lazy import keeps Node `crypto` out
+        // of the edge-middleware bundle.
+        if (account.provider === "apple" && account.refresh_token) {
+          const { storeAppleRefreshToken } = await import("@/lib/apple-refresh");
+          await storeAppleRefreshToken(dbUser.id, account.refresh_token);
+        }
         // Lazy import to avoid circular dep with auth.ts
         const { buildUserSessionPayload } = await import("./auth");
         const payload = await buildUserSessionPayload(dbUser);
