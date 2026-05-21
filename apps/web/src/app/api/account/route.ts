@@ -17,13 +17,6 @@ export async function DELETE(req: Request) {
         { status: 403 },
       );
     }
-    if (res.reason === "apple_revoke_failed") {
-      // Nothing was changed — revoking the Apple sign-in failed, so we aborted.
-      return NextResponse.json(
-        { error: "We couldn't fully delete your account right now. Please try again in a moment." },
-        { status: 503 },
-      );
-    }
     return NextResponse.json({ error: "Account not found." }, { status: 404 });
   }
   return NextResponse.json({ success: true });

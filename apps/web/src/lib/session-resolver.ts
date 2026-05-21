@@ -70,10 +70,16 @@ export async function resolveUserSession(req: Request): Promise<
   }
 
   const userRow = await db
-    .select({ disabled: users.disabled })
+    .select({ disabled: users.disabled, deactivatedAt: users.deactivatedAt })
     .from(users)
     .where(eq(users.id, session.user.id))
     .get();
+  // Deleted (deactivated) account: reject with 401 so the client signs out — a
+  // valid JWT cookie/token would otherwise keep working until expiry, and the
+  // Session row regenerates via recordWebSession on each request.
+  if (userRow?.deactivatedAt) {
+    return { result: null, error: NextResponse.json({ error: "Account deleted" }, { status: 401 }) };
+  }
   if (userRow?.disabled) {
     return { result: null, error: NextResponse.json({ error: "Account suspended" }, { status: 403 }) };
   }

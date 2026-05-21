@@ -11,9 +11,7 @@ import { revokeAppleToken } from "@/lib/apple-secret";
  */
 export const ACCOUNT_RETENTION_DAYS = 6 * 365;
 
-export type DeleteResult =
-  | { ok: true }
-  | { ok: false; reason: "forbidden" | "not_found" | "apple_revoke_failed" };
+export type DeleteResult = { ok: true } | { ok: false; reason: "forbidden" | "not_found" };
 
 /**
  * Self-service deletion is for consumer accounts only (patients / PDAs, i.e.
@@ -48,14 +46,18 @@ export async function deactivateAccount(userId: string): Promise<DeleteResult> {
   if ("error" in res) return { ok: false, reason: res.error };
   const user = res.user;
 
-  // 1. Apple token revocation (App Store 5.1.1(v)) — do this FIRST and abort the
-  //    whole deletion if it fails. Otherwise we'd null `appleRefreshToken` below
-  //    and lose the only thing that can revoke the grant, leaving the user
-  //    "deleted" in our DB while their Apple grant stays live. All-or-nothing:
-  //    nothing is mutated yet, so the user can simply retry.
+  // 1. Apple token revocation (App Store 5.1.1(v)). Best-effort: deletion must
+  //    ALWAYS complete (cutting access is the requirement, and blocking on a
+  //    revoke failure would both trap users whose token is already invalid and
+  //    risk an App Store rejection if a reviewer hits a transient failure). If
+  //    revoke fails we KEEP the refresh token (don't null it) so the purge can
+  //    retry — never lose the only thing that can revoke the grant.
+  let appleRevoked = true;
   if (user.appleRefreshToken) {
-    const revoked = await revokeAppleToken(decrypt(user.appleRefreshToken));
-    if (!revoked) return { ok: false, reason: "apple_revoke_failed" };
+    appleRevoked = await revokeAppleToken(decrypt(user.appleRefreshToken));
+    if (!appleRevoked) {
+      console.error("[account-deletion] Apple revoke failed; deactivating anyway, retaining token for purge-time retry", { userId });
+    }
   }
   // 2. Delete the user's own avatar from R2 (best-effort).
   if (user.avatarUrl?.includes("/api/files/")) {
@@ -65,31 +67,32 @@ export async function deactivateAccount(userId: string): Promise<DeleteResult> {
       /* best-effort */
     }
   }
-  // 3. Revoke PDA relationships both directions so access is cut immediately
-  //    (PDAs of this patient, and this user's own representations).
-  await db.update(patientDesignatedAgents).set({ status: "revoked" }).where(eq(patientDesignatedAgents.patientId, userId));
-  await db.update(patientDesignatedAgents).set({ status: "revoked" }).where(eq(patientDesignatedAgents.agentUserId, userId));
-  // 4. Log out everywhere.
-  await db.delete(sessions).where(eq(sessions.userId, userId));
-  // 5. Deactivate + free the unique login keys; preserve email for audit.
+  // 3-5. Mutate the DB atomically: revoke PDA relations (both directions),
+  //      delete sessions, and deactivate + free the unique login keys.
   // NOTE: deactivatedAt/purgeAfter are stored as ISO-8601 (`toISOString()`) and
   // compared lexicographically in purgeExpiredAccounts — both sides MUST stay in
   // that exact format; never write toUTCString()/date-only into these columns.
   const now = new Date();
   const purgeAfter = new Date(now.getTime() + ACCOUNT_RETENTION_DAYS * 86_400_000);
-  await db
-    .update(users)
-    .set({
-      deletedEmail: user.email,
-      email: null,
-      appleId: null,
-      googleId: null,
-      password: null,
-      appleRefreshToken: null,
-      deactivatedAt: now.toISOString(),
-      purgeAfter: purgeAfter.toISOString(),
-    })
-    .where(eq(users.id, userId));
+  await db.transaction(async (tx) => {
+    await tx.update(patientDesignatedAgents).set({ status: "revoked" }).where(eq(patientDesignatedAgents.patientId, userId));
+    await tx.update(patientDesignatedAgents).set({ status: "revoked" }).where(eq(patientDesignatedAgents.agentUserId, userId));
+    await tx.delete(sessions).where(eq(sessions.userId, userId));
+    await tx
+      .update(users)
+      .set({
+        deletedEmail: user.email,
+        email: null,
+        appleId: null,
+        googleId: null,
+        password: null,
+        // Keep the token only if revoke failed, so the purge can retry.
+        appleRefreshToken: appleRevoked ? null : user.appleRefreshToken,
+        deactivatedAt: now.toISOString(),
+        purgeAfter: purgeAfter.toISOString(),
+      })
+      .where(eq(users.id, userId));
+  });
 
   return { ok: true };
 }
@@ -105,11 +108,16 @@ export async function purgeExpiredAccounts(): Promise<{ purged: number }> {
   const nowIso = new Date().toISOString();
   const due = await db.query.users.findMany({
     where: and(isNotNull(users.deactivatedAt), isNotNull(users.purgeAfter), lt(users.purgeAfter, nowIso)),
-    columns: { id: true },
+    columns: { id: true, appleRefreshToken: true },
   });
 
   let purged = 0;
   for (const u of due) {
+    // Final chance to revoke an Apple grant whose revoke failed at deactivation
+    // (we retained the token for exactly this). Best-effort.
+    if (u.appleRefreshToken) {
+      await revokeAppleToken(decrypt(u.appleRefreshToken));
+    }
     const files = await db.query.incomingFiles.findMany({
       where: eq(incomingFiles.patientId, u.id),
       columns: { id: true, fileURL: true },
