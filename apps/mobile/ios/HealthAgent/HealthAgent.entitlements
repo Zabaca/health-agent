@@ -7,17 +7,7 @@
     <array>
       <string>Default</string>
     </array>
-    <!--
-      TODO: When HealthKit integration lands, enable the entitlement:
-
-        <key>com.apple.developer.healthkit</key>
-        <true/>
-
-      Also enable the HealthKit capability on the App ID in App Store
-      Connect, and add any required clinical-record access keys here.
-      Info.plist already carries NSHealthShareUsageDescription +
-      NSHealthUpdateUsageDescription; without this entitlement, HealthKit
-      APIs will return errors at runtime.
-    -->
+    <key>com.apple.developer.healthkit</key>
+    <true/>
   </dict>
 </plist>

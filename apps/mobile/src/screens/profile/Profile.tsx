@@ -9,7 +9,7 @@ import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/hooks/useAuth";
-import { getProfile, listMyDesignatedAgents, listRepresentedPatients, type ProfileData, type DesignatedAgent, type RepresentedPatient } from "@/lib/api";
+import { getProfile, getSetupStatus, listMyDesignatedAgents, listRepresentedPatients, type ProfileData, type DesignatedAgent, type RepresentedPatient } from "@/lib/api";
 import type { ProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
@@ -31,12 +31,16 @@ export default function Profile() {
   const [representedPatients, setRepresentedPatients] = useState<RepresentedPatient[]>([]);
   const [profileLoading, setProfileLoading] = useState(true);
   const [agentsLoading, setAgentsLoading] = useState(true);
+  const [healthKitConnected, setHealthKitConnected] = useState(false);
 
   useFocusEffect(useCallback(() => {
     getProfile()
       .then(setProfile)
       .catch(() => {})
       .finally(() => setProfileLoading(false));
+    getSetupStatus()
+      .then((s) => setHealthKitConnected(s.healthKitConnected))
+      .catch(() => {});
     listMyDesignatedAgents()
       .then(({ designatedAgents }) =>
         setAgents(designatedAgents.filter((a) => a.status !== "revoked"))
@@ -50,7 +54,7 @@ export default function Profile() {
     ? `${profile.firstName?.[0] ?? ""}${profile.lastName?.[0] ?? ""}`.toUpperCase()
     : user?.email?.[0]?.toUpperCase() ?? "?";
   const displayName = profile
-    ? `${profile.firstName} ${profile.lastName}`.trim()
+    ? `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() || null
     : null;
 
   return (
@@ -105,17 +109,24 @@ export default function Profile() {
             )}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={t.type.bodyStrong}>
-              {profileLoading ? "Loading…" : (displayName ?? profile?.email ?? user?.email ?? "")}
-            </Text>
-            {/* Prefer the fresh profile email (the session JWT can lag until re-login). */}
-            <Text style={t.type.caption}>{profile?.email ?? user?.email ?? ""}</Text>
+            {profileLoading ? (
+              <Text style={t.type.bodyStrong}>Loading…</Text>
+            ) : displayName ? (
+              <>
+                <Text style={t.type.bodyStrong}>{displayName}</Text>
+                {/* Prefer the fresh profile email (the session JWT can lag until re-login). */}
+                <Text style={t.type.caption}>{profile?.email ?? user?.email ?? ""}</Text>
+              </>
+            ) : (
+              // No name yet — show the email as the single, vertically centered line.
+              <Text style={t.type.bodyStrong}>{profile?.email ?? user?.email ?? ""}</Text>
+            )}
           </View>
           <ChevronRight size={18} color={t.colors.textSecondary} />
         </View>
       </Pressable>
 
-      {/* Health Sources — static, not wired */}
+      {/* Health Sources */}
       <View
         style={{
           backgroundColor: t.colors.surface,
@@ -138,9 +149,13 @@ export default function Profile() {
               gap: 12,
             }}
           >
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.colors.accent }} />
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: healthKitConnected ? t.colors.primary : t.colors.accent }} />
             <Text style={[t.type.body, { flex: 1 }]}>Apple Health</Text>
-            <Text style={{ color: t.colors.accent, fontWeight: "600" }}>Tap to connect</Text>
+            {healthKitConnected ? (
+              <Text style={{ color: t.colors.primary, fontWeight: "600" }}>Connected</Text>
+            ) : (
+              <Text style={{ color: t.colors.accent, fontWeight: "600" }}>Tap to connect</Text>
+            )}
           </View>
         </Pressable>
       </View>
