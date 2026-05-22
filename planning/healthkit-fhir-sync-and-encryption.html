@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HealthKit FHIR Sync &amp; Database Encryption — Discussion Doc</title>
+<style>
+  :root {
+    --fg: #1c1c1e; --muted: #6b6b70; --bg: #ffffff; --accent: #2f7d52;
+    --border: #e3e3e6; --code-bg: #f5f5f7; --warn-bg: #fff6e6; --warn-bd: #f0c34e;
+    --rec-bg: #eaf5ee; --rec-bd: #2f7d52;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--fg); background: var(--bg); margin: 0; padding: 40px 20px;
+  }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 23px; margin: 40px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 18px; margin: 26px 0 8px; }
+  p, li { color: var(--fg); }
+  a { color: var(--accent); }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 5px; font-size: 0.88em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .meta { color: var(--muted); font-size: 14px; margin: 0 0 4px; }
+  .meta strong { color: var(--fg); }
+  .context { background: var(--code-bg); border-radius: 10px; padding: 14px 18px; margin: 18px 0 0; font-size: 15px; }
+  .callout { border-radius: 10px; padding: 14px 18px; margin: 18px 0; }
+  .rec { background: var(--rec-bg); border-left: 4px solid var(--rec-bd); }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-bd); }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14.5px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; }
+  ol, ul { padding-left: 22px; }
+  li { margin: 5px 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 34px 0; }
+  .verdict-avoid { color: #b3261e; font-weight: 600; }
+  .verdict-use { color: var(--accent); font-weight: 600; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>HealthKit FHIR Sync &amp; Database Encryption — Discussion Doc</h1>
+  <p class="meta"><strong>Status:</strong> Draft for team discussion &amp; decision</p>
+  <p class="meta"><strong>Author:</strong> Khoa (with Claude) &nbsp;·&nbsp; <strong>Date:</strong> 2026-05-21</p>
+  <div class="context">
+    <strong>Context:</strong> JAM-278 shipped the first HealthKit integration (daily aggregate
+    vitals/steps/sleep/glucose → <code>HealthData</code>, foreground sync, dashboard). Two larger
+    questions came out of it and need a team decision before we build further: (1) pulling
+    <strong>FHIR clinical records</strong> from HealthKit, and (2) a coherent <strong>PHI-at-rest
+    encryption</strong> strategy on our Turso/libsql production infrastructure.
+  </div>
+
+  <h2>TL;DR / Recommendations</h2>
+  <div class="callout rec">
+    <ol>
+      <li><strong>FHIR is high value for this product</strong> (it's the EHR data — labs, meds,
+        conditions — that providers pushed into Apple Health). react-native-health can read it via
+        <code>getClinicalRecords</code>. <strong>But Apple does not allow background delivery for
+        clinical records</strong> — FHIR must be pulled in the foreground. It needs a new entitlement,
+        a new (encrypted) storage table, and a dedup-by-resource-id sync model. Scope it as its own
+        project after the incremental-sync work.</li>
+      <li><strong>Encryption: do both layers, scoped by sensitivity.</strong>
+        <ul>
+          <li>Turn on <strong>Turso platform encryption-at-rest</strong> for blanket disk/backup
+            protection (preserves all SQL — no query impact). The client <code>encryptionKey</code>
+            option does <strong>not</strong> apply to hosted Turso.</li>
+          <li>Apply <strong>app-level AES-256-GCM</strong> (existing <code>crypto.ts</code>) to the
+            <strong>FHIR blob</strong>, and reconsider it for <code>healthData.value</code>.</li>
+          <li><strong>Avoid</strong> order-preserving / deterministic "searchable" encryption for PHI.</li>
+        </ul>
+      </li>
+      <li><strong>Decisions needed</strong> are listed at the end.</li>
+    </ol>
+  </div>
+
+  <h2>Part A — FHIR / Clinical Records sync from HealthKit</h2>
+
+  <h3>What's available</h3>
+  <p>HealthKit exposes <strong>Clinical Records</strong> as <strong>FHIR resources</strong>
+    (<code>HKClinicalRecord</code>). <code>react-native-health</code> supports them via
+    <code>getClinicalRecords</code>:</p>
+  <ul>
+    <li><strong>Record types:</strong> <code>AllergyRecord</code>, <code>ConditionRecord</code>,
+      <code>CoverageRecord</code>, <code>ImmunizationRecord</code>, <code>LabResultRecord</code>,
+      <code>MedicationRecord</code>, <code>ProcedureRecord</code>, <code>VitalSignRecord</code>.</li>
+    <li><strong>Output per record:</strong> <code>id</code>, <code>displayName</code>,
+      <code>startDate</code>/<code>endDate</code>, <code>sourceId</code>,
+      <strong><code>fhirData</code></strong> (raw FHIR JSON), <strong><code>fhirRelease</code></strong>
+      (e.g. <code>DSTU2</code>, <code>R4</code>), <code>fhirVersion</code>.</li>
+  </ul>
+  <p>This is materially richer than what JAM-278 syncs today (numeric daily aggregates). It is the
+    provider EHR data the user connected in the Apple Health app.</p>
+
+  <h3>Hard constraints</h3>
+  <div class="callout warn">
+    <ul>
+      <li><strong>No background delivery for clinical records.</strong> Apple does not support
+        <code>HKObserverQuery</code>/background delivery for clinical types. <strong>FHIR can only be
+        read while the app is in the foreground.</strong> (Background delivery <em>is</em> available
+        for the quantity/category types we already sync — see Part C.)</li>
+      <li><strong>Extra entitlement + Info.plist:</strong> requires the <strong>Clinical Health
+        Records</strong> capability (<code>health-records</code> access; paid Apple Developer Program)
+        and <code>NSHealthClinicalHealthRecordsShareUsageDescription</code>.</li>
+      <li><strong>User precondition:</strong> the user must have linked a healthcare provider in the
+        Apple Health app, or there is nothing to read.</li>
+      <li><strong>Mixed FHIR versions:</strong> records can be DSTU2 or R4 depending on the source —
+        storage must keep <code>fhirRelease</code>/<code>fhirVersion</code> and not assume one schema.</li>
+    </ul>
+  </div>
+
+  <h3>Proposed storage &amp; sync model</h3>
+  <ul>
+    <li><strong>New table <code>clinicalRecords</code></strong> (separate from <code>HealthData</code>,
+      which is numeric): <code>id</code>, <code>userId</code>, <code>recordType</code>,
+      <code>fhirResourceId</code>, <code>fhirRelease</code>, <code>fhirVersion</code>,
+      <code>displayName</code>, <code>effectiveDate</code>, <strong><code>fhirData</code> (encrypted
+      blob)</strong>, <code>sourceId</code>, <code>createdAt</code>, <code>updatedAt</code>.</li>
+    <li><strong>Unique index <code>(userId, fhirResourceId)</code></strong> for idempotent upsert / dedup.</li>
+    <li><strong>Sync trigger:</strong> foreground, on app open (and a manual "Sync now"). No background.</li>
+    <li><strong>Incremental:</strong> track last clinical-sync per user; query with a <code>startDate</code>
+      watermark and upsert by <code>fhirResourceId</code> (overwrite if <code>fhirVersion</code> newer).</li>
+    <li><strong>High-sensitivity PHI</strong> → the <code>fhirData</code> blob should be encrypted at
+      the application layer (Part B).</li>
+  </ul>
+
+  <h3>Effort</h3>
+  <p>Substantial — effectively a second ingestion pipeline (new capability + entitlement, new encrypted
+    table + migration, FHIR parsing/version handling, foreground sync UI). Recommend a dedicated
+    ticket/project.</p>
+
+  <h2>Part B — Database encryption methodology on Turso/libsql (production)</h2>
+
+  <h3>Where we are today</h3>
+  <ul>
+    <li><strong>App-level field encryption already exists:</strong> <code>apps/web/src/lib/crypto.ts</code>
+      — AES-256-GCM, keyed by <code>ENCRYPTION_KEY</code> (hex), values prefixed <code>enc:</code>.
+      Used today for <strong>SSN, DOB</strong> (<code>encryptPii</code>) and the <strong>Apple refresh
+      token</strong>.</li>
+    <li><strong><code>HealthData.value</code> is stored as plaintext</strong> (numeric <code>real</code>).
+      FHIR is not yet stored.</li>
+    <li><strong>DB client</strong> (<code>apps/web/src/lib/db/index.ts</code>):
+      <code>createClient({ url, authToken })</code>. Dev uses a local file (<code>file:./dev.db</code>);
+      <strong>production is (almost certainly) hosted Turso</strong> (<code>libsql://</code>,
+      <code>DATABASE_AUTH_TOKEN</code>, <code>dialect: 'turso'</code>). No <code>encryptionKey</code> today.</li>
+  </ul>
+
+  <h3>The key infrastructure fact</h3>
+  <div class="callout warn">
+    The <code>@libsql/client</code> <strong><code>encryptionKey</code> option only encrypts local-file /
+    embedded-replica databases</strong> (SQLCipher-style page encryption). It does <strong>nothing</strong>
+    for a <strong>hosted Turso</strong> connection — there, encryption-at-rest is a <strong>Turso platform
+    feature</strong> handled server-side, not via a client key. So the "one-line <code>encryptionKey</code>"
+    approach would only protect <strong>dev</strong>, not prod. <strong>Production at-rest = a Turso platform
+    setting</strong>, not application code.
+  </div>
+
+  <h3>The options (and why)</h3>
+  <table>
+    <thead>
+      <tr><th>Approach</th><th>Protects against</th><th>Query/sort/aggregate?</th><th>Hosted Turso?</th><th>Verdict</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>App-level AES-256-GCM</strong> (our <code>crypto.ts</code>)</td>
+        <td>App-layer leakage of specific fields, DB dumps</td>
+        <td><strong>No</strong> on encrypted columns (random IV ⇒ no equality/range/order)</td>
+        <td>Yes (encrypt before write, decrypt after read)</td>
+        <td class="verdict-use">Use for high-sensitivity payloads (FHIR blob; reconsider for <code>healthData.value</code>)</td>
+      </tr>
+      <tr>
+        <td><strong>Turso platform encryption-at-rest</strong></td>
+        <td>Stolen disk / leaked backup</td>
+        <td><strong>Yes — full SQL preserved</strong> (app sees plaintext)</td>
+        <td>Yes (platform feature)</td>
+        <td class="verdict-use">Turn on — blanket baseline</td>
+      </tr>
+      <tr>
+        <td><strong>Deterministic encryption</strong></td>
+        <td>Field leakage; allows equality/GROUP BY</td>
+        <td>Partial (equality only; no range/order)</td>
+        <td>Yes</td>
+        <td class="verdict-avoid">Avoid — leaks equality/frequency</td>
+      </tr>
+      <tr>
+        <td><strong>Order-preserving / order-revealing (OPE/ORE)</strong></td>
+        <td>Field leakage; allows range/sort</td>
+        <td>Range + ORDER BY</td>
+        <td>Yes (3rd-party lib)</td>
+        <td class="verdict-avoid">Avoid for PHI — leaks ordering of all values</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Recommendation</h3>
+  <div class="callout rec">
+    <ul>
+      <li><strong>Baseline:</strong> enable <strong>Turso encryption-at-rest</strong> in production.
+        Zero query impact, protects the realistic threat (disk/backup theft). Confirm the exact
+        mechanism with Turso for our plan/region.</li>
+      <li><strong>Defense-in-depth on the actual PHI:</strong>
+        <ul>
+          <li><strong>FHIR <code>fhirData</code> blob → app-level GCM.</strong> Query needs are minimal
+            (fetch by <code>userId</code> / <code>recordType</code> / date), so losing SQL operations
+            on the blob costs nothing.</li>
+          <li><strong><code>healthData.value</code> → reconsider GCM.</strong> We never query/sort by
+            value today (we filter by <code>userId</code>/<code>type</code>/<code>date</code> and
+            aggregate client-side; the device pre-computes avg/min/max). If value-based queries appear
+            later, keep the exact value GCM-encrypted and add a <strong>non-sensitive coarse bucket</strong>
+            column in cleartext for trends — do <strong>not</strong> reach for OPE/deterministic.</li>
+        </ul>
+      </li>
+      <li><strong>Key management:</strong> today <code>ENCRYPTION_KEY</code> lives in env (Vercel).
+        For expanded PHI scope, decide on rotation and whether to move to a managed KMS.</li>
+    </ul>
+  </div>
+
+  <h2>Part C — How they intersect</h2>
+  <ul>
+    <li><strong>Background sync</strong> ("keep server in sync without opening the app") applies
+      <strong>only to the quantity/category types</strong> already in <code>HealthData</code> (HR,
+      steps, sleep, glucose) via HealthKit background delivery (<code>HKObserverQuery</code> +
+      <code>enableBackgroundDelivery</code>). Requires a <strong>native AppDelegate change</strong> and
+      is best-effort/throttled by iOS. <strong>It does not apply to FHIR.</strong></li>
+    <li><strong>Incremental resume-on-reconnect</strong> (keep data on disconnect; on reconnect sync
+      <code>[watermark − overlap, today]</code>, dedup via upsert) applies to <strong>both</strong>
+      pipelines — numeric (<code>(userId, type, date)</code> unique index, already in place) and FHIR
+      (<code>(userId, fhirResourceId)</code> unique index, proposed).</li>
+    <li><strong>Encryption</strong> matters most for <strong>FHIR</strong> and secondarily for
+      <code>healthData.value</code>.</li>
+  </ul>
+
+  <h2>Open decisions for the team</h2>
+  <ol>
+    <li><strong>Build FHIR clinical-records sync?</strong> If yes, priority vs. background sync and
+      incremental sync. Recommended order: incremental sync → background delivery → FHIR.</li>
+    <li><strong>Turso encryption-at-rest in prod:</strong> confirm it's available/enabled on our plan;
+      who owns the config change?</li>
+    <li><strong>Scope of app-level GCM:</strong> FHIR blob only, or also <code>healthData.value</code>?
+      (Recommend: FHIR now; <code>healthData.value</code> when/if value queries appear.)</li>
+    <li><strong>Key management:</strong> stay on env <code>ENCRYPTION_KEY</code>, or move to managed
+      KMS + rotation as PHI scope grows?</li>
+    <li><strong>Apple Developer Program / capabilities:</strong> confirm the paid account + "Clinical
+      Health Records" capability on App ID <code>com.zabaca.veladon</code> (also needed for Sign in
+      with Apple on device).</li>
+    <li><strong>PDA visibility for FHIR:</strong> <code>HealthData</code> is currently patient-only.
+      Should clinical records ever be visible to PDAs, and only via the imported-records path?</li>
+  </ol>
+
+  <footer>Generated 2026-05-21 · companion to <code>planning/healthkit-fhir-sync-and-encryption.md</code></footer>
+</main>
+</body>
+</html>
