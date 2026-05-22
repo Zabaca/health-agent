@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { users, releases as releasesTable, patientAssignments, userProviders, incomingFiles, zabacaAgentRoles, patientDesignatedAgents } from "@/lib/db/schema";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { users, releases as releasesTable, patientAssignments, userProviders, incomingFiles, zabacaAgentRoles, patientDesignatedAgents, RECORD_VISIBLE_SOURCES } from "@/lib/db/schema";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { Title, Text, Stack } from "@mantine/core";
 import PatientDetailTabs from "@/components/staff/PatientDetailTabs";
 import { decryptPii } from "@/lib/crypto";
@@ -38,7 +38,7 @@ export default async function AgentPatientPage({
     db.query.users.findMany({ where: eq(users.type, 'admin') }),
     db.select().from(userProviders).where(eq(userProviders.userId, patientId)).orderBy(asc(userProviders.order)),
     db.query.incomingFiles.findMany({
-      where: eq(incomingFiles.patientId, patientId),
+      where: and(eq(incomingFiles.patientId, patientId), inArray(incomingFiles.source, [...RECORD_VISIBLE_SOURCES])),
       with: { uploadLog: { with: { uploadedBy: true } } },
       orderBy: (f, { desc }) => [desc(f.createdAt)],
     }),

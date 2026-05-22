@@ -68,20 +68,22 @@ export function encryptBuffer(plaintext: Buffer): Buffer {
   return Buffer.concat([FILE_MAGIC, iv, authTag, encrypted]);
 }
 
-/** Decrypts a buffer produced by `encryptBuffer()`. Legacy/plaintext buffers are returned as-is. */
+/**
+ * Decrypts a buffer produced by `encryptBuffer()`. Legacy/plaintext buffers
+ * (no ENC1 magic) are returned as-is. Fails CLOSED: a buffer that IS marked
+ * encrypted but can't be decrypted (corruption / wrong key after rotation)
+ * throws rather than returning ciphertext — the magic header lets us tell that
+ * apart from genuine legacy plaintext, so callers surface an error instead of
+ * serving garbage with a 200.
+ */
 export function decryptBuffer(data: Buffer): Buffer {
   if (!isEncryptedBuffer(data)) return data;
-  try {
-    const iv = data.subarray(4, 16);
-    const authTag = data.subarray(16, 32);
-    const ciphertext = data.subarray(32);
-    const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), iv);
-    decipher.setAuthTag(authTag);
-    return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-  } catch {
-    // Corrupt/undecryptable — return as-is so the caller can decide.
-    return data;
-  }
+  const iv = data.subarray(4, 16);
+  const authTag = data.subarray(16, 32);
+  const ciphertext = data.subarray(32);
+  const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), iv);
+  decipher.setAuthTag(authTag);
+  return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
 }
 
 /** Encrypt both SSN and DOB fields in an object, returning a new object with encrypted values. */

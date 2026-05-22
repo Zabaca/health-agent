@@ -31,7 +31,8 @@ export default async function MyRecordDetailPage({
     with: { faxLog: true, uploadLog: true },
   });
 
-  if (!file || file.patientId !== session?.user?.id) notFound();
+  // Telemetry rows have no viewable document/clinical body — fail closed.
+  if (!file || file.patientId !== session?.user?.id || file.source === "healthkitTelemetry") notFound();
 
   const clinical = file.source === "healthkitFHIR" ? parseClinical(file.dataBlob) : null;
   const fileName = clinical?.displayName ?? file.uploadLog?.originalName ?? null;

@@ -55,7 +55,10 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Local YYYY-MM-DD — must match the local date healthkit.ts stamps on stored
+  // telemetry, or the evening UTC rollover makes the dashboard query "tomorrow".
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   async function syncHealthKit() {
     try {

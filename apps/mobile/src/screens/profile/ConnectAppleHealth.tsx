@@ -70,7 +70,12 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
   async function handleConnect() {
     setLoading(true);
     try {
-      await requestHealthKitAccess();
+      const granted = await requestHealthKitAccess();
+      if (!granted) {
+        // Resolves false on non-iOS (Android/web) — don't flag the account connected.
+        Alert.alert("Not available", "Apple Health is only available on iOS devices.");
+        return;
+      }
       const metrics = await fetchTodayMetrics();
       await Promise.all([
         patchProfile({ healthKitConnected: true }),
@@ -81,7 +86,10 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
       // clinical access is enabled (capability + permissions); errors are non-fatal.
       try {
         const clinical = await fetchClinicalRecords();
-        if (clinical.length > 0) await postClinicalRecords(clinical);
+        // Server caps at 500/request; chunk so a chronic patient's full history persists.
+        for (let i = 0; i < clinical.length; i += 500) {
+          await postClinicalRecords(clinical.slice(i, i + 500));
+        }
       } catch {
         // ignore — clinical access may not be granted/enabled
       }
