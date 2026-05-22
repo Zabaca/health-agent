@@ -34,7 +34,8 @@ export default async function MyRecordDetailPage({
   // Telemetry rows have no viewable document/clinical body — fail closed.
   if (!file || file.patientId !== session?.user?.id || file.source === "healthkitTelemetry") notFound();
 
-  const clinical = file.source === "healthkitFHIR" ? parseClinical(file.dataBlob) : null;
+  const isFhir = file.source === "healthkitFHIR";
+  const clinical = isFhir ? parseClinical(file.dataBlob) : null;
   const fileName = clinical?.displayName ?? file.uploadLog?.originalName ?? null;
 
   return (
@@ -45,7 +46,11 @@ export default async function MyRecordDetailPage({
       </Breadcrumbs>
 
       <Card withBorder p="md">
-        {clinical ? <FhirRecordView record={clinical} /> : <InlineDocViewer fileURL={file.fileURL} />}
+        {isFhir ? (
+          clinical ? <FhirRecordView record={clinical} /> : <Text c="dimmed">This clinical record could not be read.</Text>
+        ) : (
+          <InlineDocViewer fileURL={file.fileURL} />
+        )}
       </Card>
 
       {file.faxLog && (

@@ -104,19 +104,14 @@ export async function GET(req: NextRequest) {
 
   const filtered = requestedTypes ? rows.filter((r) => r.type && requestedTypes.includes(r.type)) : rows;
 
-  const out = filtered.map((r) => {
-    let value = 0;
-    let unit = "";
-    let source: string | null = null;
+  const out = filtered.flatMap((r) => {
     try {
       const parsed = JSON.parse(decrypt(r.dataBlob ?? "")) as { value: number; unit: string; source: string | null };
-      value = parsed.value;
-      unit = parsed.unit;
-      source = parsed.source ?? null;
+      return [{ id: r.id, type: r.type, date: r.time, value: parsed.value, unit: parsed.unit, source: parsed.source ?? null, updatedAt: r.updatedAt }];
     } catch {
-      // Corrupt/blank blob — skip values, keep the row visible.
+      // Corrupt/blank blob — drop the row rather than emit a fake 0 reading.
+      return [];
     }
-    return { id: r.id, type: r.type, date: r.time, value, unit, source, updatedAt: r.updatedAt };
   });
 
   return NextResponse.json(out);

@@ -47,6 +47,11 @@ function formatSleep(minutes: number | null): string {
   return `${h}h ${m}m`;
 }
 
+/** A reading exists even when it's 0 — distinguish a real 0 from "No data". */
+function hasValue(v: number | null | undefined): boolean {
+  return v !== null && v !== undefined;
+}
+
 export default function Dashboard() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
@@ -223,16 +228,16 @@ export default function Dashboard() {
           label="HEART RATE"
           value={metrics?.heartRateAvg !== null && metrics?.heartRateAvg !== undefined ? String(metrics.heartRateAvg) : "--"}
           unit="bpm"
-          status={metrics?.heartRateAvg ? "Normal" : "No data"}
-          statusTone={metrics?.heartRateAvg ? "good" : undefined}
+          status={hasValue(metrics?.heartRateAvg) ? "Normal" : "No data"}
+          statusTone={hasValue(metrics?.heartRateAvg) ? "good" : undefined}
           onPress={() => nav.navigate("CardExpanded", { cardId: "heartRate" })}
         />
         <MetricCard
           label="SLEEP"
           value={formatSleep(metrics?.sleepMinutes ?? null)}
           unit=""
-          status={metrics?.sleepMinutes ? "Good" : "No data"}
-          statusTone={metrics?.sleepMinutes ? "good" : undefined}
+          status={hasValue(metrics?.sleepMinutes) ? "Good" : "No data"}
+          statusTone={hasValue(metrics?.sleepMinutes) ? "good" : undefined}
           onPress={() => nav.navigate("SleepExpanded")}
         />
       </View>
@@ -241,16 +246,16 @@ export default function Dashboard() {
           label="GLUCOSE"
           value={metrics?.glucoseAvg !== null && metrics?.glucoseAvg !== undefined ? String(metrics.glucoseAvg) : "--"}
           unit="mg/dL"
-          status={metrics?.glucoseAvg ? "Normal" : "No data"}
-          statusTone={metrics?.glucoseAvg ? "good" : undefined}
+          status={hasValue(metrics?.glucoseAvg) ? "Normal" : "No data"}
+          statusTone={hasValue(metrics?.glucoseAvg) ? "good" : undefined}
           onPress={() => nav.navigate("GlucoseExpanded")}
         />
         <MetricCard
           label="STEPS"
           value={metrics?.steps !== null && metrics?.steps !== undefined ? metrics.steps.toLocaleString() : "--"}
           unit="steps"
-          status={metrics?.steps ? "Active" : "No data"}
-          statusTone={metrics?.steps ? "good" : undefined}
+          status={hasValue(metrics?.steps) ? "Active" : "No data"}
+          statusTone={hasValue(metrics?.steps) ? "good" : undefined}
           onPress={() => nav.navigate("StepsExpanded")}
         />
       </View>

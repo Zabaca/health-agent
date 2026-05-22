@@ -53,9 +53,13 @@ export function decrypt(value: string): string {
 // readers tell encrypted objects from legacy plaintext (decryptBuffer passes
 // plaintext through unchanged — mirrors decrypt()'s `enc:` behavior).
 const FILE_MAGIC = Buffer.from('ENC1', 'ascii');
+// magic(4) + iv(12) + authTag(16) — the minimum size of an encrypted buffer.
+const FILE_HEADER_MIN = 32;
 
 export function isEncryptedBuffer(data: Buffer): boolean {
-  return data.length >= FILE_MAGIC.length && data.subarray(0, FILE_MAGIC.length).equals(FILE_MAGIC);
+  // Length floor avoids treating a tiny legacy file that merely starts with the
+  // magic bytes as encrypted (it couldn't carry an iv+tag+ciphertext anyway).
+  return data.length >= FILE_HEADER_MIN && data.subarray(0, FILE_MAGIC.length).equals(FILE_MAGIC);
 }
 
 /** Encrypts a binary buffer (e.g. an uploaded file) using AES-256-GCM. */

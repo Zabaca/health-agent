@@ -66,10 +66,15 @@ export async function POST(req: NextRequest) {
     updatedAt: now,
   }));
 
+  // Collapse duplicate fhirResourceIds within the batch — Apple can surface the
+  // same FHIR resource under two categories, and SQLite ON CONFLICT DO UPDATE
+  // errors if one INSERT touches the same conflict target twice.
+  const deduped = Array.from(new Map(rows.map((r) => [r.externalId, r])).values());
+
   // Re-sync overwrites the same resource via (patientId, source, externalId).
   await db
     .insert(incomingFiles)
-    .values(rows)
+    .values(deduped)
     .onConflictDoUpdate({
       target: [incomingFiles.patientId, incomingFiles.source, incomingFiles.externalId],
       set: {

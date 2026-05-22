@@ -35,7 +35,8 @@ async function main() {
       skipped++;
       continue;
     }
-    await putRawToR2(key, encryptBuffer(bytes));
+    // Preserve the object's original ContentType when re-encrypting in place.
+    await putRawToR2(key, encryptBuffer(bytes), obj.ContentType ?? "application/octet-stream");
     encrypted++;
     console.log(`  encrypted ${key}`);
   }

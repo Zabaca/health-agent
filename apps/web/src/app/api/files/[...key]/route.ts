@@ -84,13 +84,28 @@ const MIME_BY_EXT: Record<string, string> = {
   gif: "image/gif",
   webp: "image/webp",
   heic: "image/heic",
+  heif: "image/heic",
   tiff: "image/tiff",
+  tif: "image/tiff",
+  svg: "image/svg+xml",
+  bmp: "image/bmp",
   txt: "text/plain",
 };
 
 function mimeFromKey(key: string): string | undefined {
   const ext = key.split(".").pop()?.toLowerCase();
   return ext ? MIME_BY_EXT[ext] : undefined;
+}
+
+/**
+ * Resolve a content-type. The DB's `fileType` is a bare extension ("pdf") for
+ * fax/upload rows, or a full MIME ("application/fhir+json") elsewhere — map the
+ * extension form to a real MIME so browsers inline-render instead of downloading.
+ */
+function toMime(t: string | undefined): string | undefined {
+  if (!t) return undefined;
+  if (t.includes("/")) return t;
+  return MIME_BY_EXT[t.toLowerCase()];
 }
 
 async function streamFile(key: string, contentType?: string): Promise<NextResponse> {
@@ -104,11 +119,11 @@ async function streamFile(key: string, contentType?: string): Promise<NextRespon
     const body = decryptBuffer(stored);
 
     const headers = new Headers();
-    // Stored bytes are opaque ciphertext (object ContentType is octet-stream),
-    // so prefer the DB-tracked type, then infer from the key's extension
-    // (untracked avatars/signatures/insurance cards), then the object's.
-    const ctype = contentType ?? mimeFromKey(key) ?? obj.ContentType;
-    if (ctype) headers.set("content-type", ctype);
+    // Resolve a real MIME: DB type (ext→MIME) → key extension → the stored
+    // object type (ignoring our opaque octet-stream) → octet-stream default.
+    const objType = obj.ContentType && obj.ContentType !== "application/octet-stream" ? obj.ContentType : undefined;
+    const ctype = toMime(contentType) ?? mimeFromKey(key) ?? objType ?? "application/octet-stream";
+    headers.set("content-type", ctype);
     headers.set("cache-control", "private, no-cache");
 
     return new NextResponse(new Blob([new Uint8Array(body)]), { headers });

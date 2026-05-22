@@ -23,14 +23,15 @@ export async function uploadToR2(
   const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
   const key = `${crypto.randomUUID()}-${safeFilename}`;
 
-  // PHI documents are app-encrypted (our key) before upload — R2 only ever holds
-  // opaque ciphertext. The real content type lives in IncomingFile.fileType and
-  // is applied on serve; the stored object is octet-stream.
+  // PHI documents are app-encrypted (our key) before upload — R2 holds opaque
+  // ciphertext. We still record the true ContentType as object metadata (a hint
+  // only; the bytes are ciphertext) so untracked files (avatars/signatures) with
+  // no DB row and no key extension still serve a correct type.
   await getR2Client().send(new PutObjectCommand({
     Bucket: S3_BUCKET,
     Key: key,
     Body: encryptBuffer(buffer),
-    ContentType: "application/octet-stream",
+    ContentType: contentType,
   }));
 
   return `/api/files/${key}`;
