@@ -68,7 +68,7 @@ async function resolveEmailUpdate(
   return { conflict: false, set: { email, emailVerified: false }, finalEmail: email };
 }
 
-// PATCH — partial update (name, phone, address, avatar, onboarding email — used by PDA onboarding and account page)
+// PATCH — partial update (name, phone, address, avatar, onboarding email, healthKitConnected)
 const partialProfileSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
@@ -76,6 +76,7 @@ const partialProfileSchema = z.object({
   address: z.string().optional(),
   avatarUrl: z.string().nullable().optional(),
   email: z.string().email().optional().or(z.literal("")),
+  healthKitConnected: z.boolean().optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -85,7 +86,7 @@ export async function PATCH(req: NextRequest) {
   const body = partialProfileSchema.safeParse(await req.json());
   if (!body.success) return NextResponse.json({ error: body.error.flatten() }, { status: 400 });
 
-  const { avatarUrl, email, ...rest } = body.data;
+  const { avatarUrl, email, healthKitConnected, ...rest } = body.data;
 
   const emailUpdate = await resolveEmailUpdate(email || undefined, result.userId);
   if (emailUpdate.conflict) {
@@ -96,6 +97,7 @@ export async function PATCH(req: NextRequest) {
     await db.update(users).set({
       ...rest,
       ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl || null } : {}),
+      ...(healthKitConnected !== undefined ? { healthKitConnected } : {}),
       ...emailUpdate.set,
     }).where(eq(users.id, result.userId));
   } catch (err) {

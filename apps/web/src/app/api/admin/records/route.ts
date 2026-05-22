@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
-import { incomingFiles } from "@/lib/db/schema";
-import { eq, isNull, gte, lte, and } from "drizzle-orm";
+import { incomingFiles, RECORD_VISIBLE_SOURCES } from "@/lib/db/schema";
+import { eq, isNull, gte, lte, and, inArray } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const { session, error } = await requireActiveSession();
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
 
-  const conditions = [isNull(incomingFiles.deletedAt)];
+  const conditions = [isNull(incomingFiles.deletedAt), inArray(incomingFiles.source, [...RECORD_VISIBLE_SOURCES])];
   if (unassignedOnly) conditions.push(isNull(incomingFiles.patientId));
   if (dateFrom) conditions.push(gte(incomingFiles.createdAt, dateFrom));
   if (dateTo) conditions.push(lte(incomingFiles.createdAt, dateTo));

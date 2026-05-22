@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFromR2 } from "@/lib/r2";
+import { decryptBuffer } from "@/lib/crypto";
 import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { incomingFiles, patientAssignments, patientDesignatedAgents } from "@/lib/db/schema";
@@ -75,18 +76,42 @@ export async function GET(
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }
 
+const MIME_BY_EXT: Record<string, string> = {
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  heic: "image/heic",
+  tiff: "image/tiff",
+  txt: "text/plain",
+};
+
+function mimeFromKey(key: string): string | undefined {
+  const ext = key.split(".").pop()?.toLowerCase();
+  return ext ? MIME_BY_EXT[ext] : undefined;
+}
+
 async function streamFile(key: string, contentType?: string): Promise<NextResponse> {
   try {
     const obj = await getFromR2(key);
     if (!obj.Body) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+    // Buffer + decrypt (GCM needs the whole object to verify the tag). Legacy
+    // plaintext objects pass through decryptBuffer unchanged.
+    const stored = Buffer.from(await obj.Body.transformToByteArray());
+    const body = decryptBuffer(stored);
+
     const headers = new Headers();
-    if (obj.ContentType) headers.set("content-type", obj.ContentType);
-    else if (contentType) headers.set("content-type", contentType);
+    // Stored bytes are opaque ciphertext (object ContentType is octet-stream),
+    // so prefer the DB-tracked type, then infer from the key's extension
+    // (untracked avatars/signatures/insurance cards), then the object's.
+    const ctype = contentType ?? mimeFromKey(key) ?? obj.ContentType;
+    if (ctype) headers.set("content-type", ctype);
     headers.set("cache-control", "private, no-cache");
 
-    const stream = obj.Body.transformToWebStream();
-    return new NextResponse(stream, { headers });
+    return new NextResponse(new Blob([new Uint8Array(body)]), { headers });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const userId = result.userId;
 
   const [user, providers, pdas, releaseRows] = await Promise.all([
-    db.query.users.findFirst({ where: eq(users.id, userId), columns: { profileComplete: true, firstName: true } }),
+    db.query.users.findFirst({ where: eq(users.id, userId), columns: { profileComplete: true, firstName: true, healthKitConnected: true } }),
     db.query.userProviders.findMany({ where: eq(userProviders.userId, userId), columns: { id: true } }),
     db.query.patientDesignatedAgents.findMany({ where: eq(patientDesignatedAgents.patientId, userId), columns: { id: true } }),
     db.query.releases.findMany({ where: eq(releases.userId, userId), columns: { id: true, voided: true } }),
@@ -24,5 +24,6 @@ export async function GET(req: NextRequest) {
     providerAdded: providers.length > 0,
     pdaAdded: pdas.length > 0,
     releaseCreated: releaseRows.some(r => !r.voided),
+    healthKitConnected: user?.healthKitConnected ?? false,
   });
 }

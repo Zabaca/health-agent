@@ -123,6 +123,7 @@ export async function purgeExpiredAccounts(): Promise<{ purged: number }> {
       columns: { id: true, fileURL: true },
     });
     for (const f of files) {
+      if (!f.fileURL) continue; // HealthKit rows have no R2 object
       try {
         await deleteFromR2(f.fileURL);
       } catch {

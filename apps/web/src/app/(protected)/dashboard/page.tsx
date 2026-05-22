@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { releases as releasesTable, users, userProviders, patientDesignatedAgents, incomingFiles } from "@/lib/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { releases as releasesTable, users, userProviders, patientDesignatedAgents, incomingFiles, RECORD_VISIBLE_SOURCES } from "@/lib/db/schema";
+import { desc, eq, and, inArray } from "drizzle-orm";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import DashboardSummary from "@/components/dashboard/DashboardSummary";
 
@@ -34,7 +34,7 @@ export default async function DashboardPage() {
         with: { providers: { columns: { providerName: true, insurance: true, providerType: true }, orderBy: (p, { asc }) => [asc(p.order)] } },
         orderBy: [desc(releasesTable.updatedAt)],
       }),
-      db.query.incomingFiles.findMany({ where: eq(incomingFiles.patientId, userId), columns: { id: true } }),
+      db.query.incomingFiles.findMany({ where: and(eq(incomingFiles.patientId, userId), inArray(incomingFiles.source, [...RECORD_VISIBLE_SOURCES])), columns: { id: true } }),
     ]);
 
     profileComplete = user?.profileComplete ?? false;

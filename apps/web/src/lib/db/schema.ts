@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
 export const users = sqliteTable('User', {
@@ -62,6 +62,8 @@ export const users = sqliteTable('User', {
   deletedEmail: text('deletedEmail'),
   /** Apple refresh token (encrypted) captured at sign-in; used to call Apple's /auth/revoke on deletion. */
   appleRefreshToken: text('appleRefreshToken'),
+  /** Set to true when the user grants HealthKit access from the mobile app. */
+  healthKitConnected: integer('healthKitConnected', { mode: 'boolean' }).notNull().default(false),
 });
 
 /**
@@ -363,19 +365,50 @@ export const incomingFaxLog = sqliteTable('IncomingFaxLog', {
   createdAt: text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+/**
+ * IncomingFile.source values shown in records lists (web + mobile, incl. PDA).
+ * Allow-list, fail-closed: `healthkitTelemetry` (patient-only vitals) and any
+ * future non-document source are excluded unless explicitly added here.
+ */
+export const RECORD_VISIBLE_SOURCES = ['fax', 'upload', 'healthkitFHIR'] as const;
+
 export const incomingFiles = sqliteTable('IncomingFile', {
   id:               text('id').primaryKey(),
+  /**
+   * Ingestion category. Document rows: 'fax' | 'upload'. HealthKit rows:
+   * 'healthkitFHIR' (clinical records — records-visible, PDA via permission) |
+   * 'healthkitTelemetry' (vitals — mobile-only, patient-only, excluded from records lists).
+   */
+  source:           text('source').notNull().default('fax'),
+  // Document fields. HealthKit rows have no file → stored as '' sentinel (kept
+  // NOT NULL to avoid a risky SQLite table rebuild; allow-list filters exclude
+  // HealthKit rows from all file-serving/records paths).
   fileURL:          text('fileURL').notNull(),
   fileType:         text('fileType').notNull(),
-  source:           text('source').notNull().default('fax'),
   incomingFaxLogId: text('incomingFaxLogId').references(() => incomingFaxLog.id),
   patientId:        text('patientId').references(() => users.id),
   releaseCode:      text('releaseCode'),
   userProviderId:   text('userProviderId').references(() => userProviders.id, { onDelete: 'set null' }),
+  // HealthKit fields — null for document rows.
+  /** Data kind: telemetry metric id (heartRateAvg, steps, …) or FHIR resourceType. */
+  type:             text('type'),
+  /** ISO timestamp: sample time (telemetry) / effective date (FHIR). */
+  time:             text('time'),
+  /** Encrypted JSON payload (telemetry values / FHIR resource), GCM via crypto.ts. */
+  dataBlob:         text('dataBlob'),
+  /** Dedup key: telemetry "<type>:<date>" / FHIR resource id. NULL for documents. */
+  externalId:       text('externalId'),
   createdAt:        text('createdAt').notNull().$defaultFn(() => new Date().toISOString()),
+  /** Last upsert time for HealthKit rows (re-sync); NULL for documents. */
+  updatedAt:        text('updatedAt'),
   deletedAt:        text('deletedAt'),
   deletedById:      text('deletedById').references(() => users.id),
-});
+}, (t) => ({
+  // Charts + records lists: range over (patientId, source, type, time).
+  patientSourceTypeTimeIdx: index('incomingFile_patient_source_type_time').on(t.patientId, t.source, t.type, t.time),
+  // Idempotent HealthKit upsert. externalId is NULL for documents (NULLs don't collide in SQLite unique indexes).
+  patientSourceExternalIdx: uniqueIndex('incomingFile_patient_source_externalId').on(t.patientId, t.source, t.externalId),
+}));
 
 export const incomingFaxLogRelations = relations(incomingFaxLog, ({ many }) => ({
   files: many(incomingFiles),
