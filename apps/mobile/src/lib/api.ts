@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { ProviderFormData, ReleaseFormData } from "@health-agent/types";
+import type { ClinicalRecordInput } from "./healthkit";
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 export const SESSION_TOKEN_KEY = "session_token";
@@ -281,6 +282,14 @@ export async function getHealthData(opts?: {
   if (opts?.type?.length) params.set("type", opts.type.join(","));
   const qs = params.toString();
   return (await apiFetch(`/api/health-data${qs ? `?${qs}` : ""}`, {}, { auth: true })) as HealthDataRow[];
+}
+
+export async function postClinicalRecords(records: ClinicalRecordInput[]): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    "/api/clinical-records",
+    { method: "POST", body: JSON.stringify({ records }) },
+    { auth: true },
+  )) as { success: boolean };
 }
 
 // ─── Connected accounts (link/unlink OAuth providers) ──────────────────────────

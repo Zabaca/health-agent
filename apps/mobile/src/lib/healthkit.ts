@@ -191,3 +191,73 @@ export async function fetchTodayMetrics(): Promise<HealthRecord[]> {
 
   return records;
 }
+
+// ─── Clinical records (FHIR) ────────────────────────────────────────────────
+// Apple returns these as FHIR (DSTU2/R4). Foreground-only — no background
+// delivery for clinical records.
+// TODO(fhir): clinical reads need the "Clinical Health Records" capability on
+// the App ID (paid Apple Developer Program) + clinical read permissions in
+// requestHealthKitAccess() + NSHealthClinicalHealthRecordsShareUsageDescription
+// (added to Info.plist). Until enabled, getClinicalRecords errors and this
+// returns []. Validate field handling against real provider data on a device.
+const CLINICAL_TYPES = [
+  'AllergyRecord',
+  'ConditionRecord',
+  'ImmunizationRecord',
+  'LabResultRecord',
+  'MedicationRecord',
+  'ProcedureRecord',
+  'VitalSignRecord',
+  'CoverageRecord',
+] as const;
+
+export type ClinicalRecordInput = {
+  recordType: string;
+  fhirResourceId: string;
+  resourceType: string;
+  displayName?: string;
+  effectiveDate?: string;
+  fhirRelease?: string;
+  fhirVersion?: string;
+  fhirData: unknown;
+};
+
+/**
+ * Fetch FHIR clinical records from the last `sinceDays`. Returns [] on non-iOS
+ * or when clinical access isn't granted/enabled.
+ */
+export async function fetchClinicalRecords(sinceDays = 365): Promise<ClinicalRecordInput[]> {
+  if (Platform.OS !== 'ios') return [];
+  const AppleHealthKit = getAppleHealthKit();
+  const start = new Date();
+  start.setDate(start.getDate() - sinceDays);
+  const startDate = start.toISOString();
+  const out: ClinicalRecordInput[] = [];
+
+  for (const type of CLINICAL_TYPES) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const results = await new Promise<any[] | null>((resolve) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      AppleHealthKit.getClinicalRecords({ startDate, type }, (err: string, res: any[]) =>
+        resolve(err ? null : res),
+      );
+    });
+    if (!results) continue;
+    for (const r of results) {
+      const fhir = r.fhirData ?? {};
+      const fhirResourceId = fhir.id ?? r.id;
+      if (!fhirResourceId) continue;
+      out.push({
+        recordType: type,
+        fhirResourceId: String(fhirResourceId),
+        resourceType: fhir.resourceType ?? type,
+        displayName: r.displayName,
+        effectiveDate: fhir.effectiveDateTime ?? fhir.recordedDate ?? fhir.onsetDateTime ?? r.startDate,
+        fhirRelease: r.fhirRelease,
+        fhirVersion: r.fhirVersion,
+        fhirData: fhir,
+      });
+    }
+  }
+  return out;
+}

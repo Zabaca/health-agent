@@ -6,6 +6,17 @@ import { eq } from "drizzle-orm";
 import { Stack, Text, Group, Card, Anchor, Breadcrumbs, Title } from "@mantine/core";
 import Link from "next/link";
 import InlineDocViewer from "@/components/records/InlineDocViewer";
+import FhirRecordView from "@/components/records/FhirRecordView";
+import { decrypt } from "@/lib/crypto";
+import { type StoredClinicalRecord } from "@health-agent/types";
+
+function parseClinical(dataBlob: string | null): StoredClinicalRecord | null {
+  try {
+    return JSON.parse(decrypt(dataBlob ?? "")) as StoredClinicalRecord;
+  } catch {
+    return null;
+  }
+}
 
 export default async function MyRecordDetailPage({
   params,
@@ -22,7 +33,8 @@ export default async function MyRecordDetailPage({
 
   if (!file || file.patientId !== session?.user?.id) notFound();
 
-  const fileName = file.uploadLog?.originalName ?? null;
+  const clinical = file.source === "healthkitFHIR" ? parseClinical(file.dataBlob) : null;
+  const fileName = clinical?.displayName ?? file.uploadLog?.originalName ?? null;
 
   return (
     <Stack gap="lg">
@@ -32,7 +44,7 @@ export default async function MyRecordDetailPage({
       </Breadcrumbs>
 
       <Card withBorder p="md">
-        <InlineDocViewer fileURL={file.fileURL} />
+        {clinical ? <FhirRecordView record={clinical} /> : <InlineDocViewer fileURL={file.fileURL} />}
       </Card>
 
       {file.faxLog && (

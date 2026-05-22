@@ -6,8 +6,8 @@ import { Activity, Moon, FlaskConical, Footprints, Heart } from "lucide-react-na
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { useTheme } from "@/theme/ThemeProvider";
-import { requestHealthKitAccess, fetchTodayMetrics, recordHealthSync, getLastHealthSync, clearHealthSync } from "@/lib/healthkit";
-import { patchProfile, postHealthData, getSetupStatus, getHealthData, type HealthDataRow } from "@/lib/api";
+import { requestHealthKitAccess, fetchTodayMetrics, fetchClinicalRecords, recordHealthSync, getLastHealthSync, clearHealthSync } from "@/lib/healthkit";
+import { patchProfile, postHealthData, postClinicalRecords, getSetupStatus, getHealthData, type HealthDataRow } from "@/lib/api";
 import type { ProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
@@ -77,6 +77,14 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
         metrics.length > 0 ? postHealthData(metrics) : Promise.resolve(),
       ]);
       await recordHealthSync();
+      // FHIR clinical records (foreground, one-time on connect). No-op until
+      // clinical access is enabled (capability + permissions); errors are non-fatal.
+      try {
+        const clinical = await fetchClinicalRecords();
+        if (clinical.length > 0) await postClinicalRecords(clinical);
+      } catch {
+        // ignore — clinical access may not be granted/enabled
+      }
       onConnected?.();
       nav.goBack();
     } catch (err) {
