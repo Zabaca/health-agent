@@ -4,8 +4,9 @@ import { db } from "@/lib/db";
 import {
   patientDesignatedAgents,
   incomingFiles,
+  RECORD_VISIBLE_SOURCES,
 } from "@/lib/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, inArray } from "drizzle-orm";
 
 // GET /api/representing/[patientId]/records — fetch patient's files scoped by PDA grants
 export async function GET(
@@ -29,7 +30,7 @@ export async function GET(
   if (!relation.healthRecordsPermission) return NextResponse.json({ error: "No document access" }, { status: 403 });
 
   const files = await db.query.incomingFiles.findMany({
-    where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt)),
+    where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt), inArray(incomingFiles.source, [...RECORD_VISIBLE_SOURCES])),
     with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
     orderBy: (f, { desc }) => [desc(f.createdAt)],
   });

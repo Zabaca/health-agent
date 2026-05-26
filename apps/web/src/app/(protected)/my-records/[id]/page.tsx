@@ -6,6 +6,17 @@ import { eq } from "drizzle-orm";
 import { Stack, Text, Group, Card, Anchor, Breadcrumbs, Title } from "@mantine/core";
 import Link from "next/link";
 import InlineDocViewer from "@/components/records/InlineDocViewer";
+import FhirRecordView from "@/components/records/FhirRecordView";
+import { decrypt } from "@/lib/crypto";
+import { type StoredClinicalRecord } from "@health-agent/types";
+
+function parseClinical(dataBlob: string | null): StoredClinicalRecord | null {
+  try {
+    return JSON.parse(decrypt(dataBlob ?? "")) as StoredClinicalRecord;
+  } catch {
+    return null;
+  }
+}
 
 export default async function MyRecordDetailPage({
   params,
@@ -20,9 +31,12 @@ export default async function MyRecordDetailPage({
     with: { faxLog: true, uploadLog: true },
   });
 
-  if (!file || file.patientId !== session?.user?.id) notFound();
+  // Telemetry rows have no viewable document/clinical body — fail closed.
+  if (!file || file.patientId !== session?.user?.id || file.source === "healthkitTelemetry") notFound();
 
-  const fileName = file.uploadLog?.originalName ?? null;
+  const isFhir = file.source === "healthkitFHIR";
+  const clinical = isFhir ? parseClinical(file.dataBlob) : null;
+  const fileName = clinical?.displayName ?? file.uploadLog?.originalName ?? null;
 
   return (
     <Stack gap="lg">
@@ -32,7 +46,11 @@ export default async function MyRecordDetailPage({
       </Breadcrumbs>
 
       <Card withBorder p="md">
-        <InlineDocViewer fileURL={file.fileURL} />
+        {isFhir ? (
+          clinical ? <FhirRecordView record={clinical} /> : <Text c="dimmed">This clinical record could not be read.</Text>
+        ) : (
+          <InlineDocViewer fileURL={file.fileURL} />
+        )}
       </Card>
 
       {file.faxLog && (

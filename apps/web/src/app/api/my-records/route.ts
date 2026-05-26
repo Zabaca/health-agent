@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
-import { incomingFiles } from "@/lib/db/schema";
-import { and, eq, isNull, lt, or } from "drizzle-orm";
+import { incomingFiles, RECORD_VISIBLE_SOURCES } from "@/lib/db/schema";
+import { and, eq, isNull, lt, or, inArray } from "drizzle-orm";
 
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
@@ -39,6 +39,7 @@ export async function GET(req: Request) {
     where: and(
       eq(incomingFiles.patientId, result.userId),
       isNull(incomingFiles.deletedAt),
+      inArray(incomingFiles.source, [...RECORD_VISIBLE_SOURCES]),
       cursor
         ? or(
             lt(incomingFiles.createdAt, cursor.ts),

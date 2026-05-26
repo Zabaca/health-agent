@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { patientDesignatedAgents, incomingFiles, userProviders } from "@/lib/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { patientDesignatedAgents, incomingFiles, userProviders, RECORD_VISIBLE_SOURCES } from "@/lib/db/schema";
+import { eq, and, isNull, inArray } from "drizzle-orm";
 import { Breadcrumbs, Anchor, Text } from "@mantine/core";
 import Link from "next/link";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
@@ -34,7 +34,7 @@ export default async function RepresentingRecordsPage({
 
   const [files, patientProviders] = await Promise.all([
     db.query.incomingFiles.findMany({
-      where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt)),
+      where: and(eq(incomingFiles.patientId, patientId), isNull(incomingFiles.deletedAt), inArray(incomingFiles.source, [...RECORD_VISIBLE_SOURCES])),
       with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
       orderBy: (f, { desc }) => [desc(f.createdAt)],
     }),

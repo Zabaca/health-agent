@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
-import { incomingFiles } from "@/lib/db/schema";
-import { isNull, gte, lte, and } from "drizzle-orm";
+import { incomingFiles, RECORD_VISIBLE_SOURCES } from "@/lib/db/schema";
+import { isNull, gte, lte, and, inArray } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const { session, error } = await requireActiveSession();
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const dateTo = searchParams.get("dateTo");
 
   // Agents always see unassigned only
-  const conditions = [isNull(incomingFiles.patientId), isNull(incomingFiles.deletedAt)];
+  const conditions = [isNull(incomingFiles.patientId), isNull(incomingFiles.deletedAt), inArray(incomingFiles.source, [...RECORD_VISIBLE_SOURCES])];
   if (dateFrom) conditions.push(gte(incomingFiles.createdAt, dateFrom));
   if (dateTo) conditions.push(lte(incomingFiles.createdAt, dateTo));
 

@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { incomingFiles, userProviders } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { incomingFiles, userProviders, RECORD_VISIBLE_SOURCES } from "@/lib/db/schema";
+import { eq, and, inArray } from "drizzle-orm";
 import PageHeader from "@/components/shared/PageHeader";
 import MyRecordsTable from "@/components/records/MyRecordsTable";
 import UploadFileButton from "@/components/records/UploadFileButton";
@@ -16,7 +16,7 @@ export default async function MyRecordsPage() {
 
   const [files, myProviders] = await Promise.all([
     db.query.incomingFiles.findMany({
-      where: eq(incomingFiles.patientId, userId),
+      where: and(eq(incomingFiles.patientId, userId), inArray(incomingFiles.source, [...RECORD_VISIBLE_SOURCES])),
       with: { faxLog: true, uploadLog: { with: { uploadedBy: true } } },
       orderBy: (f, { desc }) => [desc(f.createdAt)],
     }),

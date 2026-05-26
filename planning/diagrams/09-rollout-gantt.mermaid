@@ -1,0 +1,31 @@
+gantt
+  title Rollout phases
+  dateFormat  YYYY-MM-DD
+  axisFormat  Sprint %s
+
+  section Phase 0 — Foundations
+  publishEvent + audit_log + waitUntil     :p0a, 2026-05-11, 4d
+  notification_preferences table + UI stub :p0b, after p0a, 3d
+  Migrate existing email sends to publisher:p0c, after p0b, 3d
+
+  section Phase 1 — Notifications
+  Expo push: token registration + send     :p1a, 2026-05-22, 5d
+  Web push: SW + VAPID                     :p1b, after p1a, 4d
+  In-app inbox UI + bell                   :p1c, after p1b, 4d
+  Channel router + dedup                   :p1d, after p1a, 5d
+  Wire missing events (release.signed etc) :p1e, after p1d, 3d
+
+  section Phase 2 — Presence
+  Pick + integrate Ably or Soketi          :p2a, 2026-06-15, 5d
+  /api/realtime/auth + scope checks        :p2b, after p2a, 3d
+  Web + mobile subscribe layer             :p2c, after p2b, 5d
+  Presence-aware channel suppression       :p2d, after p2c, 3d
+  Live record/release fan-out              :p2e, after p2d, 4d
+
+  section Phase 3 — Collision
+  Optimistic locking on hot tables         :p3a, 2026-07-13, 5d
+  Atomic signature endpoint                :p3b, 2026-07-13, 1d
+  Soft edit leases                         :p3c, after p3a, 5d
+
+  section Phase 4 — Co-editing (deferred)
+  CRDT exploration if needed               :p4, 2026-09-01, 10d

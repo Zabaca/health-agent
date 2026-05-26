@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { incomingFiles } from "@/lib/db/schema";
+import { incomingFiles, RECORD_VISIBLE_SOURCES } from "@/lib/db/schema";
+import { inArray } from "drizzle-orm";
 import { Group, Title } from "@mantine/core";
 import RecordsTable from "@/components/records/RecordsTable";
 import UploadFileButton from "@/components/records/UploadFileButton";
@@ -11,6 +12,7 @@ export default async function AdminRecordsPage() {
   await auth();
 
   const files = await db.query.incomingFiles.findMany({
+    where: inArray(incomingFiles.source, [...RECORD_VISIBLE_SOURCES]),
     with: { faxLog: true },
     orderBy: (f, { desc }) => [desc(f.createdAt)],
   });

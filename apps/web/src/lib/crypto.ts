@@ -48,6 +48,48 @@ export function decrypt(value: string): string {
   }
 }
 
+// ─── Binary (file) encryption ───────────────────────────────────────────────
+// Layout: MAGIC(4) | iv(12) | authTag(16) | ciphertext. The magic prefix lets
+// readers tell encrypted objects from legacy plaintext (decryptBuffer passes
+// plaintext through unchanged — mirrors decrypt()'s `enc:` behavior).
+const FILE_MAGIC = Buffer.from('ENC1', 'ascii');
+// magic(4) + iv(12) + authTag(16) — the minimum size of an encrypted buffer.
+const FILE_HEADER_MIN = 32;
+
+export function isEncryptedBuffer(data: Buffer): boolean {
+  // Length floor avoids treating a tiny legacy file that merely starts with the
+  // magic bytes as encrypted (it couldn't carry an iv+tag+ciphertext anyway).
+  return data.length >= FILE_HEADER_MIN && data.subarray(0, FILE_MAGIC.length).equals(FILE_MAGIC);
+}
+
+/** Encrypts a binary buffer (e.g. an uploaded file) using AES-256-GCM. */
+export function encryptBuffer(plaintext: Buffer): Buffer {
+  const key = getKey();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return Buffer.concat([FILE_MAGIC, iv, authTag, encrypted]);
+}
+
+/**
+ * Decrypts a buffer produced by `encryptBuffer()`. Legacy/plaintext buffers
+ * (no ENC1 magic) are returned as-is. Fails CLOSED: a buffer that IS marked
+ * encrypted but can't be decrypted (corruption / wrong key after rotation)
+ * throws rather than returning ciphertext — the magic header lets us tell that
+ * apart from genuine legacy plaintext, so callers surface an error instead of
+ * serving garbage with a 200.
+ */
+export function decryptBuffer(data: Buffer): Buffer {
+  if (!isEncryptedBuffer(data)) return data;
+  const iv = data.subarray(4, 16);
+  const authTag = data.subarray(16, 32);
+  const ciphertext = data.subarray(32);
+  const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), iv);
+  decipher.setAuthTag(authTag);
+  return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+}
+
 /** Encrypt both SSN and DOB fields in an object, returning a new object with encrypted values. */
 export function encryptPii<T extends { ssn?: string | null; dateOfBirth?: string | null }>(
   data: T

@@ -1630,6 +1630,8 @@ PODS:
     - React-logger (= 0.76.5)
     - React-perflogger (= 0.76.5)
     - React-utils (= 0.76.5)
+  - RNAppleHealthKit (1.7.0):
+    - React
   - RNDateTimePicker (8.2.0):
     - React-Core
   - RNGestureHandler (2.20.2):
@@ -1777,6 +1779,7 @@ DEPENDENCIES:
   - React-utils (from `../../../node_modules/react-native/ReactCommon/react/utils`)
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../../../node_modules/react-native/ReactCommon`)
+  - RNAppleHealthKit (from `../../../node_modules/react-native-health`)
   - "RNDateTimePicker (from `../../../node_modules/@react-native-community/datetimepicker`)"
   - RNGestureHandler (from `../../../node_modules/react-native-gesture-handler`)
   - RNScreens (from `../../../node_modules/react-native-screens`)
@@ -1969,6 +1972,8 @@ EXTERNAL SOURCES:
     :path: build/generated/ios
   ReactCommon:
     :path: "../../../node_modules/react-native/ReactCommon"
+  RNAppleHealthKit:
+    :path: "../../../node_modules/react-native-health"
   RNDateTimePicker:
     :path: "../../../node_modules/@react-native-community/datetimepicker"
   RNGestureHandler:
@@ -2071,6 +2076,7 @@ SPEC CHECKSUMS:
   React-utils: f584a494ac233c7857bab176416b0c49cb4037ba
   ReactCodegen: 1f59af46efc9351f27046d90d9ceb5e99385f623
   ReactCommon: 5809a8ee421b7219221a475b78180f8f34b5c5ec
+  RNAppleHealthKit: 86ef7ab70f762b802f5c5289372de360cca701f9
   RNDateTimePicker: 818460dc31b0dc5ec58289003e27dd8d022fb79c
   RNGestureHandler: 27a63f2218affdf1a426d56682f9b174904838b3
   RNScreens: 4a5ab20b324ed1e3fe3862796b8f8e0a6208c415

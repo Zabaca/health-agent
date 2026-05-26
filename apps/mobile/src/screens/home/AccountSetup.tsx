@@ -60,6 +60,14 @@ export default function AccountSetup() {
       disabled: !prereqsMet,
       onPress: () => nav.navigate("ReleasesTab", { screen: "WizardStep1" } as never),
     },
+    {
+      id: "healthkit",
+      title: "Connect Apple Health",
+      body: "Sync your vitals, sleep, glucose, and activity data to your dashboard automatically.",
+      complete: status?.healthKitConnected ?? false,
+      disabled: false,
+      onPress: () => nav.navigate("ProfileTab", { screen: "ConnectAppleHealth" } as never),
+    },
   ];
 
   return (

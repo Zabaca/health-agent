@@ -1,0 +1,12 @@
+flowchart LR
+  USER[👤 Guest does something<br/>e.g., uploads a record] --> CLERK[🛎️ Front Desk<br/>route handler]
+  CLERK -->|"signs logbook"| LOG[📓 Logbook<br/>audit_log]
+  CLERK -->|"says: 'done!'"| USER
+  CLERK -.->|"hands off"| BELLHOP[🚶 Bellhop<br/>waitUntil fanout]
+
+  BELLHOP --> BRAIN{🧠 'How do I reach<br/>the recipient?'}
+  BRAIN -->|"in their room"| PHONE[☎️ In-app toast]
+  BRAIN -->|"out of room"| PAGER[📟 Push notification]
+  BRAIN -->|"out of room"| MAIL[✉️ Email]
+
+  WHITEBOARD[📋 Receptionist's<br/>Whiteboard<br/>presence] -.->|"who's where?"| BRAIN

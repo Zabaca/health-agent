@@ -1,6 +1,7 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { ProviderFormData, ReleaseFormData } from "@health-agent/types";
+import type { ClinicalRecordInput } from "./healthkit";
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 export const SESSION_TOKEN_KEY = "session_token";
@@ -185,6 +186,7 @@ export type SetupStatus = {
   providerAdded: boolean;
   pdaAdded: boolean;
   releaseCreated: boolean;
+  healthKitConnected: boolean;
 };
 
 export async function getSetupStatus(): Promise<SetupStatus> {
@@ -225,6 +227,69 @@ export type UpdateProfileInput = {
 
 export async function updateProfile(data: UpdateProfileInput): Promise<{ success: boolean }> {
   return (await apiFetch("/api/profile", { method: "PUT", body: JSON.stringify(data) }, { auth: true })) as { success: boolean };
+}
+
+export type PatchProfileInput = {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  address?: string;
+  avatarUrl?: string | null;
+  email?: string;
+  healthKitConnected?: boolean;
+};
+
+export async function patchProfile(data: PatchProfileInput): Promise<{ success: boolean }> {
+  return (await apiFetch("/api/profile", { method: "PATCH", body: JSON.stringify(data) }, { auth: true })) as { success: boolean };
+}
+
+// ─── Health Data ──────────────────────────────────────────────────────────────
+
+export type HealthRecord = {
+  type: string;
+  date: string;
+  value: number;
+  unit: string;
+  source?: string;
+};
+
+export type HealthDataRow = {
+  id: string;
+  type: string;
+  date: string;
+  value: number;
+  unit: string;
+  source: string | null;
+  updatedAt: string;
+};
+
+export async function postHealthData(records: HealthRecord[]): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    "/api/health-data",
+    { method: "POST", body: JSON.stringify({ records }) },
+    { auth: true },
+  )) as { success: boolean };
+}
+
+export async function getHealthData(opts?: {
+  from?: string;
+  to?: string;
+  type?: string[];
+}): Promise<HealthDataRow[]> {
+  const params = new URLSearchParams();
+  if (opts?.from) params.set("from", opts.from);
+  if (opts?.to) params.set("to", opts.to);
+  if (opts?.type?.length) params.set("type", opts.type.join(","));
+  const qs = params.toString();
+  return (await apiFetch(`/api/health-data${qs ? `?${qs}` : ""}`, {}, { auth: true })) as HealthDataRow[];
+}
+
+export async function postClinicalRecords(records: ClinicalRecordInput[]): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    "/api/clinical-records",
+    { method: "POST", body: JSON.stringify({ records }) },
+    { auth: true },
+  )) as { success: boolean };
 }
 
 // ─── Connected accounts (link/unlink OAuth providers) ──────────────────────────
