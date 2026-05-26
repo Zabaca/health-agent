@@ -1,0 +1,11 @@
+flowchart TD
+  EDIT[user opens edit mode] --> LEASE{lease available?}
+  LEASE -- yes --> ACQ[acquire 30s lease<br/>broadcast lock]
+  LEASE -- no --> READONLY[read-only mode<br/>show 'X is editing']
+  ACQ --> HB[heartbeat every 15s]
+  HB --> SAVE{save?}
+  SAVE -- yes --> OL[optimistic update<br/>WHERE version = ?]
+  OL -- 200 --> RELEASE[release lease<br/>broadcast unlock]
+  OL -- 409 --> CONFLICT[conflict UI:<br/>'they changed X — keep mine / theirs / merge']
+  SAVE -- close --> RELEASE
+  HB -- timeout --> EXPIRE[lease expired<br/>force re-acquire]

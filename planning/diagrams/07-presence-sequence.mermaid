@@ -1,0 +1,29 @@
+sequenceDiagram
+  participant PDA
+  participant API as Next.js API
+  participant DB
+  participant LOG as Audit log
+  participant ROUTER as Channel router (waitUntil)
+  participant RT as Realtime
+  participant WEB as Patient web client
+  participant MOB as Patient mobile
+
+  PDA->>API: POST /records/upload (for patientId)
+  API->>DB: insert incomingFile + fileUploadLog
+  API->>LOG: writeAudit(record.uploaded)
+  API-->>PDA: 200
+  API->>ROUTER: waitUntil(run router)
+
+  ROUTER->>RT: presence query — patient online?
+  alt patient online
+    RT-->>ROUTER: yes
+    ROUTER->>RT: publish patient:{id} {recordId, byRole}
+    RT-->>WEB: live event
+    RT-->>MOB: live event
+  else patient offline
+    RT-->>ROUTER: no
+    ROUTER->>MOB: Expo push (if token + pref)
+    ROUTER->>API: send email (if pref)
+  end
+
+  Note over ROUTER: Best-effort — vendor failure here drops this one notification. No retry.

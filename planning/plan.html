@@ -1,0 +1,1396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Real-time Notifications, Presence & Collaboration — Architecture Research</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #666;
+    --accent: #2563eb;
+    --border: #e5e7eb;
+    --code-bg: #f5f5f5;
+    --table-stripe: #fafafa;
+    --max: 1200px;
+    --prose: 820px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --fg: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --border: #30363d;
+      --code-bg: #161b22;
+      --table-stripe: #161b22;
+    }
+  }
+  html, body { background: var(--bg); color: var(--fg); }
+  body {
+    margin: 0;
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  }
+  main { max-width: var(--max); margin: 2rem auto; padding: 0 1.25rem; }
+  /* Keep prose at a comfortable reading width while letting diagrams,
+     tables, and code use the full column. */
+  main p, main h1, main h2, main h3, main h4, main ul, main ol, main blockquote {
+    max-width: var(--prose);
+  }
+  pre.mermaid, table, pre:not(.mermaid) { width: 100%; }
+  h1, h2, h3, h4 { line-height: 1.25; }
+  h1 { font-size: 1.9rem; margin-top: 2.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0.4rem; }
+  h2 { font-size: 1.4rem; margin-top: 2rem; }
+  h3 { font-size: 1.15rem; margin-top: 1.5rem; }
+  a { color: var(--accent); }
+  code { background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.92em; }
+  pre {
+    background: var(--code-bg);
+    padding: 0.85rem 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+  }
+  /* Mermaid diagrams render inside iframes so they can use viewport width
+     while the surrounding prose stays at the comfortable reading width. */
+  iframe.mermaid-frame {
+    display: block;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    border: 0;
+    background: transparent;
+    min-height: 360px;
+    transition: height 0.15s ease;
+  }
+  /* Avoid double horizontal scroll when the iframe content is itself scrollable */
+  body { overflow-x: hidden; }
+  pre code { background: transparent; padding: 0; }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    margin: 1rem 0;
+    padding: 0.25rem 1rem;
+    color: var(--muted);
+    background: var(--code-bg);
+  }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.93em; }
+  th, td { border: 1px solid var(--border); padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; }
+  tr:nth-child(even) td { background: var(--table-stripe); }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 3rem 0; }
+  .toc {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0;
+  }
+  .toc h2 { margin: 0 0 0.5rem; font-size: 1.05rem; }
+  .toc ol { margin: 0; padding-left: 1.25rem; }
+  .toc li { margin: 0.15rem 0; text-transform: capitalize; }
+  .chapter { padding-top: 1rem; }
+  .topbar { font-size: 0.85em; color: var(--muted); margin-bottom: 1rem; }
+  .topbar a { color: var(--muted); }
+  @page {
+    size: letter;
+    margin: 0.6in 0.55in;
+  }
+  @media print {
+    html, body { background: #fff !important; color: #000 !important; }
+    body { font-size: 10.5pt; }
+    main { max-width: none; margin: 0; padding: 0; }
+    .topbar { display: none; }
+
+    /* Each chapter starts on a fresh page; the readme + TOC stay on page 1 */
+    .chapter {
+      break-before: page;
+      page-break-before: always;
+      padding-top: 0;
+    }
+
+    /* Headings stay attached to the content that follows them */
+    h1, h2, h3, h4 {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    h1 { font-size: 17pt; margin-top: 0; border-bottom: 1.5px solid #999; }
+    h2 { font-size: 13pt; }
+    h3 { font-size: 11.5pt; }
+
+    /* Don't split atomic content blocks across pages */
+    pre, table, blockquote, .toc, figure, ul, ol {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    pre.mermaid { max-height: 9in; }
+    pre.mermaid svg {
+      max-width: 100% !important;
+      height: auto !important;
+      max-height: 8.5in;
+    }
+
+    /* Tables: tighter and don't orphan the header */
+    table { font-size: 9.5pt; }
+    th, td { padding: 0.28rem 0.45rem; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+
+    /* Paragraphs: avoid 1-line orphans/widows */
+    p, li { orphans: 3; widows: 3; }
+
+    /* Anchor links print as plain black; keep external URLs visible */
+    a { color: #000; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar">Open in any browser. Use <kbd>Cmd</kbd>+<kbd>P</kbd> → Save as PDF for a portable export. Each chapter starts on its own page; check "Background graphics" in the print dialog to keep table shading and code blocks visible.</div>
+
+  <article id="readme"></article>
+
+  <nav class="toc">
+    <h2>Chapters</h2>
+    <ol>
+      <li><a href="#00-context">context</a></li>
+<li><a href="#01-current-state">current state</a></li>
+<li><a href="#02-architecture-overview">architecture overview</a></li>
+<li><a href="#03-event-taxonomy">event taxonomy</a></li>
+<li><a href="#04-channel-rules">channel rules</a></li>
+<li><a href="#05-sync-vs-async">sync vs async</a></li>
+<li><a href="#06-realtime-comparison">realtime comparison</a></li>
+<li><a href="#07-presence-and-channels">presence and channels</a></li>
+<li><a href="#08-collision-mitigation">collision mitigation</a></li>
+<li><a href="#09-rollout-phases">rollout phases</a></li>
+<li><a href="#10-hipaa-and-audit">hipaa and audit</a></li>
+<li><a href="#11-files-modules">files modules</a></li>
+<li><a href="#12-open-decisions">open decisions</a></li>
+<li><a href="#13-verification">verification</a></li>
+<li><a href="#14-recommendations">recommendations</a></li>
+<li><a href="#15-linear-tickets">linear tickets</a></li>
+    </ol>
+  </nav>
+
+  <article id="00-context" class="chapter"></article>
+<article id="01-current-state" class="chapter"></article>
+<article id="02-architecture-overview" class="chapter"></article>
+<article id="03-event-taxonomy" class="chapter"></article>
+<article id="04-channel-rules" class="chapter"></article>
+<article id="05-sync-vs-async" class="chapter"></article>
+<article id="06-realtime-comparison" class="chapter"></article>
+<article id="07-presence-and-channels" class="chapter"></article>
+<article id="08-collision-mitigation" class="chapter"></article>
+<article id="09-rollout-phases" class="chapter"></article>
+<article id="10-hipaa-and-audit" class="chapter"></article>
+<article id="11-files-modules" class="chapter"></article>
+<article id="12-open-decisions" class="chapter"></article>
+<article id="13-verification" class="chapter"></article>
+<article id="14-recommendations" class="chapter"></article>
+<article id="15-linear-tickets" class="chapter"></article>
+</main>
+
+<script type="text/markdown" id="md-readme">
+# Real-time Notifications, Presence, and Collaboration — Research Index
+
+Research session generated 2026-05-07; **simplified 2026-05-18 (v2)** to narrow v1 scope to in-app realtime (Ably) + email only, drop the central channel router, and consolidate per-recipient channels into shared scope channels.
+
+## Chapters
+
+1. [Context](./00-context.md) — why this work, goals, HIPAA stance
+2. [Current-state audit](./01-current-state.md) — what exists today (verified), with file:line evidence
+3. [Target architecture overview](./02-architecture-overview.md) — single-picture design + core abstraction
+4. [Event taxonomy](./03-event-taxonomy.md) — events, scope, optional recipient envelope
+5. [Channel rules](./04-channel-rules.md) — publishEvent fires Ably; email is inline in route handlers
+6. [Sync model](./05-sync-vs-async.md) — everything is sync; no router, no waitUntil, no queue
+7. [Realtime transport](./06-realtime-comparison.md) — Ably chosen; alternatives kept as reference
+8. [Presence model & channels](./07-presence-and-channels.md) — channel taxonomy, auth, recipient envelope
+9. [Collision mitigation](./08-collision-mitigation.md) — **deferred** to a later phase; kept for reference
+10. [Phased rollout](./09-rollout-phases.md) — collapsed to one phase
+11. [HIPAA & audit posture](./10-hipaa-and-audit.md) — PHI policy, audit log, storage tiering (libSQL/Turso, not Postgres)
+12. [Files & modules to add](./11-files-modules.md) — trimmed module map
+13. [Open decisions](./12-open-decisions.md) — mostly resolved; remaining open items called out
+14. [Verification plan](./13-verification.md) — end-to-end checks for the single phase
+15. [Recommendations summary](./14-recommendations.md) — one-page distilled call
+16. [Linear tickets](./15-linear-tickets.md) — JAM-298 → JAM-304, blockedBy graph, where to start
+
+## Reading order
+
+If short on time: **Context → Architecture overview → Channel rules → Recommendations summary**. The rest is depth on demand.
+
+## What changed in v2
+
+- **Drop**: push notifications, SMS, central channel router, `notification_log`, `notification_preferences`, `push_tokens`, presence-driven channel suppression, dedup ledger, tier matrix
+- **Consolidate**: per-recipient `user:{recipientId}` fan-outs → single `patient:{patientId}` channel that all authorized recipients (patient + PDAs + agents) subscribe to
+- **Add**: recipient envelope (`recipientIds: string[]`) for events on shared channels with narrower audience than the channel
+- **Keep**: `audit_log` (HIPAA), inline `sendXEmail()` calls in route handlers (today's pattern), Ably (chosen), "no PHI on the wire" invariant
+- **Fix**: storage doc said Postgres; actual stack is libSQL/Turso
+
+## Source
+
+Approved plan archived at `~/.claude/plans/for-the-real-time-rosy-galaxy.md`.
+
+</script>
+<script type="text/markdown" id="md-00-context">
+# 00 — Context
+
+> **v2 note (2026-05-18)**: original plan covered in-app + push + email + SMS with a central router. v1 scope narrowed to **in-app realtime (Ably) + email only**, no central router (`publishEvent` does Ably; route handlers call `sendXEmail` inline), and per-recipient fan-out consolidated into shared `patient:{id}` channels. See README for the full diff.
+
+
+The platform currently has zero real-time infrastructure. All user-facing async signal happens over Resend email, fired synchronously from inside route handlers. There are no push notifications, no SMS, no WebSocket/SSE, no background queue, and no general-purpose audit log. As the three-role model (Patient / PDA / Zabaca Agent) matures, the lack of a real-time signal path is becoming a UX bottleneck:
+
+- A PDA uploads a record; the patient has no idea until they refresh.
+- A release is created and needs a patient signature; only an email goes out, and the patient may not be reading email.
+- An agent and a PDA can both touch the same release simultaneously and the last write wins silently.
+
+## Goals, in priority order
+
+1. **Event → notification path** — a single domain-event abstraction that decides *who* gets notified, on *which* channel, *now or later*, with dedup.
+2. **Presence** — know which users are currently online and on which screen, so we can downgrade push/email when in-app delivery is sufficient.
+3. **Collision mitigation** — prevent silent data loss when two actors edit the same record.
+
+## HIPAA stance
+
+Notification payloads omit PHI. "New record uploaded — open the app to view." Always. Anything that *could* contain PHI rides authenticated, BAA-covered transport (Resend, hosted realtime via BAA tier, or self-hosted in our VPC). This stance makes vendor choice a perf/cost question rather than a compliance question.
+
+## Roles glossary
+
+- **Patient** — primary account holder, owns their data
+- **PDA (Patient Designated Agent)** — surrogate decision-maker invited by the patient with per-relationship permissions (`healthRecordsPermission`, `manageProvidersPermission`, `releasePermission` ∈ `{viewer, editor}`)
+- **Zabaca Agent** — internal staff role, can act on behalf of patients via `zabacaAgentRoles`
+
+</script>
+<script type="text/markdown" id="md-01-current-state">
+# 01 — Current-state audit
+
+Verified by reading the codebase 2026-05-07.
+
+## Infrastructure inventory
+
+| Concern | Status | Evidence |
+|---|---|---|
+| Email | **Active (Resend)** | `apps/web/src/lib/email.ts:1-41`; 9 templates already wired |
+| SMS | None | — |
+| Mobile push | None (mock only) | `apps/mobile/src/mock/notifications.ts`; no `expo-notifications` import |
+| Web push / Service Worker | None | — |
+| In-app toast | Mantine `<Notifications />` | `apps/web/src/app/layout.tsx:25` |
+| In-app inbox | None | — |
+| WebSocket / SSE / Pusher / Ably | None | — |
+| Polling (refetchInterval) | None | — |
+| Background jobs / Vercel Cron | None | `vercel.json` has no cron entries |
+| `waitUntil` usage | None | — |
+| Audit log (general HIPAA action log) | **Missing** | Only domain-specific: `fileUploadLog`, `releaseRequestLog`, `Session` (devices) |
+| Optimistic locking | **None anywhere** | All updates are blind overwrites |
+| Release-signing race | **Open bug** | `apps/web/src/app/api/releases/[id]/sign/route.ts:21-37` — check-then-update is non-atomic |
+
+## Roles model (verified)
+
+- `users.type ∈ {admin, user}` — coarse axis only
+- Patient: any user with a `patientAssignments` row (assigned Zabaca agent)
+- PDA: user with a row in `patientDesignatedAgents`, per-relationship scopes: `healthRecordsPermission`, `manageProvidersPermission`, `releasePermission` ∈ `{viewer, editor}`
+- Zabaca Agent: row in `zabacaAgentRoles` (staff)
+- Session payload (`apps/web/src/auth.ts:42-53`): `{ id, email, type, isAgent, isPda, isPatient, mustChangePassword, onboarded, disabled }`
+- Mobile session: same JWT in `expo-secure-store`, decoded client-side (`apps/mobile/src/lib/api.ts:82-92`)
+
+## Existing email-trigger surfaces
+
+These are the natural hook points for the new event publisher.
+
+| Event | Route handler | Current side-effect |
+|---|---|---|
+| Release created | `apps/web/src/app/api/releases/route.ts:45-153` | `sendNewReleaseNotificationEmail` to agent |
+| Record uploaded by PDA/Agent for patient | `apps/web/src/app/api/records/upload/route.ts:9-90` | `sendNewRecordUploadEmail` to patient |
+| PDA invite created | `apps/web/src/app/api/my-designated-agents/route.ts:63-130` | `sendInviteEmail` |
+| Scheduled call created | `apps/web/src/app/api/scheduled-calls/route.ts:43+` | `sendScheduledCallEmail` |
+| Release signed | `apps/web/src/app/api/releases/[id]/sign/route.ts:9-38` | **No notification — gap** |
+| PDA invite accepted/declined | `apps/web/src/app/api/representing/pending/[id]/route.ts:10-47` | **No notification — gap** |
+| Profile updated | `apps/web/src/app/api/profile/route.ts:41-72` | **No audit, no notification — gap** |
+
+## Concurrency findings
+
+All update endpoints reviewed perform blind overwrites — no `version` check, no `If-Match`, no `SELECT ... FOR UPDATE`, no lock tables.
+
+Highest-risk surfaces:
+
+- **Release form ↔ signing**: PUT release deletes/reinserts providers blindly (`apps/web/src/app/api/releases/[id]/route.ts:46-50`); concurrent edit from patient and PDA can interleave.
+- **Signature**: check-then-update is non-atomic in `apps/web/src/app/api/releases/[id]/sign/route.ts:21-37`. Two simultaneous signs both succeed.
+- **Health record metadata**: PATCH at `apps/web/src/app/api/documents/[id]/route.ts:89-90` has no prior-state check.
+- **Profile**: PATCH/PUT at `apps/web/src/app/api/profile/route.ts:49-52, 65-66` — no version, no audit.
+
+## Form/draft persistence
+
+None. Release form lives in React state only (`apps/web/src/components/release-form/ReleaseForm.tsx:34-55`); unsubmitted data is lost on navigation. No localStorage / AsyncStorage drafts.
+
+</script>
+<script type="text/markdown" id="md-02-architecture-overview">
+# 02 — Target architecture overview
+
+## The plain-English version: bulletin board, not bellhop
+
+Imagine a small apartment building. Every resident (user) has a mailbox (the existing email system, already wired up). The building also has a **bulletin board in the lobby** where the super pins notices like "package for unit 3B" or "elevator out for an hour." Anyone walking through the lobby sees the notices that apply to them.
+
+That's the whole architecture:
+
+| Real thing | In our system |
+|---|---|
+| **Resident** | A user (Patient, PDA, or Agent) |
+| **Mailbox** | Resend email — already in `lib/email.ts`; route handlers call `sendXEmail()` inline, exactly as today |
+| **Bulletin board** | An Ably channel — `patient:{id}` for things the patient + their PDAs all care about, `user:{id}` for personal notices |
+| **Pinning a notice** | `publishEvent({ type, scope, payload })` from a route handler |
+| **Logbook the super keeps** | `audit_log` table — every event publish, every channel subscription, every email send, every PDA data read |
+| **A notice that says "only 3B should act on this"** | Recipient envelope: `recipientIds: ["user_3B"]` — other residents see the notice exists but their app ignores it |
+
+There is no central router, no presence ledger, no bellhop, no waitUntil, no queue, no retry layer. A route handler does its work, calls `publishEvent` (one fire-and-forget Ably publish), calls `sendXEmail` if the flow requires email, and returns. That's it.
+
+## Flow
+
+```mermaid
+flowchart LR
+  USER[👤 User does something<br/>e.g. PDA uploads a record] --> ROUTE[🛎️ Route handler]
+  ROUTE -->|insert + commit| DB[(🗄️ Database)]
+  ROUTE -->|writeAudit| AUDIT[(📓 audit_log)]
+  ROUTE -->|publishEvent — fire-and-forget| ABLY{{📡 Ably}}
+  ROUTE -->|sendXEmail — inline, today| RESEND[✉️ Resend]
+  ROUTE -->|200 OK| USER
+
+  ABLY --> WEB["💻 Patient web client<br/>shows toast"]
+  ABLY --> MOB["📱 Patient mobile<br/>shows toast"]
+  ABLY --> PDA1["💻 PDA 1<br/>subscribed to same patient:&#123;id&#125;"]
+```
+
+Notice what's **not** in the diagram: no router box, no presence box, no fanout loop, no dedup table, no preferences lookup. Each side-effect is a single line in the route handler.
+
+## Worked example: PDA uploads a record for a patient
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant PDA as 👥 PDA (mobile)
+    participant API as 🛎️ Route handler
+    participant DB as 🗄️ Database
+    participant AUDIT as 📓 audit_log
+    participant ABLY as 📡 Ably
+    participant PT as 👤 Patient (web, online)
+    participant PDA2 as 👥 PDA 2 (also subscribed)
+
+    PDA->>API: POST /records/upload (patientId=42)
+    API->>DB: insert IncomingFile
+    API->>AUDIT: writeAudit(record.uploaded)
+    API->>ABLY: publish to patient:42 {type: "record.uploaded", recordId}
+    API-->>PDA: 200 OK
+
+    Note over ABLY: Broadcast to every subscriber on patient:42
+    ABLY->>PT: live event arrives → Mantine toast, list refreshes
+    ABLY->>PDA2: live event arrives → toast on their view too
+```
+
+PHI never leaves authenticated REST. The Ably message is `{ type, recordId, patientId, byUserId }` — IDs only. Anyone receiving the event refetches via the existing REST endpoint, where row-level auth runs as it does today.
+
+## Channel taxonomy at a glance
+
+| Channel | Who subscribes | What's published there |
+|---|---|---|
+| `user:{userId}` | That user only | Personal account events (security alerts, suspension, PDA invite received) |
+| `patient:{patientId}` | Patient + every accepted PDA + assigned agents | All patient-scoped events (records, releases, providers, profile, permissions) |
+| `release:{releaseId}` | Anyone with patient access on the release page | Page-scoped collaboration |
+| `document:{documentId}` | Anyone with patient access on the document page | Page-scoped collaboration |
+| `provider:{providerId}` | Anyone with patient access on the provider page | Page-scoped collaboration |
+| `chat:{chatId}` | (placeholder for future chat feature) | — |
+
+Channel names live in `packages/types/src/schemas/events.ts` via `channelNameFor(scope)`. Clients never construct channel names directly.
+
+## Why this shape (and why no router)
+
+| Original full-fat design | Simplified v2 |
+|---|---|
+| Route handler calls `publishEvent`; publisher hands off to a `waitUntil` router that decides which channels fire (in-app vs push vs email vs SMS), checks user preferences, dedups against `notification_log`, and queries presence. | Route handler calls `publishEvent` (Ably only) and `sendXEmail` (inline) directly. No router. No `notification_log`. No `notification_preferences`. No presence lookup. No dedup. |
+| Four notification surfaces × dedup × prefs × presence × audit ≈ a lot of code and three new tables. | One Ably publish + the existing email call + one `audit_log` write. No new behavior tables. |
+| BAA + provider choice matters; PHI could theoretically appear in payloads. | "No PHI on the wire" invariant unchanged; payload is always IDs. The simplification doesn't loosen this guarantee. |
+
+The router can be added back later as a single module the route handler delegates to, *if* push/SMS land and need shared logic. Until then, the cost of building it is not justified.
+
+## The three boundaries that keep this clean
+
+1. **Route handlers always call `publishEvent` (never Ably SDK directly) and `writeAudit` (never `db.insert(auditLog)` directly).** One choke point per concern.
+2. **Realtime payloads are always ID-only.** "Record 47892 changed — go look." Never the record's contents. Keeps PHI off the wire regardless of vendor BAA status.
+3. **`audit_log` is append-only.** No code updates or deletes rows; the only delete path is the future archival job (separate credential).
+
+Holding these three lines keeps every later evolution local: adding push back later, swapping Ably for Soketi, piping audit into Axiom — each is one module change, not a refactor.
+
+</script>
+<script type="text/markdown" id="md-03-event-taxonomy">
+# 03 — Event taxonomy
+
+> **v2 note**: the tier-1/tier-2/tier-3 matrix and the channel-per-event matrix from v1 are gone. With only in-app realtime (Ably) + inline email, every event has a single decision: which channel does it publish to, and (for shared channels) does it need a `recipientIds` envelope. Email decisions live at the route-handler level, exactly as they do today.
+
+## Event list
+
+| Event | Scope (channel) | Subscribers | Inline email today? | Recipient envelope? |
+|---|---|---|---|---|
+| `record.uploaded` | `patient:{patientId}` | Patient + accepted PDAs + assigned agents | `sendNewRecordUploadEmail` to patient | no |
+| `record.viewed_by_pda` | `patient:{patientId}` | (same) | no | **yes** — `recipientIds: [patientUserId]` so other PDAs ignore |
+| `release.created` | `patient:{patientId}` | (same) | `sendNewReleaseNotificationEmail` to listed agent | no |
+| `release.signed` | `patient:{patientId}` | (same) | no | no |
+| `release.declined` | `patient:{patientId}` | (same) | no | no |
+| `pda.permissions_changed` | `patient:{patientId}` | (same) | no | optional — `recipientIds: [pdaUserId]` for "your perms changed" UX |
+| `provider.added` | `patient:{patientId}` | (same) | no | no |
+| `provider.removed` | `patient:{patientId}` | (same) | no | no |
+| `profile.updated` | `patient:{patientId}` | (same) | no | no |
+| `account.suspended` | `user:{userId}` | That user only | `sendAccountSuspendedEmail` | n/a (1:1 channel) |
+| `account.reinstated` | `user:{userId}` | (same) | `sendAccountReinstatedEmail` | n/a |
+| `security.new_device_login` | `user:{userId}` | (same) | (future) | n/a |
+| `pda.invite_received` | `user:{userId}` of invitee | Invitee only | `sendInviteEmail` (mandatory — invitee may not have an account yet) | n/a |
+| `pda.you_were_added` | `user:{userId}` of the PDA | The PDA only | (future) | n/a |
+
+The schema for these events (the `EventType` enum, payload Zod schemas, `channelNameFor(scope)`) lives in `packages/types/src/schemas/events.ts`.
+
+## Scope
+
+`scope` is a discriminated union; the channel name is derived from it:
+
+```ts
+type ChannelScope =
+  | { kind: 'user';     userId:     string }   // → "user:{id}"
+  | { kind: 'patient';  patientId:  string }   // → "patient:{id}"
+  | { kind: 'release';  releaseId:  string }   // → "release:{id}"
+  | { kind: 'document'; documentId: string }   // → "document:{id}"
+  | { kind: 'provider'; providerId: string };  // → "provider:{id}"
+```
+
+Route handlers pass `scope`; clients never name channels directly.
+
+## Payloads — IDs only, no PHI
+
+Every event payload contains only IDs + actor + timestamp. The recipient's client refetches over authenticated REST.
+
+Example:
+
+```ts
+publishEvent({
+  type: 'record.uploaded',
+  scope: { kind: 'patient', patientId },
+  payload: { recordId, patientId, byUserId: session.user.id },
+})
+```
+
+This is enforced two ways:
+1. Zod schemas in `events.ts` allow only known ID/string fields per event.
+2. Code review for any new event type — payload must be reviewable as "no PHI" at first glance.
+
+## Recipient envelope
+
+For events on a shared channel (`patient:{id}`) where one specific subscriber should react (others should ignore):
+
+```ts
+publishEvent({
+  type: 'record.viewed_by_pda',
+  scope: { kind: 'patient', patientId },
+  recipientIds: [patientUserId],   // only the patient's client renders this
+  payload: { recordId, patientId, byUserId: pdaUserId },
+})
+```
+
+Rules:
+- Absent `recipientIds` → every subscriber treats the event as for them.
+- Present `recipientIds` → clients filter; non-recipients drop the event silently.
+- This is **UX correctness**, not security. The authorization gate is at channel-auth time (subscription) and at REST-fetch time. The envelope merely prevents the wrong toast from appearing.
+
+## Email handling
+
+Email is **not** a channel of `publishEvent`. Route handlers call `lib/email.ts` functions inline today; v2 keeps that. If a flow should also email, the route handler calls `sendXEmail` after `publishEvent`. Existing flows:
+
+| Route | Email function called inline (today, unchanged) |
+|---|---|
+| `apps/web/src/app/api/releases/route.ts:137` | `sendNewReleaseNotificationEmail` |
+| `apps/web/src/app/api/records/upload/route.ts` | `sendNewRecordUploadEmail` |
+| `apps/web/src/app/api/my-designated-agents/route.ts` | `sendInviteEmail` |
+| `apps/web/src/app/api/scheduled-calls/route.ts` | `sendScheduledCallEmail` |
+| Account state changes | `sendAccountSuspendedEmail` / `sendAccountReinstatedEmail` |
+
+The simplification adds `publishEvent` alongside these — it does not replace them.
+
+## Audience derivation
+
+For `patient:{id}` events: the channel-auth gate (see `07-presence-and-channels.md`) decides who *can subscribe*. Once subscribed, every subscriber sees every published event on the channel (subject to the recipient envelope filter).
+
+For `user:{id}` events: only that user can subscribe by definition.
+
+No server-side fanout loop computes recipients — the channel membership IS the audience.
+
+## What's not in v1
+
+- Push notifications (mobile + web)
+- SMS
+- In-app inbox feed (would need `notification_log` table)
+- Per-event per-channel user preferences (would need `notification_preferences` table)
+- Dedup / cooldown / coalescing
+- Quiet hours / scheduled delivery / digests
+
+Any of these can be added later as additive features without changing the publishEvent surface.
+
+</script>
+<script type="text/markdown" id="md-04-channel-rules">
+# 04 — Channel rules (v2)
+
+> **v2 note**: this chapter previously described a `waitUntil`-driven router with dedup, cooldown windows, critical/tier matrix, and `notification_preferences` overlays. All of that is gone in v1. The rules below are the entire set.
+
+## The rules
+
+```
+Route handler does its work.
+  └─ writeAudit(...)                    — always, synchronously, before publish
+  └─ publishEvent({ type, scope, ... }) — always; fire-and-forget Ably publish
+  └─ sendXEmail(...)                    — if this flow requires email; inline, blocking the response
+return 200
+```
+
+There is no router. There is no decision tree. Each side-effect is one line in the route handler.
+
+## `publishEvent` semantics
+
+| Behavior | Detail |
+|---|---|
+| Synchronous audit write | `writeAudit` is awaited inside `publishEvent` BEFORE the Ably publish call. Audit must not be lost if Ably is slow or down. |
+| Fire-and-forget publish | The Ably publish call is awaited but errors are caught and logged; the function never throws to the caller. |
+| Channel resolution | `channelNameFor(scope)` — pure function, no I/O. |
+| No PHI guard | Payload is validated against the per-event Zod schema in `events.ts`. Schemas only allow ID/string fields. |
+| Env-gated | If `ABLY_API_KEY` is missing (dev without Ably), `publishEvent` logs and skips the publish but still writes the audit row. |
+
+## Email semantics
+
+Unchanged from today. Route handlers call `sendXEmail` from `apps/web/src/lib/email.ts` directly. If a send fails:
+- Wrap the call in `try/catch` if the route's UX requires telling the user
+- Always `writeAudit({ status: 'failed', ... })` on failure
+- A failed email does not roll back the database write
+
+## What's deliberately not in v1
+
+- **No dedup ledger.** No `notification_log`. No cooldown windows. Two rapid events fire twice — that's a UX problem if it happens; we deal with it then.
+- **No user preferences.** No `notification_preferences`. If a user wants to mute a specific email, that's a route-level flag stored on `users` (or a tiny dedicated boolean column), not a generic per-event matrix.
+- **No critical/tier matrix.** The plan has only one tier — "events you care about." Each route decides whether to email.
+- **No presence-aware suppression.** Ably always fires for in-app; email always fires when the route says so. A user actively in the app gets both. Acceptable for the small set of email-triggering flows.
+- **No quiet hours / scheduled delivery / digests.** Same as today.
+
+## Audit log writes triggered by the rules
+
+The rules produce these audit rows for a typical event:
+
+| Trigger | Row |
+|---|---|
+| Route handler enters | (optional, for sensitive routes) — `actor` action |
+| `publishEvent` called | `eventType=record.uploaded, actorUserId=..., entityType=record, entityId=..., status=ok` |
+| `/api/realtime/auth` issues a token | `eventType=channel.granted, actorUserId=..., entityType=channel, entityId=patient:42` (or `channel.denied`) |
+| PDA reads patient data via REST | `eventType=patient.read_by_pda, actorUserId=pda..., entityType=patient, entityId=42` |
+| Email send completes | `eventType=email.sent, actorUserId=system, entityType=email, entityId=..., status=ok|failed` |
+
+All of these go through `writeAudit` in `lib/audit/log.ts`. No code does `db.insert(auditLog)` directly.
+
+## When to add a router back
+
+If push notifications return, or SMS lands, or events accumulate per-user preference toggles — at that point a router becomes worth its complexity. The migration is mechanical: keep `publishEvent` as the entry point; behind it, dispatch to multiple channel adapters; add the prefs table. Route handlers don't change. Until then, in-lining at the route is the smallest thing that works.
+
+</script>
+<script type="text/markdown" id="md-05-sync-vs-async">
+# 05 — Sync model (v2)
+
+> **v2 note**: this chapter used to describe a sync-vs-fire-and-forget split with a `waitUntil`-driven router. In v1 there is **no async path** — everything happens inside the route handler before it returns. The split was an artifact of having a router; with the router gone, the split goes too.
+
+## The model
+
+Every route handler runs to completion before returning. Order inside the handler:
+
+1. Authn / authz (existing pattern)
+2. Perform the action (DB writes, third-party calls)
+3. `writeAudit(...)` — synchronously, before any side-effect
+4. `publishEvent({ ... })` — fire-and-forget Ably publish, awaited (errors caught + logged)
+5. `sendXEmail(...)` if this flow requires email — awaited, blocking the response
+6. Return 200
+
+Steps 3–5 are inline. There is no `waitUntil`, no queue, no background job. The user pays the latency of the Ably publish (~50ms) and the email send (~200–500ms via Resend) on responses for flows that include them.
+
+## Why no `waitUntil`
+
+- The router that `waitUntil` was hiding is gone.
+- A bare Ably publish is fast (~50ms). Hiding it behind `waitUntil` saves negligible latency.
+- A bare email send is slow (~200–500ms) and the routes that need email already accept that cost today.
+- `waitUntil` complicates audit ordering (audit row may write after response, complicating "transaction-like" guarantees).
+
+If a future route needs to fan out many side-effects, `waitUntil` can be reintroduced for that specific route. The general case doesn't need it.
+
+## Error policy
+
+| Failure | Effect |
+|---|---|
+| DB write fails | Route returns 5xx as today. `publishEvent` never runs. `sendXEmail` never runs. |
+| `writeAudit` fails | Logged to stderr; route continues. Audit must never break the request path. (Failed audit writes are an ops alert, not a user-facing error.) |
+| Ably publish fails | Logged; route continues. The user's data is committed. The live update is lost; the user sees it on next page load. |
+| Email send fails | Logged; route returns 200 if the data is committed. (Specific UX flows that need "we sent you an email" copy may choose to surface the failure — that's a per-route decision.) |
+
+## What's deliberately not on the menu (unchanged from v1 of this doc)
+
+- **Scheduled / deferred events.** No quiet-hours hold, no "remind in 10 min."
+- **Durable queue.** No outbox, no `notBefore`, no retry sweeper.
+- **Replay tooling.** If you need to replay an event manually, do it from the `audit_log` row.
+
+If a real outage or product need pushes us to add durability, the `audit_log` is already the source of truth — we'd add an outbox table and a drain on top of the existing `publishEvent` surface without changing route handlers.
+
+</script>
+<script type="text/markdown" id="md-06-realtime-comparison">
+# 06 — Realtime transport (v2)
+
+> **v2 decision: Ably.** The comparison table is kept below for reference. Reasoning: our payloads are signaling-only (IDs, no PHI), so vendor BAA status is a defense-in-depth concern rather than a compliance gate; Ably is fastest to ship with the best DX for the small scale we need in v1.
+
+## Chosen: Ably
+
+- Tier: start on **Standard** ($29/mo). Our "no PHI on the wire" invariant means BAA tier is not required.
+- Channels used: `user:{id}`, `patient:{id}`, plus the page-scoped `release:{id}` / `document:{id}` / `provider:{id}` and the future `chat:{id}`.
+- Client auth: token-based via `POST /api/realtime/auth`; tokens have ≤60s TTL and `capability: { "<channel>": ["subscribe"] }` only (no client-side publish in v1).
+- Server publish: `ably-js` from the Node/Next.js runtime via `lib/events/publish.ts`. REST publish — no need for a long-lived server connection.
+
+## Comparison (reference only)
+
+| Option | Type | HIPAA / BAA | Cost (est.) | DX | Verdict |
+|---|---|---|---|---|---|
+| **Ably** | Hosted | BAA on Enterprise tier (not needed given our payload policy) | $29–$500+/mo | Excellent | **Chosen** |
+| Pusher Channels | Hosted | Limited (no BAA on most plans) | $49+/mo | Good | Skipped — same protocol as Soketi without ops control |
+| PubNub | Hosted | BAA available | $49+/mo | Good | Heavier API; no advantage over Ably for our scale |
+| Supabase Realtime | Hosted | BAA on Pro+ | Bundled if on Supabase | Good | We're not on Supabase — adopting it for one feature is a tax |
+| Soketi (self-host) | Pusher protocol-compatible OSS | DIY (in-VPC) | $5–$20 VPS | Good | Viable if we ever need to leave hosted — but ops burden not justified now |
+| Centrifugo (self-host) | OSS | DIY | $5–$20 VPS | Good | Same as Soketi; smaller community |
+| SSE via Vercel Functions | Native | DIY | Within Vercel | Limited | Skipped — function lifetime cap breaks long-lived connections |
+| Postgres `LISTEN/NOTIFY` → SSE | Native | DIY | Within Vercel | Limited | Same lifetime issue; doesn't scale |
+
+## Vendor abstraction
+
+All vendor code is concentrated:
+
+- `apps/web/src/lib/events/publish.ts` — server-side publish + `writeAudit`
+- `apps/web/src/lib/realtime/auth.ts` — token issuance + scope check
+- `apps/web/src/lib/realtime/client.ts` — browser subscriber
+- `apps/mobile/src/lib/realtime/client.ts` — RN subscriber
+
+A future swap (Ably → Soketi, e.g., for cost or self-host reasons) is a per-file change in these four spots. Route handlers, event types, and channel-name conventions don't move.
+
+## Why not skip realtime entirely
+
+A polling alternative (refetch every N seconds) was considered. It was rejected because:
+- It doesn't fix the "PDA uploads → patient sees nothing until refresh" UX gap that started this work.
+- Aggressive polling against authenticated REST has worse total cost than a single WebSocket connection at our user count.
+- The plan needs to support live presence on shared pages eventually (release-page collaboration); WebSocket is the natural substrate.
+
+</script>
+<script type="text/markdown" id="md-07-presence-and-channels">
+# 07 — Channels & subscription model (v2)
+
+> **v2 note**: presence is **out of scope** for v1 (it was needed only to drive the router's "skip push if user is online" rule, and there's no router anymore). The rest of this chapter — channel naming, channel auth, recipient envelope — is the active spec.
+
+## Channel naming
+
+```
+user:{userId}           — strictly 1:1; that user's personal events
+patient:{patientId}     — patient + every accepted PDA + assigned agents
+release:{releaseId}     — joined on UI navigation (release page open)
+document:{documentId}   — joined on UI navigation (document page open)
+provider:{providerId}   — joined on UI navigation (provider page open)
+chat:{chatId}           — placeholder for future chat feature
+```
+
+The channel-name string is the single source of truth and is built by `channelNameFor(scope)` in `packages/types/src/schemas/events.ts`. Clients never construct channel names directly — they get a `scope` from the server and pass it to the subscribe helper.
+
+## Why `patient:{id}` and not per-user fanout
+
+In v1 of the plan, a `record.uploaded` event would have been fanned out by the router to `user:{patient}`, `user:{pda1}`, `user:{pda2}`, ... — one publish per recipient.
+
+In v2, the server publishes **once** to `patient:{patientId}`. Patient + every accepted PDA + assigned agents are already subscribed because they have channel-auth for that patient (see below). Benefits:
+
+- ~2–5× fewer Ably channel writes per event at the scale of "patient with several PDAs"
+- No server-side fanout loop to maintain
+- The channel membership IS the audience — no separate audience computation
+
+## Channel auth
+
+Every `subscribe` request hits `POST /api/realtime/auth`:
+
+1. The caller's session is resolved (existing `auth-helpers`).
+2. For each requested channel, `canAccessChannel(session, channelName)` runs:
+
+| Channel | Allowed when |
+|---|---|
+| `user:{id}` | `session.user.id === id` |
+| `patient:{id}` | `session.user.id === id` (the patient subscribing to their own channel), OR a row exists in `patientDesignatedAgents` with `patientId=id, agentUserId=session.user.id, status='accepted'`, OR `session.user` is an assigned Zabaca agent for the patient |
+| `release:{id}` | Resolve `release.id → patientId`; apply `patient:{patientId}` rule |
+| `document:{id}` | Resolve `document.id → patientId`; apply `patient:{patientId}` rule |
+| `provider:{id}` | Resolve `provider.id → patientId`; apply `patient:{patientId}` rule |
+| `chat:{id}` | TBD with the chat feature |
+
+3. The handler returns an Ably token with `capability: { "<granted channel>": ["subscribe"] }`. Denied channels do not appear in the capability map; the client receives a per-channel granted/denied list.
+4. Token TTL is ≤60s. Clients auto-refresh.
+5. **Every issuance is audit-logged.** Granted → `eventType=channel.granted, status=granted`. Denied → `eventType=channel.denied, status=denied`.
+
+## Recipient envelope (UX filter)
+
+Some events on a shared channel are meant for a specific subscriber (e.g., "PDA #2 viewed your records" — the patient should react, other PDAs should not). The payload carries an optional `recipientIds` field:
+
+```ts
+{
+  type: "record.viewed_by_pda",
+  recipientIds: ["user_patient_42"],   // optional; UX filter only
+  ts: 1737000000000,
+  payload: { recordId: "rec_xyz", patientId: "user_patient_42", byUserId: "user_pda_2" }
+}
+```
+
+Client subscriber rule:
+- If `recipientIds` is absent → render the event.
+- If `recipientIds` is present and the local user ID is in it → render.
+- If `recipientIds` is present and the local user ID is NOT in it → drop silently.
+
+This is a **UX correctness** mechanism, not a security boundary. The actual authorization gates are at subscribe time (above) and at REST-fetch time (existing route-level auth). The envelope only prevents the wrong client from showing the wrong toast.
+
+We deliberately chose this over per-recipient encryption: payloads carry no PHI (only IDs + event names), so the "metadata leak" of "an event existed" to non-recipient subscribers is acceptable — they already have channel-auth to know events on that patient exist.
+
+## Sequence — record uploaded by PDA
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant PDA as 👥 PDA
+    participant API as 🛎️ Route handler
+    participant AUDIT as 📓 audit_log
+    participant ABLY as 📡 Ably
+    participant WEB as 👤 Patient web (subscribed to patient:42)
+    participant PDA2 as 👥 PDA 2 (also subscribed)
+
+    PDA->>API: POST /records/upload (patientId=42)
+    API->>API: writeAudit(record.uploaded)
+    API->>ABLY: publish patient:42 { type, recordId, ... }
+    API-->>PDA: 200 OK
+    ABLY->>WEB: live event → toast + list refresh
+    ABLY->>PDA2: live event → toast + list refresh
+```
+
+PHI does not flow on the channel. Both subscribers receive `{ type, recordId, patientId, byUserId }` and refetch the record via the existing authenticated REST endpoint.
+
+## Subscription lifecycle (client)
+
+On sign-in or app open:
+1. Client calls `POST /api/realtime/auth` with the channels it wants: always `user:{me}`, plus `patient:{id}` for each patient the user has access to (own patient + every patient they're a PDA for).
+2. Client receives a token; connects to Ably; subscribes to the granted channels.
+3. On route change to a release/document/provider page: client calls auth again to add `release:{id}` (etc.) to its subscription set.
+4. On route exit: client unsubscribes from page-scoped channels.
+5. On logout: client disconnects.
+
+Token refresh runs ~50s into the 60s TTL.
+
+## What's removed from v1 of this chapter
+
+- "Presence" section — built-in Ably presence is unused in v1 (no router rule consumes it). If a future feature wants "X is editing this release," presence comes back as a page-scoped feature on `release:{id}`.
+- The sequence diagram showing presence-driven branching (online → in-app; offline → push+email).
+
+</script>
+<script type="text/markdown" id="md-08-collision-mitigation">
+# 08 — Collision mitigation (deferred)
+
+> **v2 note: this whole chapter is deferred.** The v1 simplification covers in-app realtime + email only. Collision mitigation (optimistic locking, atomic signature endpoint, soft edit leases, CRDT) is a separate workstream that does not depend on the notification work and can land in any later phase. Content below is kept as the reference design.
+
+Three layers, ordered by ROI.
+
+## 8.1 Optimistic locking — phase 3a
+
+Add a `version int not null default 1` column to: `users`, `releases`, `incomingFiles`, `userProviders`, `patientDesignatedAgents`.
+
+Update pattern:
+
+```sql
+UPDATE releases SET ..., version = version + 1, updated_at = now()
+WHERE id = $1 AND version = $2
+RETURNING id;
+```
+
+If `RETURNING` is empty → 409 Conflict. Client refetches, shows merge UI, retries with new version.
+
+All clients send the `version` they last loaded as part of any update body. Drizzle migration backfills `version = 1`.
+
+## 8.2 Atomic signature — phase 3a (small, do alongside)
+
+Replace `apps/web/src/app/api/releases/[id]/sign/route.ts:21-37` with a single SQL statement guarded by `WHERE auth_signature_image IS NULL`:
+
+```sql
+UPDATE releases SET auth_signature_image = $1, auth_date = $2, auth_expiration_date = $3
+WHERE id = $4 AND auth_signature_image IS NULL
+RETURNING id;
+```
+
+Empty `RETURNING` → 409 "already signed". Closes the existing race bug.
+
+## 8.3 Soft edit leases — phase 3b
+
+For UX-level "PDA Bob is editing this release":
+
+- New table `record_locks { entityType, entityId, userId, leaseExpiresAt, sessionJti }` (or Redis with TTL).
+- Client acquires a 30s lease on entering edit mode; heartbeats every 15s while editing; releases on close/blur.
+- Other clients subscribing to the same `release:{id}` channel see lease events and render a "view-only — Bob is editing" badge.
+- Lease expiry is enforced by the realtime channel + server-side check on save.
+- This is **advisory**, not a true mutex. Optimistic locking remains the actual safety net.
+
+## 8.4 CRDT — defer
+
+Only consider Yjs / Automerge if a future feature introduces shared free-text editing (e.g., collaborative care notes). Liveblocks Yjs or `y-postgres` are the obvious paths. Out of scope for now — tracked as Phase 4.
+
+## Edit-mode flow
+
+```mermaid
+flowchart TD
+  EDIT[user opens edit mode] --> LEASE{lease available?}
+  LEASE -- yes --> ACQ[acquire 30s lease<br/>broadcast lock]
+  LEASE -- no --> READONLY[read-only mode<br/>show 'X is editing']
+  ACQ --> HB[heartbeat every 15s]
+  HB --> SAVE{save?}
+  SAVE -- yes --> OL[optimistic update<br/>WHERE version = ?]
+  OL -- 200 --> RELEASE[release lease<br/>broadcast unlock]
+  OL -- 409 --> CONFLICT[conflict UI:<br/>'they changed X — keep mine / theirs / merge']
+  SAVE -- close --> RELEASE
+  HB -- timeout --> EXPIRE[lease expired<br/>force re-acquire]
+```
+
+## Summary
+
+Optimistic locking + atomic signature endpoint = ~80% of the value for a few days of work. Soft leases polish the UX for the remaining 20%. CRDT is a phase-4 concern, only if a feature demands it.
+
+</script>
+<script type="text/markdown" id="md-09-rollout-phases">
+# 09 — Rollout (v2: single phase)
+
+> **v2 note**: v1 of this doc had four phases (foundations → notifications → presence → collision). With the simplification, the notification work collapses to a single phase. Collision mitigation (`08`) becomes a separate workstream, scheduled when product wants it.
+
+## Phase 1 — Ship in-app realtime + audit log
+
+```mermaid
+gantt
+  title v2 rollout
+  dateFormat YYYY-MM-DD
+  axisFormat Day %d
+
+  section Phase 1 — Realtime + audit
+  Schema: audit_log + migration            :p1a, 2026-05-19, 1d
+  packages/types: events.ts (EventType + Zod) :p1b, after p1a, 1d
+  lib/audit/log.ts (writeAudit + digest)   :p1c, after p1a, 1d
+  lib/events/publish.ts (publishEvent)     :p1d, after p1b, 2d
+  lib/realtime/scope.ts (canAccessChannel) :p1e, after p1d, 1d
+  /api/realtime/auth route                 :p1f, after p1e, 1d
+  lib/realtime/client.ts (web subscriber)  :p1g, after p1f, 2d
+  apps/mobile realtime client              :p1h, after p1g, 2d
+  Wire releases POST as reference          :p1i, after p1g, 1d
+  Wire remaining event sites               :p1j, after p1i, 2d
+  Verification (see 13)                    :p1k, after p1j, 2d
+```
+
+Roughly **~2 weeks of work** end to end.
+
+### Deliverables
+
+- `AuditLog` table + drizzle migration + `writeAudit({ ... })` helper, audit-DB wrapper for future swap to a dedicated Turso database
+- Shared event schemas in `@health-agent/types`: `EventType` enum, per-event Zod payload schemas, `channelNameFor(scope)`, `parseChannelName(name)`
+- `publishEvent({ type, scope, recipientIds?, payload })` — server entry point; writes audit, fires Ably publish
+- `POST /api/realtime/auth` — token issuance, channel-by-channel auth check, audit-log granted/denied
+- Web + mobile Ably subscribers — `user:{me}` + every accessible `patient:{id}`; recipient-envelope filter; Mantine/RN dispatch
+- Reference wiring at `POST /api/releases` (existing email stays; `publishEvent` added)
+- Wiring at the remaining event sites enumerated in `11-files-modules.md`
+
+### Exit criteria
+
+- Open patient web + accepted PDA web in two browsers; PDA uploads a record → both see a live toast + list refresh within ~1s; no other browser context sees it.
+- Sign-out and ban tests: revoking a PDA's access removes them from `patient:{id}` on token refresh (within 60s).
+- Channel-auth denial path: PDA without permission for patient B requests `patient:{B}` → 403, `AuditLog` row with `status=denied`.
+- All existing email flows continue to send unchanged (no regression in Resend behavior).
+- `bun run type-check && bun run lint && bun run build` clean at repo root; Metro resolver OK in mobile.
+
+## Future phases (not scheduled)
+
+| Phase | Trigger to schedule |
+|---|---|
+| Push notifications (mobile Expo + web VAPID) | Product wants alerts when users aren't in-app |
+| In-app inbox feed | Users ask for "see what I missed" |
+| Per-event email preferences | Users complain about specific email noise |
+| Collision mitigation (chapter 08) | Two-user concurrent-edit incident in production |
+| Presence on shared pages (release/document) | Collaboration UX work picks up |
+| Chat feature on `chat:{id}` | Product decides to build chat |
+
+Each is purely additive: nothing in v1's surface needs to change to add any of them.
+
+</script>
+<script type="text/markdown" id="md-10-hipaa-and-audit">
+# 10 — HIPAA, PII, and audit posture (v2)
+
+| Concern | Stance |
+|---|---|
+| Notification payloads | No PHI in email titles/bodies/subjects. "New record uploaded — open the app to view." Always. |
+| Realtime payloads | Only IDs + event names. Client fetches the actual record over authenticated REST. |
+| Channel auth | Every subscribe request authenticated and scoped server-side; tokens short-lived (≤60s); every issuance audit-logged (granted and denied). |
+| BAAs | Resend (yes). Ably standard tier (no BAA) is acceptable because realtime payloads carry no PHI; Enterprise tier upgrade is optional defense-in-depth. |
+| Audit log | Every event publish, every channel-auth issuance, every PDA data fetch on patient data, every signature attempt, every email send. Append-only `AuditLog`. |
+| Opt-out | Out of scope in v1. No `notification_preferences` table; per-route email muting is a per-flow decision if/when it's needed. |
+
+## Audit log shape
+
+```
+AuditLog (SQLite/Turso):
+  id              text PK
+  actorUserId     text NULL          -- who did the thing; NULL for system events
+  actorRole       text NOT NULL      -- patient | pda | agent | admin | system
+  eventType       text NOT NULL      -- namespaced: record.uploaded, release.signed, channel.granted, ...
+  entityType      text NULL          -- release | record | profile | invite | session | channel | email
+  entityId        text NULL          -- the affected row's PK or the channel name
+  payloadDigest   text NULL          -- sha256 of canonical payload; proves what was emitted without storing PHI
+  status          text NOT NULL DEFAULT 'ok'   -- ok | granted | denied | failed
+  ip              text NULL
+  ua              text NULL
+  createdAt       text NOT NULL
+```
+
+Indexes:
+- `(actorUserId, createdAt DESC)`
+- `(entityType, entityId, createdAt DESC)`
+- `(eventType, createdAt DESC)`
+
+Retention: keep indefinitely (HIPAA's 6-year minimum, whichever is longer).
+
+## Storage strategy
+
+The app runs on **libSQL/Turso** (`apps/web/src/lib/db/index.ts:1-14`). The v1 audit table lives in the main database. A two-tier plan handles growth:
+
+| Tier | Where | Holds | Why |
+|---|---|---|---|
+| Hot | Main Turso DB (v1) → dedicated sibling Turso DB (when hot size exceeds ~5GB) | Last ~90 days, fully indexed | Append-only; isolated cutover lets us scale and back up audit independently of operational data |
+| Cold | Vercel Blob (or Marketplace S3) as monthly Parquet files | Everything older than 90 days, 6+ years | HIPAA retention without bloating Turso; queryable via DuckDB/Athena for breach-investigation discovery |
+| Optional sidecar | Axiom or Datadog Logs (mirrored write) | Same events, for free-text search + alerting | Turso remains system of record; sidecar is for ops convenience |
+
+**Sizing sanity-check**: at ~10k MAU × ~50 audit events/day/active-user × ~300 bytes/row ≈ 180M rows/year ≈ ~60GB/year. Turso handles tens of GB fine; we won't get close in v1 (~hundreds of MAU). Archival isn't urgent — design the cron, run it when hot-tier size crosses ~5GB.
+
+**Append-only enforcement**
+- No `UPDATE`/`DELETE` paths in app code touching `AuditLog`.
+- DB-level: app DB credentials have only `INSERT`/`SELECT` on `AuditLog`. The future archival job uses a separate admin-only credential to delete-after-export.
+- All writes go through `writeAudit` in `apps/web/src/lib/audit/log.ts`. No code calls `db.insert(auditLog)` directly.
+
+**v1 deferral**: The dedicated sibling Turso DB is a *future* migration. v1 writes to `db` (the operational client). The `lib/audit/log.ts` module exposes an `auditDb` alias internally — the eventual swap is a one-line connection-string change there.
+
+## Write points (full coverage list)
+
+| Write site | Where | `eventType` | `status` |
+|---|---|---|---|
+| Every `publishEvent` call | `lib/events/publish.ts` | the event's type (e.g. `record.uploaded`) | `ok` or `failed` |
+| Channel-auth token issuance | `/api/realtime/auth` | `channel.granted` / `channel.denied` | `granted` / `denied` |
+| PDA reads patient-scoped data | REST handlers serving patient data when caller is a PDA | `patient.read_by_pda` (or finer-grained per resource) | `ok` |
+| Release signature attempts | sign route handler | `release.signature_attempted` | `ok` or `failed` |
+| Email sends | thin wrappers in `lib/email.ts` (or after `await sendXEmail` in the caller) | `email.sent` | `ok` or `failed` |
+
+The first three are HIPAA-mandated. The other two are best-practice extensions of the same audit surface.
+
+## Why we don't need vendor BAAs in v1
+
+PHI never leaves authenticated REST + the database:
+- **Realtime payloads**: IDs + event names only. A subscriber who somehow received an event for a record they can't access still cannot read the record (REST returns 403).
+- **Email**: subjects + bodies are canned templates with no PHI ("New record uploaded — open the app to view"). No patient names, no record contents.
+- **Audit payload**: only sha256 digests are stored; raw payload is never persisted.
+
+Result: Ably standard tier and Resend's standard offering are sufficient. A future Ably Enterprise BAA upgrade is defense-in-depth, not a compliance requirement.
+
+</script>
+<script type="text/markdown" id="md-11-files-modules">
+# 11 — Files & modules to add (v2)
+
+```
+apps/web/src/lib/events/
+  publish.ts            // publishEvent({ type, scope, recipientIds?, payload })
+                        //   - writes audit_log synchronously
+                        //   - validates payload against Zod schema in events.ts
+                        //   - fires Ably REST publish (no-op if ABLY_API_KEY absent)
+
+apps/web/src/lib/realtime/
+  scope.ts              // channelNameFor() + canAccessChannel(session, channelName)
+  auth.ts               // POST /api/realtime/auth handler — token issuance + audit
+  client.ts             // browser Ably client + React hook (useRealtime)
+
+apps/web/src/lib/audit/
+  log.ts                // writeAudit(...) + digestPayload(...)
+                        // auditDb alias points at main `db` in v1; swap point for dedicated Turso DB later
+
+apps/mobile/src/lib/
+  realtime/
+    client.ts           // RN Ably client mirroring web
+
+packages/types/src/schemas/
+  events.ts             // EventType enum, ChannelScope union, eventPayloads Zod schemas,
+                        // channelNameFor, parseChannelName, EventEnvelope
+```
+
+Removed from the v1 module list (versus the original plan):
+
+```
+apps/web/src/lib/events/
+  router.ts             — no router in v1
+apps/web/src/lib/notifications/
+  channels/expoPush.ts  — push deferred
+  channels/webPush.ts   — push deferred
+  channels/inApp.ts     — Ably IS the in-app surface; no separate adapter
+  channels/email.ts     — emails go through existing lib/email.ts inline
+  preferences.ts        — no notification_preferences in v1
+apps/mobile/src/lib/
+  push.ts               — push deferred
+packages/types/src/schemas/
+  notifications.ts      — no preference shape in v1
+```
+
+## DB migrations (drizzle)
+
+New table in v1:
+
+- `AuditLog` — append-only event/action log; v2 shape in `10-hipaa-and-audit.md`
+
+Migration file: `apps/web/drizzle/0026_audit_log.sql` (hand-written to match the repo's pattern; updates `meta/_journal.json` accordingly).
+
+Not in v1:
+
+- `notification_preferences` — removed; no router consults preferences
+- `notification_log` — removed; no dedup, no inbox UI
+- `push_tokens` — removed; push deferred
+- `record_locks` — collision mitigation deferred to a later phase (see `08`)
+
+## API routes to add
+
+- `POST /api/realtime/auth` — channel-subscribe token issuance
+
+Removed from the original list:
+
+- `POST /api/me/push-tokens` and friends — push deferred
+- `GET /api/me/notifications` + read state — no inbox in v1
+- `GET/PUT /api/me/notification-preferences` — no prefs table in v1
+- `POST /api/locks/*` — collision mitigation deferred
+
+## Existing routes to update
+
+Add `publishEvent(...)` alongside existing `sendXEmail(...)` calls. The email lines do **not** change.
+
+| Route | Existing inline email (keep as-is) | Add publishEvent |
+|---|---|---|
+| `apps/web/src/app/api/releases/route.ts:137` | `sendNewReleaseNotificationEmail` | `publishEvent({ type: "release.created", scope: { kind: "patient", patientId }, payload: { releaseId, patientId, byUserId } })` |
+| `apps/web/src/app/api/records/upload/route.ts` | `sendNewRecordUploadEmail` | `publishEvent({ type: "record.uploaded", scope: { kind: "patient", patientId }, payload: { recordId, patientId, byUserId } })` |
+| `apps/web/src/app/api/my-designated-agents/route.ts` | `sendInviteEmail` | `publishEvent({ type: "pda.invite_received", scope: { kind: "user", userId: invitee.id }, payload: { pdaInviteId, patientId } })` |
+| `apps/web/src/app/api/scheduled-calls/route.ts` | `sendScheduledCallEmail` | (out of scope — scheduling explicitly deferred) |
+| `apps/web/src/app/api/releases/[id]/sign/route.ts` | (no email today) | `publishEvent({ type: "release.signed", scope: { kind: "patient", patientId }, payload: { releaseId, patientId, byUserId } })` + `writeAudit(release.signature_attempted)` |
+| `apps/web/src/app/api/representing/pending/[id]/route.ts` | (no email today) | `publishEvent({ type: "pda.you_were_added" or similar })` |
+| `apps/web/src/app/api/profile/route.ts` | (no email today) | `publishEvent({ type: "profile.updated", scope: { kind: "patient", patientId } })` |
+| Account suspend/reinstate admin routes | `sendAccountSuspendedEmail` / `sendAccountReinstatedEmail` | `publishEvent({ type: "account.suspended" or "account.reinstated", scope: { kind: "user", userId } })` |
+
+## Wiring summary
+
+For each route, the diff is small:
+
+```ts
+// before
+await sendXEmail(...);
+return NextResponse.json({ ... });
+
+// after
+await sendXEmail(...);
+await publishEvent({ type: "...", scope: { ... }, payload: { ... } });
+return NextResponse.json({ ... });
+```
+
+`publishEvent` writes the audit row internally. No separate `writeAudit` call in the route unless the route has its own audit-worthy action (signature attempt, PDA data read) that isn't already covered by the event publish.
+
+</script>
+<script type="text/markdown" id="md-12-open-decisions">
+# 12 — Open decisions (v2)
+
+Most of v1's open decisions are resolved by the simplification. Remaining open items below.
+
+## Resolved in v2
+
+| Original decision | Resolution |
+|---|---|
+| Ably vs Soketi | **Ably** (Standard tier). Payloads are signaling-only so no BAA needed; Ably's DX wins for v1's small scale. |
+| Push (mobile + web) in phase 1 | **Deferred**. Re-evaluate once in-app + email surfaces are live and we see real usage. |
+| SMS | **Deferred**. Same. |
+| Durable queue / outbox / retries | **Not in v1**. Acceptable to drop a notification on vendor blip; data is committed. |
+| Channel router with dedup/prefs/critical | **Removed from v1**. `publishEvent` does only Ably publish; email is inline at the route. |
+| `notification_log` (dedup + inbox feed) | **Removed from v1**. No router means no dedup; no inbox UI in v1. |
+| `notification_preferences` (per-event channel toggles) | **Removed from v1**. Per-route email muting can be added as a single column on `users` if a specific flow needs it. |
+| `push_tokens` | **Removed from v1**. |
+| Presence-aware channel suppression | **Removed from v1**. No router means no consumer. Built-in Ably presence stays available if a future page-collaboration feature wants it. |
+| Quiet hours / scheduled delivery / digests | **Not in v1**. Same as v1 plan. |
+| Audit log storage (Postgres) | **libSQL/Turso** corrected. Two-tier plan (hot in Turso, cold in Vercel Blob Parquet) documented in `10-hipaa-and-audit.md`. |
+| Mixed-audience events on shared channels (encryption?) | **Recipient envelope** (`recipientIds: string[]`). No encryption. Payloads carry no PHI; envelope is a UX-correctness filter, not a security boundary. |
+
+## Still open
+
+| Decision | Safe default until decided | Re-evaluate when |
+|---|---|---|
+| Email-without-presence noise (user in-app AND gets email for the same event) | Accept as-is — current email-triggering flows are high-signal | First user complaint about email noise on the existing flows |
+| In-app dispatch surface — Mantine toast vs a richer surface | Mantine `notifications.show()` (already in repo) | Product designs an inbox/feed |
+| `chat:{id}` channel | Placeholder name only; no wiring in v1 | Chat feature is scoped |
+| Audit retention — cold-tier kickoff threshold | ~5GB hot-tier size | When hot-tier audit volume crosses the threshold (won't be soon at v1 scale) |
+| `recipientIds` for `pda.permissions_changed` | Use envelope so non-affected PDAs don't see the "your perms changed" toast | If product wants every PDA in the patient context to see the change |
+| Optimistic locking / atomic signature endpoint (chapter 08) | Status quo until a concurrent-edit incident happens | First production incident or product asks for collaborative editing |
+
+## Decisions already made (carried forward from v1 plan)
+
+- **HIPAA**: PHI never on notification or realtime payloads (regardless of vendor BAA)
+- **`audit_log` is mandatory**: every publish, every channel-auth issuance, every PDA data read, every signature attempt, every email send
+
+</script>
+<script type="text/markdown" id="md-13-verification">
+# 13 — Verification plan (v2)
+
+End-to-end checks for the single phase. Local dev: `~/.bun/bin/bun run dev`.
+
+## Schema + audit
+
+- `bun run db:migrate` applies `0026_audit_log.sql` cleanly against a fresh DB and an existing one (no destructive change).
+- Query `AuditLog` after a release-create flow: expect rows for (a) `release.created` from `publishEvent`, (b) `channel.granted` from `/api/realtime/auth`, (c) `email.sent` if instrumented.
+- All `payloadDigest` fields are sha256 hex strings, never raw text or JSON.
+
+## Channel auth
+
+- `POST /api/realtime/auth` with a patient session requesting `patient:{ownId}` → 200 with capability map; `AuditLog` row `eventType=channel.granted, status=granted`.
+- Same endpoint with PDA session A (accepted PDA of patient B) requesting `patient:{B}` → 200, granted.
+- Same endpoint with PDA session A requesting `patient:{C}` where A has no PDA row for C → channel not in capability map, `AuditLog` row `eventType=channel.denied, status=denied`.
+- Token TTL: capture a token, wait 90s, attempt subscribe → fails (Ably rejects expired token).
+
+## Channel naming / consolidated fan-out
+
+- Open patient web (patient X), PDA web (PDA 1 of X), and a third browser (PDA of a different patient Y).
+- PDA 1 uploads a record for patient X.
+- Both patient X and PDA 1 see a live Mantine toast and the records list refreshes within ~1s.
+- The PDA-of-Y browser sees nothing in their UI.
+- In Ably's dashboard (or network tab), confirm: **one** publish to `patient:{X}`, not multiple per-user publishes.
+
+## Recipient envelope
+
+- Server-side: emit a synthetic event with `recipientIds: [patientUserId]` (e.g. via a dev-only endpoint or unit-test harness).
+- Patient browser: toast shown.
+- PDA browser (also subscribed to same `patient:{id}`): event received in subscriber console log, dropped silently (no toast, no refetch).
+
+## Email parity (no regression)
+
+- Trigger `POST /api/releases` with an agent listed.
+- Existing `sendNewReleaseNotificationEmail` fires unchanged (check Resend dashboard or local logs).
+- Additionally, patient + PDA web browsers see a live "new release created" toast.
+- No double-email; no email behavior change vs `main`.
+
+## No-PHI invariant
+
+- Grep `publishEvent` call sites — payload fields should be IDs/event metadata only.
+- Per-event Zod schemas in `packages/types/src/schemas/events.ts` reject any field that doesn't match the spec.
+- Spot-check three Ably publishes via the dashboard's message inspector: payload bodies contain only IDs.
+
+## Mobile
+
+- `cd apps/mobile && node -e "require('./metro.config.js')"` resolves (the new `events.ts` schema must be picked up via the workspace watcher).
+- Run app on simulator/device, sign in as patient with at least one accepted PDA, leave dashboard open.
+- From a separate browser as the PDA, upload a record → mobile receives the event and refreshes the list.
+
+## Build + lint + type-check
+
+- `bun run type-check && bun run lint && bun run build` at repo root.
+- After Ably/`@ably/realtime` is installed, run the above again — should remain clean.
+
+## Failure paths
+
+- Block Ably's host (`/etc/hosts` to `127.0.0.1`) and POST `/api/releases` → response is still 200, `AuditLog` records `eventType=release.created, status=ok` AND optionally `status=failed` for the publish attempt depending on how we instrument it; no in-app toast appears; email still fires.
+- Block Resend's host → POST `/api/releases` returns whatever it returns today (the route's existing error handling), `AuditLog` records `eventType=email.sent, status=failed` if instrumented.
+- DB unavailable → 5xx as today; nothing published; nothing emailed.
+
+</script>
+<script type="text/markdown" id="md-14-recommendations">
+# 14 — Recommendations summary (v2)
+
+A one-page distilled view for stakeholders.
+
+## Scope of v1
+
+Ship **in-app live notifications (Ably) + the existing email behavior + a full HIPAA audit log**. Nothing else. Push, SMS, in-app inbox, per-event preferences, dedup, presence-driven suppression, and a central router are all deferred.
+
+## Realtime transport
+
+**Ably**, Standard tier. Realtime payloads are signaling-only (IDs, no PHI), so vendor BAA tier is not required. All vendor code lives in `lib/events/publish.ts`, `lib/realtime/auth.ts`, `lib/realtime/client.ts` — a future swap to Soketi or another Pusher-protocol provider is a per-file change.
+
+## Channels
+
+One shared `patient:{patientId}` channel per patient that everyone with patient access (patient + accepted PDAs + assigned agents) subscribes to. Personal events stay on per-user `user:{userId}` channels. Page-scoped channels (`release:{id}`, `document:{id}`, `provider:{id}`) join on UI navigation. `chat:{id}` is a placeholder for a future chat feature.
+
+This replaces v1's per-recipient fan-out (publishing once per recipient channel). The membership of `patient:{id}` IS the audience.
+
+## Recipient envelope, not encryption
+
+Mixed-audience events on a shared channel (e.g., "PDA #2 viewed your records" → patient should react, other PDAs should not) carry an optional `recipientIds: string[]`. Clients filter by it. Not a security boundary — channel-auth at subscribe time and REST auth at fetch time remain the actual gates. Payloads carry no PHI, so encryption is unnecessary.
+
+## Email
+
+No change from today. Route handlers call `lib/email.ts` `sendXEmail()` directly. `publishEvent` is added alongside, not as a replacement.
+
+## HIPAA audit log
+
+Mandatory. `AuditLog` table (libSQL/Turso; the v1 docs that said Postgres were wrong). Append-only. Write points: every `publishEvent`, every channel-auth issuance, every PDA data read, every signature attempt, every email send.
+
+Storage tiering plan: hot in Turso (v1 in main DB; future sibling DB), cold in Vercel Blob as monthly Parquet. Designed but not built until hot-tier size justifies it (~5GB; not soon at v1 scale).
+
+## Sequencing
+
+| Phase | What | Time |
+|---|---|---|
+| 1 | Audit table + shared event types + `publishEvent` + `/api/realtime/auth` + web + mobile subscribers + wire reference route | ~2 weeks |
+| Future | Push, in-app inbox, prefs, collision mitigation, presence on collab pages, chat | scheduled by product trigger |
+
+## Single most impactful first move
+
+**Phase 1 alone** lands:
+1. The HIPAA audit log the platform currently lacks
+2. Live patient-visible updates when a PDA or agent acts on their data — the original UX pain point
+3. A clean abstraction (`publishEvent` + `writeAudit`) that every future channel/feature plugs into without changing route handlers
+
+It is the lowest-risk, highest-leverage first step, and ~2 weeks of work — far smaller than the original 4-phase plan.
+
+</script>
+<script type="text/markdown" id="md-15-linear-tickets">
+# 15 — Linear tickets
+
+Implementation tracked under the **Mobile Launch** project (Zabaca team / `JAM`). All seven tickets are labeled `Feature`, created 2026-05-18, and wired with explicit `blockedBy` relationships.
+
+## Critical path
+
+```
+JAM-298 ──┬──> JAM-299 ──┬──> JAM-300 ──┐
+          │              ├──> JAM-301 ──┤
+          │              └──> JAM-302 ──┤
+          └──────────────────> JAM-303 ──┴──> JAM-304
+```
+
+Single-engineer serial: ~3–4 weeks. With 2 engineers parallelizing T3/T4/T5/T6 after T2: ~2 weeks.
+
+## Tickets
+
+| # | Title | Est. | Blocked by | Blocks | Link |
+|---|---|---|---|---|---|
+| JAM-298 | T1 — Foundation: AuditLog + shared event schemas | 3 | — | JAM-299, JAM-303 | [open](https://linear.app/zabaca/issue/JAM-298/t1-foundation-auditlog-table-shared-event-schemas) |
+| JAM-299 | T2 — Realtime backbone: publishEvent + channel auth | 5 | JAM-298 | JAM-300, JAM-301, JAM-302 | [open](https://linear.app/zabaca/issue/JAM-299/t2-realtime-backbone-publishevent-channel-auth) |
+| JAM-300 | T3 — Web realtime subscriber + Mantine dispatch | 5 | JAM-299 | JAM-304 | [open](https://linear.app/zabaca/issue/JAM-300/t3-web-realtime-subscriber-mantine-dispatch) |
+| JAM-301 | T4 — Mobile realtime subscriber | 5 | JAM-299 | JAM-304 | [open](https://linear.app/zabaca/issue/JAM-301/t4-mobile-realtime-subscriber) |
+| JAM-302 | T5 — Wire existing routes to publishEvent | 5 | JAM-299 | JAM-304 | [open](https://linear.app/zabaca/issue/JAM-302/t5-wire-existing-routes-to-publishevent) |
+| JAM-303 | T6 — HIPAA audit sweep (parallel) | 5 | JAM-298 | JAM-304 | [open](https://linear.app/zabaca/issue/JAM-303/t6-hipaa-audit-sweep-parallel) |
+| JAM-304 | T7 — Verification + cutover | 3 | JAM-300, JAM-301, JAM-302, JAM-303 | — | [open](https://linear.app/zabaca/issue/JAM-304/t7-verification-cutover) |
+
+**Total: 31 story points across 7 tickets.**
+
+## Where each ticket maps in the planning docs
+
+| Ticket | Primary references |
+|---|---|
+| JAM-298 (T1) | `10-hipaa-and-audit.md` (table shape, storage tiering), `03-event-taxonomy.md` (event list), `11-files-modules.md` (modules) |
+| JAM-299 (T2) | `04-channel-rules.md` (publishEvent semantics), `07-presence-and-channels.md` (channel-auth gate) |
+| JAM-300 (T3) | `07-presence-and-channels.md` (subscription lifecycle), `apps/web/src/app/layout.tsx` (Mantine mount) |
+| JAM-301 (T4) | T3 as canonical client behavior; same channel taxonomy and envelope |
+| JAM-302 (T5) | `11-files-modules.md` (route diff table), `03-event-taxonomy.md` (payload shapes) |
+| JAM-303 (T6) | `10-hipaa-and-audit.md` "Write points" table — rows 3, 4, 5 (email, PDA-read, signature) |
+| JAM-304 (T7) | `13-verification.md` (full check list) |
+
+## Where to start
+
+Start with **JAM-298**. It's the only ticket with no blockers and it unblocks both downstream branches (the realtime branch via JAM-299, and the audit-sweep branch via JAM-303).
+
+## Plan source
+
+Approved plan: `~/.claude/plans/for-the-real-time-rosy-galaxy.md` (linked from every ticket).
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script>
+  let _mfrCount = 0;
+
+  // 1) Render every <script type="text/markdown" id="md-X"> into the matching
+  // <article id="X">. Marked emits <pre><code class="language-mermaid"> for
+  // fenced mermaid blocks; we post-process those into placeholder divs.
+  document.querySelectorAll('script[type="text/markdown"]').forEach((s) => {
+    const targetId = s.id.replace(/^md-/, '');
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    target.innerHTML = window.marked.parse(s.textContent.trim(), { gfm: true, breaks: false });
+
+    // Post-process: swap each marked-emitted mermaid code block for a placeholder
+    // div carrying the source as base64. Iterating per-article preserves DOM order
+    // and avoids race conditions with the next step.
+    target.querySelectorAll('pre > code.language-mermaid').forEach((codeEl) => {
+      const id = 'mfr-' + (++_mfrCount);
+      const text = codeEl.textContent || '';
+      const b64 = btoa(unescape(encodeURIComponent(text)));
+      const div = document.createElement('div');
+      div.className = 'mermaid-placeholder';
+      div.id = id;
+      div.setAttribute('data-mermaid-b64', b64);
+      const pre = codeEl.parentElement; // the <pre>
+      pre.replaceWith(div);
+    });
+  });
+
+  // 2) Build a self-contained mermaid renderer document (HTML + CSS + JS) for
+  // a single diagram source string. Returned as one HTML string suitable for
+  // assigning to iframe.srcdoc — no escaping needed since we pass it via the
+  // JS property, not via attribute serialization.
+  function buildIframeDoc(source) {
+    const esc = source.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return [
+      '<!doctype html><html><head><meta charset="utf-8"><style>',
+      'html,body{margin:0;padding:.75rem 1rem;background:transparent;font:14px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;color:#1a1a1a}',
+      '@media (prefers-color-scheme: dark){html,body{color:#e6edf3}}',
+      'pre.mermaid{text-align:center;margin:0;background:transparent;border:0}',
+      'pre.mermaid svg{max-width:100%;height:auto}',
+      '</style></head><body>',
+      '<pre class="mermaid">' + esc + '</pre>',
+      '<script type="module">',
+      'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs";',
+      'const dark=matchMedia("(prefers-color-scheme: dark)").matches;',
+      'mermaid.initialize({startOnLoad:false,theme:dark?"dark":"default",securityLevel:"loose",flowchart:{useMaxWidth:true,htmlLabels:true},sequence:{useMaxWidth:true},gantt:{useMaxWidth:true}});',
+      'try{await mermaid.run({querySelector:"pre.mermaid"})}catch(e){const p=document.createElement("pre");p.style.color="#b00";p.style.whiteSpace="pre-wrap";p.textContent="mermaid render failed: "+String(e&&e.message||e);document.body.replaceChildren(p)}',
+      'const send=()=>parent.postMessage({type:"mermaid-iframe-resize",id:window.name,height:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight)},"*");',
+      'send();requestAnimationFrame(send);new ResizeObserver(send).observe(document.body);',
+      '<' + '/script>',
+      '</body></html>',
+    ].join('');
+  }
+
+  // 3) Replace each placeholder <div> with a fresh iframe whose srcdoc is set
+  // via the JS property (no attribute-string escaping pitfalls).
+  document.querySelectorAll('.mermaid-placeholder').forEach((el) => {
+    const b64 = el.getAttribute('data-mermaid-b64') || '';
+    let source = '';
+    try {
+      // Decode base64 to bytes, then UTF-8 to string. atob alone mangles non-ASCII.
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      source = new TextDecoder('utf-8').decode(bytes);
+    } catch (e) { source = '/* decode error */'; }
+    const iframe = document.createElement('iframe');
+    iframe.className = 'mermaid-frame';
+    iframe.id = el.id;
+    iframe.name = el.id;
+    iframe.loading = 'lazy';
+    iframe.setAttribute('sandbox', 'allow-scripts allow-popups');
+    iframe.srcdoc = buildIframeDoc(source);
+    el.replaceWith(iframe);
+  });
+
+  // 4) Iframes postMessage their rendered height back; resize so the diagram
+  // sits inline without an internal scrollbar.
+  window.addEventListener('message', (e) => {
+    const data = e.data;
+    if (!data || data.type !== 'mermaid-iframe-resize') return;
+    const frame = document.getElementById(data.id) || document.getElementsByName(data.id)[0];
+    if (frame && typeof data.height === 'number') {
+      frame.style.height = (data.height + 8) + 'px';
+    }
+  });
+</script>
+</body>
+</html>

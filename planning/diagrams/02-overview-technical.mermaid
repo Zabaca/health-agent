@@ -1,0 +1,25 @@
+flowchart LR
+  subgraph Web["Next.js (apps/web)"]
+    R[Route handler / Server action] --> P[publishEvent]
+    P --> AL[(audit_log table)]
+    R -->|wU| WU[waitUntil]
+    WU --> ROUTE
+  end
+
+  subgraph Worker["Channel router (in-process)"]
+    ROUTE[channelRouter] --> EMAIL[Resend]
+    ROUTE --> PUSHM[Expo Push]
+    ROUTE --> PUSHW[Web Push / VAPID]
+    ROUTE --> RT[Realtime publish]
+    ROUTE --> INBOX[(notification_log)]
+  end
+
+  subgraph Realtime["Realtime layer"]
+    RT --> ABLY{{Ably / Soketi}}
+    ABLY --> WC[Web client]
+    ABLY --> MC[Mobile client]
+  end
+
+  WC -. presence .-> ABLY
+  MC -. presence .-> ABLY
+  ROUTE -. "online?" .-> ABLY

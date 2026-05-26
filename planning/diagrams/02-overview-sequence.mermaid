@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    participant PDA as 👥 PDA (mobile)
+    participant API as 🛎️ Front Desk (route handler)
+    participant DB as 🗄️ Database
+    participant LOG as 📓 Audit log
+    participant BELL as 🚶 Bellhop (waitUntil)
+    participant RT as 📡 Realtime
+    participant PT as 👤 Patient (web, online)
+
+    PDA->>API: New record for patient 42
+    API->>DB: save the record
+    API->>LOG: write audit entry
+    API-->>PDA: 200 done
+    API->>BELL: hand off via waitUntil
+
+    Note over BELL: Runs after the response goes out. Best-effort, no retries.
+
+    BELL->>RT: is patient 42 online?
+    RT-->>BELL: yes, viewing records on web
+    BELL->>RT: publish to patient:42 (ID only, no PHI)
+    RT-->>PT: 🔔 live event arrives
+    PT->>PT: row appears in records table, no refresh
+    Note over BELL: Online → in-app only. Offline → push and email. Vendor blip = dropped.

@@ -1,0 +1,12 @@
+flowchart TD
+  E[event published] --> AUDIT[write audit_log]
+  AUDIT --> WU[waitUntil: run channel router]
+  WU --> DEDUP{dedup key seen<br/>in cooldown window?}
+  DEDUP -- yes --> SKIP[skip this recipient]
+  DEDUP -- no --> CRIT{critical?}
+  CRIT -- yes --> MULTI[fan out to all enabled channels<br/>email + push + in-app]
+  CRIT -- no --> PREF{user prefs<br/>allow channel?}
+  PREF -- no --> DROP[skip channel]
+  PREF -- yes --> PRES{user has live<br/>realtime connection?}
+  PRES -- yes --> INAPP[in-app live only]
+  PRES -- no --> SEND[push + email]
