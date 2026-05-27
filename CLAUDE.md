@@ -16,13 +16,12 @@ Bun-workspace monorepo. Do not run commands at the repo root expecting Next.js b
 - New cross-surface Zod schemas go in `packages/types/src/schemas/` and are imported as `@health-agent/types`. Don't add new schemas to `apps/web/src/lib/schemas/`. (The legacy `release.ts` still lives there pending a migration; `profile.ts` already moved.)
 - Test web after a structural change: `bun run type-check && bun run lint && bun run build` at root.
 - Test mobile Metro resolution: `cd apps/mobile && node -e "require('./metro.config.js')"` (catches workspace-resolver breakage cheaply).
-- Always use your ORM's migration utilities (e.g., Dizzle) to handle database changes. Never write or edit raw SQL files by hand when updating the schema.
+- Always use your ORM's migration utilities (e.g., Dizzle) to handle database changes. NEVER write or edit raw SQL files by hand when updating the schema.
   - ## Core Rules:
-    1. **Always use CLI generators:** Run commands like `bun db:generate`. 
-    2. **Never hardcode SQL:** Do not manually create, alter, or modify raw `.sql` files for schema updates.
-    3. **Idempotency:** Ensure all migrations can run safely across environments without failing on already-applied changes.
-    4. **Validation:** Always preview the generated migration file and explain the changes before applying them to the database.
-    5. **Rollbacks:** NEVER perform any rollback operations. 
+    1. **Always use CLI generators:** Always use generator to produce the migration.
+    2. **Never hardcode SQL:** All database operations—including creating tables, altering tables, dropping tables, and defining relationships—must be written in TypeScript/JavaScript using drizzle-orm schema syntax. NEVER manually create, edit, or delete any .sql migration files. NEVER touch, modify, or inspect the meta/_journal.json file manually. Drizzle must manage this exclusively.
+    3. **Rollbacks:** You are strictly forbidden from performing database rollbacks. If a schema change needs to be undone or corrected, you must write a new forward-fixing schema change in your TypeScript files and generate a new forward migration. You must never delete past migrations to "go back in time."
+    4. **PRODUCTION:** Migrations should NEVER run on production environments. This task is solely performed by CI.
 
 ## Secrets & env
 
