@@ -3,14 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>method</key>
-	<string>app-store</string>
+	<string>app-store-connect</string>
 	<key>teamID</key>
-	<string>FILL_IN_TEAM_ID</string>
+	<string>CYCW5D248P</string>
 	<key>uploadSymbols</key>
 	<true/>
 	<key>uploadBitcode</key>
 	<false/>
 	<key>signingStyle</key>
-	<string>automatic</string>
+	<string>manual</string>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.zabaca.veladon</key>
+		<string>Veladon App Store</string>
+	</dict>
 </dict>
 </plist>

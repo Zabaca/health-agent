@@ -16,6 +16,13 @@ Bun-workspace monorepo. Do not run commands at the repo root expecting Next.js b
 - New cross-surface Zod schemas go in `packages/types/src/schemas/` and are imported as `@health-agent/types`. Don't add new schemas to `apps/web/src/lib/schemas/`. (The legacy `release.ts` still lives there pending a migration; `profile.ts` already moved.)
 - Test web after a structural change: `bun run type-check && bun run lint && bun run build` at root.
 - Test mobile Metro resolution: `cd apps/mobile && node -e "require('./metro.config.js')"` (catches workspace-resolver breakage cheaply).
+- Always use your ORM's migration utilities (e.g., Dizzle, Prisma, TypeORM, Sequelize, or Alembic) to handle database changes. Never write or edit raw SQL files by hand when updating the schema.
+  - ## Core Rules:
+    1. **Always use CLI generators:** Run commands like `bun db:generate`, `bun prisma migrate dev`, `bun typeorm migration:generate`, or `alembic revision --autogenerate` for schema changes. 
+    2. **Never hardcode SQL:** Do not manually create, alter, or modify raw `.sql` files for schema updates.
+    3. **Idempotency:** Ensure all migrations can run safely across environments without failing on already-applied changes.
+    4. **Validation:** Always preview the generated migration file and explain the changes before applying them to the database.
+    5. **Rollbacks:** Include a documented rollback strategy or command using your ORM if a migration fails.
 
 ## Secrets & env
 
