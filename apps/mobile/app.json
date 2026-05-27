@@ -21,8 +21,8 @@
       "bundleIdentifier": "com.zabaca.veladon",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSHealthShareUsageDescription": "Veladon reads your health data to display vitals, activity, sleep, and lab results on your dashboard.",
-        "NSHealthUpdateUsageDescription": "Veladon writes health data to keep your records in sync."
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSHealthShareUsageDescription": "Veladon reads your health data to display vitals, activity, sleep, and lab results on your dashboard."
       }
     },
     "android": {
@@ -37,7 +37,6 @@
       ]
     },
     "plugins": [
-      "expo-updates",
       "expo-apple-authentication",
       [
         "expo-camera",
@@ -54,10 +53,7 @@
       "@react-native-community/datetimepicker"
     ],
     "updates": {
-      "url": "https://u.expo.dev/FILL_IN_PROJECT_ID"
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
+      "enabled": false
     }
   }
 }
