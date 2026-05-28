@@ -77,7 +77,8 @@ export const linkIntents = sqliteTable('LinkIntent', {
   nonce: text('nonce').primaryKey(),
   userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
   provider: text('provider', { enum: ['google', 'apple'] }).notNull(),
-  expiresAt: integer('expiresAt', { mode: 'timestamp_ms' }).notNull(),
+  /** ISO-8601 UTC timestamp. */
+  expiresAt: text('expiresAt').notNull(),
 });
 
 /**
@@ -88,7 +89,8 @@ export const linkIntents = sqliteTable('LinkIntent', {
 export const sessions = sqliteTable('Session', {
   sessionToken: text('sessionToken').primaryKey(),
   userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  expires: integer('expires', { mode: 'timestamp_ms' }).notNull(),
+  /** ISO-8601 UTC timestamp. */
+  expires: text('expires').notNull(),
   platform: text('platform', { enum: ['web', 'ios', 'android'] }).notNull().default('web'),
   deviceName: text('deviceName'),
   userAgent: text('userAgent'),

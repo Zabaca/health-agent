@@ -65,7 +65,7 @@ export async function resolveUserSession(req: Request): Promise<
     .from(sessions)
     .where(eq(sessions.sessionToken, jti))
     .get();
-  if (!row || row.revokedAt || row.expires < new Date()) {
+  if (!row || row.revokedAt || row.expires < new Date().toISOString()) {
     return { result: null, error: NextResponse.json({ error: "Session revoked" }, { status: 401 }) };
   }
 

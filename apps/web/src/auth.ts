@@ -79,7 +79,7 @@ async function recordWebSession(jti: string, userId: string) {
     .values({
       sessionToken: jti,
       userId,
-      expires: new Date(Date.now() + SESSION_TTL_MS),
+      expires: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
       platform: "web",
       deviceName,
       userAgent,

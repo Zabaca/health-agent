@@ -5,6 +5,7 @@ import { users, userProviders, patientAssignments } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import StaffReleaseForm from "@/components/staff/StaffReleaseForm";
 import { decrypt } from "@/lib/crypto";
+import { toIsoDate } from "@/lib/dates";
 
 export const metadata = { title: "New Release — Agent Portal" };
 
@@ -54,7 +55,7 @@ export default async function AgentNewReleasePage({
         firstName: patient.firstName ?? "",
         middleName: patient.middleName ?? "",
         lastName: patient.lastName ?? "",
-        dateOfBirth: patient.dateOfBirth ? decrypt(patient.dateOfBirth) : "",
+        dateOfBirth: patient.dateOfBirth ? toIsoDate(decrypt(patient.dateOfBirth)) : "",
         mailingAddress: patient.address ?? "",
         phoneNumber: patient.phoneNumber ?? "",
         email: patient.email ?? undefined,

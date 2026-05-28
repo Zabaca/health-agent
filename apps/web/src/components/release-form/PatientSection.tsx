@@ -4,6 +4,7 @@ import { SimpleGrid, TextInput, Title, Paper } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useFormContext, Controller } from "react-hook-form";
 import type { ReleaseFormData } from "@/types/release";
+import { parseLocalDate, toIsoDate } from "@/lib/dates";
 
 export default function PatientSection() {
   const {
@@ -49,14 +50,8 @@ export default function PatientSection() {
               popoverProps={{ withinPortal: true, zIndex: 300 }}
               styles={{ root: { alignSelf: 'end' } }}
               error={errors.dateOfBirth?.message}
-              value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
-              onChange={(date) =>
-                field.onChange(
-                  date
-                    ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
-                    : ""
-                )
-              }
+              value={parseLocalDate(field.value)}
+              onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
             />
           )}
         />

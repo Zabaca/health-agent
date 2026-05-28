@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { releases as releasesTable, providers as providersTable } from "@/lib/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { decryptPii } from "@/lib/crypto";
+import { formatDateUS } from "@/lib/dates";
 
 function esc(v: string | null | undefined): string {
   if (!v) return "";
@@ -88,7 +89,7 @@ function buildProviderSection(p: {
 
   const dateRangeHtml = p.allAvailableDates
     ? `<div class="field-value" style="margin-bottom:10px">All available dates</div>`
-    : `<div class="field-grid-2">${field("From", p.dateRangeFrom)}${field("To", p.dateRangeTo)}</div>`;
+    : `<div class="field-grid-2">${field("From", formatDateUS(p.dateRangeFrom))}${field("To", formatDateUS(p.dateRangeTo))}</div>`;
 
   const purposeValue = p.purpose === "Other"
     ? `Other — ${p.purposeOther || ""}`
@@ -286,7 +287,7 @@ function buildHtml(release: ReturnType<typeof decryptPii> & { providers: Paramet
         ${field("First Name", r.firstName)}
         ${field("Middle Name", r.middleName)}
         ${field("Last Name", r.lastName)}
-        ${field("Date of Birth", dateOfBirth)}
+        ${field("Date of Birth", formatDateUS(dateOfBirth))}
         ${field("Social Security Number", ssnDisplay)}
       </div>
       ${field("Mailing Address", r.mailingAddress)}
@@ -306,12 +307,12 @@ function buildHtml(release: ReturnType<typeof decryptPii> & { providers: Paramet
         <div class="code-value">${code}</div>
       </div>
       <div class="field-grid-2">
-        ${field("Authorization Expiration Date", r.authExpirationDate)}
+        ${field("Authorization Expiration Date", formatDateUS(r.authExpirationDate))}
         ${field("Expiration Event", r.authExpirationEvent)}
       </div>
       <div class="field-grid-2">
         ${field("Patient Printed Name", r.authPrintedName)}
-        ${field("Date", r.authDate)}
+        ${field("Date", formatDateUS(r.authDate))}
       </div>
       ${signatureHtml}
     </div>

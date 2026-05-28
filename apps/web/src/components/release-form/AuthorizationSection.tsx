@@ -7,6 +7,7 @@ import { useFormContext, Controller } from "react-hook-form";
 import type { UseFormSetValue } from "react-hook-form";
 import dynamic from "next/dynamic";
 import type { ReleaseFormData } from "@/types/release";
+import { parseLocalDate, toIsoDate } from "@/lib/dates";
 
 const SignaturePad = dynamic(() => import("./SignaturePad"), { ssr: false });
 
@@ -235,14 +236,8 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
                     minDate={minExpirationDate}
                     popoverProps={{ withinPortal: true, zIndex: 300 }}
                     error={errors.authExpirationDate?.message}
-                    value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
-                    onChange={(date) =>
-                      field.onChange(
-                        date
-                          ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
-                          : ""
-                      )
-                    }
+                    value={parseLocalDate(field.value)}
+                    onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
                   />
                 )}
               />
@@ -272,14 +267,8 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
                     minDate={today}
                     popoverProps={{ withinPortal: true, zIndex: 300 }}
                     error={errors.authDate?.message}
-                    value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
-                    onChange={(date) =>
-                      field.onChange(
-                        date
-                          ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
-                          : ""
-                      )
-                    }
+                    value={parseLocalDate(field.value)}
+                    onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
                   />
                 )}
               />

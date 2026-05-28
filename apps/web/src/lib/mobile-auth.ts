@@ -63,7 +63,7 @@ export async function requireMobileSession(req: Request): Promise<MobileAuthSucc
 
   if (!row) return { ok: false, status: 401, error: "Session not found" };
   if (row.revokedAt) return { ok: false, status: 401, error: "Session revoked" };
-  if (row.expires < new Date()) return { ok: false, status: 401, error: "Session expired" };
+  if (row.expires < new Date().toISOString()) return { ok: false, status: 401, error: "Session expired" };
   if (row.userId !== userId) return { ok: false, status: 401, error: "Session/user mismatch" };
 
   // Account-suspension / deletion check (matches requireActiveSession behavior).

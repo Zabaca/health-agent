@@ -20,6 +20,7 @@ import { IconQuestionMark } from "@tabler/icons-react";
 import { DatePickerInput } from "@mantine/dates";
 import { useFormContext, Controller } from "react-hook-form";
 import type { ReleaseFormData } from "@/types/release";
+import { parseLocalDate, toIsoDate } from "@/lib/dates";
 
 const PURPOSE_OPTIONS = [
   { value: "Continuing care", label: "Continuing care" },
@@ -326,14 +327,8 @@ export default function RecordRequestFields({ index }: Props) {
                 placeholder="MM/DD/YYYY"
                 popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={providerErrors?.dateRangeFrom?.message}
-                value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
-                onChange={(date) =>
-                  field.onChange(
-                    date
-                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
-                      : ""
-                  )
-                }
+                value={parseLocalDate(field.value)}
+                onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
               />
             )}
           />
@@ -346,14 +341,8 @@ export default function RecordRequestFields({ index }: Props) {
                 placeholder="MM/DD/YYYY"
                 popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={providerErrors?.dateRangeTo?.message}
-                value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
-                onChange={(date) =>
-                  field.onChange(
-                    date
-                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
-                      : ""
-                  )
-                }
+                value={parseLocalDate(field.value)}
+                onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
               />
             )}
           />

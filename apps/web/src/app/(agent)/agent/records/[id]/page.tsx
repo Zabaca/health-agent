@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { Title, Stack, Text, Group, Card, Anchor, Breadcrumbs } from "@mantine/core";
 import Link from "next/link";
 import InlineDocViewer from "@/components/records/InlineDocViewer";
+import FaxReceivedTime from "@/components/records/FaxReceivedTime";
 
 export default async function AgentRecordDetailPage({
   params,
@@ -83,7 +84,7 @@ export default async function AgentRecordDetailPage({
           <Stack gap="xs">
             <Group gap="xs">
               <Text size="sm" fw={500}>Received:</Text>
-              <Text size="sm">{file.faxLog.recvdate} {file.faxLog.starttime}</Text>
+              <FaxReceivedTime recvdate={file.faxLog.recvdate} starttime={file.faxLog.starttime} />
             </Group>
             <Group gap="xs">
               <Text size="sm" fw={500}>Pages:</Text>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { todayIsoDate } from '../dates';
 
 const providerBaseShape = {
   providerName: z.string().optional(),
@@ -47,8 +48,10 @@ const providerBaseShape = {
   sensitivePsychotherapy: z.boolean().default(false),
   sensitiveOther: z.boolean().default(false),
   sensitiveOtherDesc: z.string().optional(),
-  dateRangeFrom: z.string().optional(),
-  dateRangeTo: z.string().optional(),
+  dateRangeFrom: z.string().optional()
+    .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), "Please enter a valid date (YYYY-MM-DD)"),
+  dateRangeTo: z.string().optional()
+    .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), "Please enter a valid date (YYYY-MM-DD)"),
   allAvailableDates: z.boolean(),
   purpose: z.string().optional(),
   purposeOther: z.string().optional(),
@@ -161,13 +164,9 @@ const releaseBaseObject = z.object({
   middleName: z.string().optional(),
   lastName: z.string().min(1, "Last name is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter a valid date (YYYY-MM-DD)")
     .refine((val) => !isNaN(new Date(val).getTime()), "Please enter a valid date")
-    .refine((val) => {
-      const date = new Date(val);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return date <= today;
-    }, "Date of birth cannot be in the future"),
+    .refine((val) => val <= todayIsoDate(), "Date of birth cannot be in the future"),
   mailingAddress: z.string().min(1, "Mailing address is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   email: z.string().email("Please enter a valid email address"),
@@ -196,6 +195,7 @@ const releaseBaseObject = z.object({
   authPrintedName: z.string().trim().min(1, "Printed name is required"),
   authSignatureImage: z.string({ required_error: "Signature is required" }).min(1, "Signature is required"),
   authDate: z.string().min(1, "Date is required")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter a valid date (YYYY-MM-DD)")
     .refine((val) => !isNaN(new Date(val).getTime()), "Please enter a valid date"),
   authAgentName: z.string().optional(),
 });

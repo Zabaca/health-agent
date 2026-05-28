@@ -14,6 +14,7 @@ import { DatePickerInput } from "@mantine/dates";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, type ProfileFormData } from "@health-agent/types";
+import { parseLocalDate, toIsoDate } from "@/lib/dates";
 import { apiClient } from "@/lib/api/client";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import PageHeader from "@/components/shared/PageHeader";
@@ -182,14 +183,8 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
                 maxDate={new Date()}
                 popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={errors.dateOfBirth?.message}
-                value={field.value && !isNaN(Date.parse(field.value)) ? new Date(field.value) : null}
-                onChange={(date) =>
-                  field.onChange(
-                    date
-                      ? date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" })
-                      : ""
-                  )
-                }
+                value={parseLocalDate(field.value)}
+                onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
                 styles={{ root: { alignSelf: 'end' } }}
               />
             )}

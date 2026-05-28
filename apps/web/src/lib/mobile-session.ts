@@ -36,7 +36,7 @@ export async function recordMobileSession(opts: {
     .values({
       sessionToken: jti,
       userId,
-      expires: new Date(Date.now() + MOBILE_SESSION_TTL_MS),
+      expires: new Date(Date.now() + MOBILE_SESSION_TTL_MS).toISOString(),
       platform: device.platform,
       deviceName,
       userAgent,

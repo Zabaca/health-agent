@@ -54,7 +54,7 @@ export async function requirePageSession(): Promise<Session> {
     .from(sessions)
     .where(eq(sessions.sessionToken, jti))
     .get();
-  if (!row || row.revokedAt || row.expires < new Date()) {
+  if (!row || row.revokedAt || row.expires < new Date().toISOString()) {
     redirect(CLEAR_SESSION_REDIRECT);
   }
 

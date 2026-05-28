@@ -7,6 +7,7 @@ import { DatePickerInput } from "@mantine/dates";
 import { IconPencil } from "@tabler/icons-react";
 import dynamic from "next/dynamic";
 import { apiClient } from "@/lib/api/client";
+import { toIsoDate } from "@/lib/dates";
 
 const SignaturePad = dynamic(() => import("@/components/release-form/SignaturePad"), { ssr: false });
 
@@ -71,8 +72,8 @@ export default function SignReleaseSection({ releaseId }: { releaseId: string })
         body: {
           signatureImage: signatureUrl,
           printedName: printedName.trim(),
-          authDate: authDate!.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }),
-          expirationDate: expirationDate!.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" }),
+          authDate: toIsoDate(authDate!),
+          expirationDate: toIsoDate(expirationDate!),
           expirationEvent: expirationEvent.trim() || undefined,
         },
       });

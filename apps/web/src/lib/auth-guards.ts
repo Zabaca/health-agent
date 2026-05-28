@@ -69,7 +69,7 @@ export async function requireActiveSession(): Promise<ActiveSessionResult> {
     .get();
 
   // No row = either deleted or never tracked. Treat as revoked.
-  if (!sessionRow || sessionRow.revokedAt || sessionRow.expires < new Date()) {
+  if (!sessionRow || sessionRow.revokedAt || sessionRow.expires < new Date().toISOString()) {
     return {
       session: null,
       error: NextResponse.json({ error: "Session revoked" }, { status: 401 }),

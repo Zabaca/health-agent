@@ -1,2 +1,0 @@
-ALTER TABLE `IncomingFile` ADD COLUMN `deletedAt` text;
-ALTER TABLE `IncomingFile` ADD COLUMN `deletedById` text REFERENCES User(id);

@@ -4,6 +4,7 @@ import { users, patientDesignatedAgents } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import ProfileForm from "@/components/profile/ProfileForm";
 import { decrypt } from "@/lib/crypto";
+import { toIsoDate } from "@/lib/dates";
 
 export const metadata = { title: "My Profile — Veladon" };
 
@@ -35,7 +36,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: { re
         firstName:   user?.firstName   ?? "",
         middleName:  user?.middleName  ?? "",
         lastName:    user?.lastName    ?? "",
-        dateOfBirth: user?.dateOfBirth ? decrypt(user.dateOfBirth) : "",
+        dateOfBirth: user?.dateOfBirth ? toIsoDate(decrypt(user.dateOfBirth)) : "",
         address:     user?.address     ?? "",
         phoneNumber: user?.phoneNumber ?? "",
         ssn:         user?.ssn         ? decrypt(user.ssn) : "",
