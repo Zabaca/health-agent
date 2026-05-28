@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "NEXTAUTH_URL=http://localhost:3000 next dev",
-    "build": "next build",
+    "build": "drizzle-kit migrate && next build",
     "start": "next start",
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate",
