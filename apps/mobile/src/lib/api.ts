@@ -91,6 +91,9 @@ export type SessionUser = {
   mustChangePassword: boolean;
   onboarded: boolean;
   disabled: boolean;
+  // ISO-8601 timestamp the user accepted consent; null until the consent gate
+  // is cleared. PDA-invited accounts are exempt and stay null.
+  consentedAt: string | null;
 };
 
 export type LoginResponse = { user: SessionUser; sessionToken: string };
@@ -129,11 +132,32 @@ export async function loginGoogle(idToken: string): Promise<LoginResponse> {
   })) as LoginResponse;
 }
 
-export async function registerEmail(email: string, password: string): Promise<{ id: string; email: string }> {
+export async function registerEmail(
+  email: string,
+  password: string,
+  dateOfBirth: string,
+): Promise<{ id: string; email: string }> {
   return (await apiFetch("/api/register", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, dateOfBirth }),
   })) as { id: string; email: string };
+}
+
+export async function recordConsent(
+  dateOfBirth?: string,
+): Promise<{ user: SessionUser; sessionToken: string }> {
+  return (await apiFetch(
+    "/api/consent",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        tosAccepted: true,
+        privacyAccepted: true,
+        ...(dateOfBirth ? { dateOfBirth } : {}),
+      }),
+    },
+    { auth: true },
+  )) as { user: SessionUser; sessionToken: string };
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {

@@ -12,6 +12,7 @@ declare module "next-auth" {
       mustChangePassword: boolean;
       onboarded?: boolean;
       disabled: boolean;
+      consentedAt?: string | null;
     };
   }
 }

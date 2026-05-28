@@ -89,6 +89,7 @@ export const authConfig = {
         token.mustChangePassword = (user as any).mustChangePassword;
         token.onboarded = (user as any).onboarded;
         token.disabled = (user as any).disabled;
+        token.consentedAt = (user as any).consentedAt;
         // Mint a persistent session id ONCE at sign-in. We can't rely on the
         // standard `jti` claim because Auth.js's encode() calls
         // setJti(crypto.randomUUID()) on every request — `jti` rotates per
@@ -103,6 +104,9 @@ export const authConfig = {
       if (trigger === 'update' && session?.onboarded !== undefined) {
         token.onboarded = session.onboarded;
       }
+      if (trigger === 'update' && session?.consentedAt !== undefined) {
+        token.consentedAt = session.consentedAt;
+      }
       return token;
     },
     async session({ session, token }) {
@@ -114,6 +118,7 @@ export const authConfig = {
       session.user.mustChangePassword = token.mustChangePassword as boolean;
       session.user.onboarded = token.onboarded as boolean | undefined;
       session.user.disabled = token.disabled as boolean;
+      session.user.consentedAt = token.consentedAt as string | null | undefined;
       // Surface persistentJti to server-side guards so they can look up the
       // sessions row. (NB: not Auth.js's `jti` — that rotates per request.)
       (session as unknown as Record<string, unknown>).jti = token.persistentJti;

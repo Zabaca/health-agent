@@ -54,6 +54,7 @@ export async function buildUserSessionPayload(user: typeof users.$inferSelect) {
     mustChangePassword: user.mustChangePassword,
     onboarded: user.onboarded,
     disabled: user.disabled,
+    consentedAt: user.consentedAt,
   };
 }
 

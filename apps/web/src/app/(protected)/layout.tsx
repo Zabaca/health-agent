@@ -1,8 +1,9 @@
 import { requirePageSession } from "@/lib/page-auth";
 import { db } from "@/lib/db";
-import { patientDesignatedAgents } from "@/lib/db/schema";
+import { patientDesignatedAgents, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import AppShell from "@/components/layout/AppShell";
+import ConsentModal from "@/components/consent/ConsentModal";
 import { IconLayoutDashboard, IconFiles, IconUser, IconBuildingHospital, IconFolder, IconUsers, IconArrowsLeftRight } from "@tabler/icons-react";
 
 export default async function ProtectedLayout({
@@ -24,6 +25,15 @@ export default async function ProtectedLayout({
   });
   const isPda = !!pdaRelation;
 
+  // Consent gate: blocks the portal until legal acceptance is recorded. PDAs are
+  // exempt (the inviting adult's invitation is proof of consent). Re-query the
+  // current row so a just-recorded consent isn't masked by a stale JWT.
+  const consentRow = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { consentedAt: true, dateOfBirth: true },
+  });
+  const needsConsent = !isPda && !consentRow?.consentedAt;
+
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: <IconLayoutDashboard size={16} /> },
     { href: "/profile", label: "My Profile", icon: <IconUser size={16} /> },
@@ -37,5 +47,10 @@ export default async function ProtectedLayout({
     ? [{ href: "/representing", label: "Representative View", icon: <IconArrowsLeftRight size={16} /> }]
     : [];
 
-  return <AppShell navItems={navItems} bottomNavItems={bottomNavItems}>{children}</AppShell>;
+  return (
+    <AppShell navItems={navItems} bottomNavItems={bottomNavItems}>
+      {needsConsent && <ConsentModal hasDateOfBirth={!!consentRow?.dateOfBirth} />}
+      {children}
+    </AppShell>
+  );
 }

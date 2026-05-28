@@ -22,6 +22,7 @@ import {
   loginEmail,
   loginGoogle,
   registerEmail,
+  recordConsent as apiRecordConsent,
   requestPasswordReset as apiRequestPasswordReset,
   revokeCurrentSession,
   setUnauthorizedHandler,
@@ -52,7 +53,9 @@ type AuthState = {
   linkApple: () => Promise<Result>;
   /** Link a Google id_token to the CURRENT account. Does not switch sessions. */
   linkGoogle: (idToken: string) => Promise<Result>;
-  register: (email: string, password: string) => Promise<Result>;
+  register: (email: string, password: string, dateOfBirth: string) => Promise<Result>;
+  /** Record onboarding consent. `dateOfBirth` is required only when none is on file (OAuth). */
+  recordConsent: (dateOfBirth?: string) => Promise<{ ok: true } | { ok: false; underage?: boolean; error?: string }>;
   requestPasswordReset: (email: string) => Promise<Result>;
   signOut: () => Promise<void>;
   enableBiometric: () => Promise<Result>;
@@ -261,14 +264,31 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
-  const register = useCallback<AuthState["register"]>(async (email, password) => {
+  const register = useCallback<AuthState["register"]>(async (email, password, dateOfBirth) => {
     try {
-      await registerEmail(email, password);
+      await registerEmail(email, password, dateOfBirth);
     } catch (e) {
       return { ok: false, error: e instanceof ApiError ? e.message : "Network error. Please try again." };
     }
     return signInEmail(email, password);
   }, [signInEmail]);
+
+  const recordConsent = useCallback<AuthState["recordConsent"]>(async (dateOfBirth) => {
+    try {
+      const { user: nextUser, sessionToken } = await apiRecordConsent(dateOfBirth);
+      // Swap in the re-minted token so the persisted JWT reflects consentedAt —
+      // otherwise a relaunch decodes the stale token and loops back to the gate.
+      await persistSession(sessionToken, nextUser);
+      return { ok: true };
+    } catch (e) {
+      // 403 → underage: apiFetch has already cleared the session + signed the
+      // user out; surface the flag so the screen can explain why.
+      if (e instanceof ApiError && e.status === 403) {
+        return { ok: false, underage: true };
+      }
+      return { ok: false, error: e instanceof ApiError ? e.message : "Network error. Please try again." };
+    }
+  }, [persistSession]);
 
   const requestPasswordReset = useCallback<AuthState["requestPasswordReset"]>(async (email) => {
     try {
@@ -341,6 +361,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       linkApple,
       linkGoogle,
       register,
+      recordConsent,
       requestPasswordReset,
       signOut,
       enableBiometric,
@@ -362,6 +383,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       linkApple,
       linkGoogle,
       register,
+      recordConsent,
       requestPasswordReset,
       signOut,
       enableBiometric,
