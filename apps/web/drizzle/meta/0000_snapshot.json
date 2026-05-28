@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c691e940-1e9d-4a1c-84fa-f80755aa6086",
+  "id": "73057f83-6c39-4a63-836c-8e3a40103e85",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "FaxConfirm": {
@@ -488,7 +488,7 @@
         },
         "expiresAt": {
           "name": "expiresAt",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -1592,7 +1592,7 @@
         },
         "expires": {
           "name": "expires",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false

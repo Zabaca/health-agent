@@ -67,7 +67,7 @@ CREATE TABLE `LinkIntent` (
 	`nonce` text PRIMARY KEY NOT NULL,
 	`userId` text NOT NULL,
 	`provider` text NOT NULL,
-	`expiresAt` integer NOT NULL,
+	`expiresAt` text NOT NULL,
 	FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
@@ -222,7 +222,7 @@ CREATE TABLE `ScheduledCall` (
 CREATE TABLE `Session` (
 	`sessionToken` text PRIMARY KEY NOT NULL,
 	`userId` text NOT NULL,
-	`expires` integer NOT NULL,
+	`expires` text NOT NULL,
 	`platform` text DEFAULT 'web' NOT NULL,
 	`deviceName` text,
 	`userAgent` text,
