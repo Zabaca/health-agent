@@ -6,14 +6,6 @@ import { useTheme } from "@/theme/ThemeProvider";
 
 const DEFAULT_DOB = new Date(2000, 0, 1);
 
-/** Calendar date as a timezone-safe `YYYY-MM-DD` string. */
-export function dateToIso(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
 function formatDob(date: Date | null): string {
   if (!date) return "";
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });

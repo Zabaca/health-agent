@@ -7,12 +7,12 @@ import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
-import { DobField, dateToIso } from "@/components/DobField";
+import { DobField } from "@/components/DobField";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { useOAuthButtons } from "@/hooks/useOAuthButtons";
 import type { AuthParamList } from "@/navigation/types";
-import { isAdult, MINIMUM_AGE } from "@health-agent/types";
+import { isAdult, MINIMUM_AGE, toIsoDate } from "@health-agent/types";
 
 type Nav = NativeStackNavigationProp<AuthParamList>;
 
@@ -47,7 +47,7 @@ export default function CreateAccount() {
       setError("Date of birth is required");
       return;
     }
-    const dobIso = dateToIso(dob);
+    const dobIso = toIsoDate(dob);
     if (!isAdult(dobIso)) {
       setError(`You must be ${MINIMUM_AGE} or older to use Veladon.`);
       return;

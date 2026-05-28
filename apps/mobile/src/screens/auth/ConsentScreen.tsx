@@ -3,15 +3,15 @@ import { ActivityIndicator, Alert, Linking, Pressable, Text, View } from "react-
 import { ShieldCheck, Square, CheckSquare } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
-import { DobField, dateToIso } from "@/components/DobField";
+import { DobField } from "@/components/DobField";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { getProfile } from "@/lib/api";
-import { TERMS_URL, PRIVACY_URL, isAdult, MINIMUM_AGE } from "@health-agent/types";
+import { TERMS_URL, PRIVACY_URL, MINIMUM_AGE, toIsoDate } from "@health-agent/types";
 
 export default function ConsentScreen() {
   const t = useTheme();
-  const { recordConsent } = useAuth();
+  const { recordConsent, signOut } = useAuth();
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [hasDob, setHasDob] = useState(false);
   const [dob, setDob] = useState<Date | null>(null);
@@ -38,20 +38,22 @@ export default function ConsentScreen() {
         setError("Date of birth is required");
         return;
       }
-      dobIso = dateToIso(dob);
-      if (!isAdult(dobIso)) {
-        setError(`You must be ${MINIMUM_AGE} or older to use Veladon.`);
-        return;
-      }
+      // Don't block under-18 here: the row already exists (OAuth created it at
+      // sign-in), so the DOB must reach the server, which purges the account and
+      // returns 403 → handled below.
+      dobIso = toIsoDate(dob);
     }
     setSubmitting(true);
     const r = await recordConsent(dobIso);
     setSubmitting(false);
     if (!r.ok) {
       if (r.underage) {
+        // Account was hard-deleted server-side; sign out (clearing the now-dead
+        // token + local state) only after the user acknowledges why.
         Alert.alert(
           "Age requirement",
           `Veladon is currently available to adults ${MINIMUM_AGE} and over. We'll add support for younger users in a future release.`,
+          [{ text: "OK", onPress: () => { void signOut(); } }],
         );
       } else {
         setError(r.error ?? "Something went wrong. Please try again.");

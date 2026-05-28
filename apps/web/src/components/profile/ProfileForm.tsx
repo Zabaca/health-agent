@@ -10,11 +10,10 @@ import {
   Alert,
   Group,
 } from "@mantine/core";
-import { DatePickerInput } from "@mantine/dates";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema, type ProfileFormData } from "@health-agent/types";
-import { parseLocalDate, toIsoDate } from "@/lib/dates";
+import IsoDatePickerInput from "@/components/shared/IsoDatePickerInput";
 import { apiClient } from "@/lib/api/client";
 import AvatarUpload from "@/components/shared/AvatarUpload";
 import PageHeader from "@/components/shared/PageHeader";
@@ -176,15 +175,14 @@ export default function ProfileForm({ defaultValues, onComplete, redirectTo, maw
             name="dateOfBirth"
             control={control}
             render={({ field }) => (
-              <DatePickerInput
+              <IsoDatePickerInput
                 label="Date of Birth"
-                placeholder="MM/DD/YYYY"
                 required
                 maxDate={new Date()}
                 popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={errors.dateOfBirth?.message}
-                value={parseLocalDate(field.value)}
-                onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
+                value={field.value}
+                onChange={field.onChange}
                 styles={{ root: { alignSelf: 'end' } }}
               />
             )}

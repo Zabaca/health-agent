@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { TextInput, Title, Paper, Stack, SimpleGrid, Text, Select, Badge } from "@mantine/core";
-import { DatePickerInput } from "@mantine/dates";
 import { useFormContext, Controller } from "react-hook-form";
 import type { UseFormSetValue } from "react-hook-form";
 import dynamic from "next/dynamic";
 import type { ReleaseFormData } from "@/types/release";
-import { parseLocalDate, toIsoDate } from "@/lib/dates";
+import IsoDatePickerInput from "@/components/shared/IsoDatePickerInput";
 
 const SignaturePad = dynamic(() => import("./SignaturePad"), { ssr: false });
 
@@ -229,15 +228,14 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
                 name="authExpirationDate"
                 control={control}
                 render={({ field }) => (
-                  <DatePickerInput
+                  <IsoDatePickerInput
                     label="Authorization Expiration Date"
-                    placeholder="MM/DD/YYYY"
                     required
                     minDate={minExpirationDate}
                     popoverProps={{ withinPortal: true, zIndex: 300 }}
                     error={errors.authExpirationDate?.message}
-                    value={parseLocalDate(field.value)}
-                    onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
+                    value={field.value}
+                    onChange={field.onChange}
                   />
                 )}
               />
@@ -260,15 +258,14 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
                 name="authDate"
                 control={control}
                 render={({ field }) => (
-                  <DatePickerInput
+                  <IsoDatePickerInput
                     label="Date"
-                    placeholder="MM/DD/YYYY"
                     required
                     minDate={today}
                     popoverProps={{ withinPortal: true, zIndex: 300 }}
                     error={errors.authDate?.message}
-                    value={parseLocalDate(field.value)}
-                    onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
+                    value={field.value}
+                    onChange={field.onChange}
                   />
                 )}
               />

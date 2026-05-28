@@ -181,7 +181,7 @@ const releaseBaseObject = z.object({
   authAgentPhone: z.string().optional(),
   authAgentEmail: z.string().email("Please enter a valid email address").optional().or(z.literal("")),
   authExpirationDate: z.string().min(1, "Expiration date is required")
-    .regex(/^\d{4}-\d{2}-\d{2}/, "Please enter a valid date (YYYY-MM-DD)")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter a valid date (YYYY-MM-DD)")
     .refine((val) => !isNaN(new Date(val).getTime()), "Please enter a valid date")
     .refine((val) => {
       // Compare as YYYY-MM-DD strings to avoid UTC-parse vs local-minDate mismatch.

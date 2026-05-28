@@ -17,10 +17,9 @@ import {
 } from "@mantine/core";
 import { useState } from "react";
 import { IconQuestionMark } from "@tabler/icons-react";
-import { DatePickerInput } from "@mantine/dates";
 import { useFormContext, Controller } from "react-hook-form";
 import type { ReleaseFormData } from "@/types/release";
-import { parseLocalDate, toIsoDate } from "@/lib/dates";
+import IsoDatePickerInput from "@/components/shared/IsoDatePickerInput";
 
 const PURPOSE_OPTIONS = [
   { value: "Continuing care", label: "Continuing care" },
@@ -322,13 +321,12 @@ export default function RecordRequestFields({ index }: Props) {
             name={`providers.${index}.dateRangeFrom`}
             control={control}
             render={({ field }) => (
-              <DatePickerInput
+              <IsoDatePickerInput
                 label="From"
-                placeholder="MM/DD/YYYY"
                 popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={providerErrors?.dateRangeFrom?.message}
-                value={parseLocalDate(field.value)}
-                onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
+                value={field.value}
+                onChange={field.onChange}
               />
             )}
           />
@@ -336,13 +334,12 @@ export default function RecordRequestFields({ index }: Props) {
             name={`providers.${index}.dateRangeTo`}
             control={control}
             render={({ field }) => (
-              <DatePickerInput
+              <IsoDatePickerInput
                 label="To"
-                placeholder="MM/DD/YYYY"
                 popoverProps={{ withinPortal: true, zIndex: 300 }}
                 error={providerErrors?.dateRangeTo?.message}
-                value={parseLocalDate(field.value)}
-                onChange={(date) => field.onChange(date ? toIsoDate(date) : "")}
+                value={field.value}
+                onChange={field.onChange}
               />
             )}
           />

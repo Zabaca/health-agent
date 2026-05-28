@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Modal, Stack, Title, Text, Checkbox, Anchor, Button, Alert, TextInput } from "@mantine/core";
-import { TERMS_URL, PRIVACY_URL, isAdult, MINIMUM_AGE } from "@health-agent/types";
+import { Modal, Stack, Title, Text, Checkbox, Anchor, Button, Alert } from "@mantine/core";
+import { TERMS_URL, PRIVACY_URL, MINIMUM_AGE } from "@health-agent/types";
+import IsoDatePickerInput from "@/components/shared/IsoDatePickerInput";
 
 interface Props {
   /** When false, the user has no DOB on file (OAuth) and must supply one here. */
@@ -25,10 +26,9 @@ export default function ConsentModal({ hasDateOfBirth }: Props) {
 
   const onSubmit = async () => {
     setError("");
-    if (!hasDateOfBirth && !isAdult(dob)) {
-      setError(`You must be ${MINIMUM_AGE} or older to use Veladon.`);
-      return;
-    }
+    // Don't block under-18 client-side: the row already exists (OAuth created it
+    // at sign-in), so the DOB must reach the server, which purges the account and
+    // returns 403 → signed out below.
     setLoading(true);
     try {
       const res = await fetch("/api/consent", {
@@ -75,12 +75,13 @@ export default function ConsentModal({ hasDateOfBirth }: Props) {
         </Text>
 
         {!hasDateOfBirth && (
-          <TextInput
+          <IsoDatePickerInput
             label="Date of Birth"
-            type="date"
-            value={dob}
-            onChange={(e) => setDob(e.currentTarget.value)}
             required
+            maxDate={new Date()}
+            popoverProps={{ withinPortal: true, zIndex: 300 }}
+            value={dob}
+            onChange={setDob}
           />
         )}
 

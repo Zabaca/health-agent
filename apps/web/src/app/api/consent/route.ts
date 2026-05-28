@@ -5,6 +5,7 @@ import { resolveUserSession } from "@/lib/session-resolver";
 import { buildUserSessionPayload } from "@/auth";
 import { signMobileSessionToken } from "@/lib/oauth-verify";
 import { hardDeleteUser } from "@/lib/account-deletion";
+import { isPdaExempt } from "@/lib/consent-gate";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { decrypt, encryptPii } from "@/lib/crypto";
@@ -22,7 +23,11 @@ export async function POST(req: Request) {
 
   const parsed = consentSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Both Terms and Privacy must be accepted." }, { status: 400 });
+    // Surface the specific issue (e.g. a malformed/future DOB) rather than the
+    // generic terms message — a bad DOB returning 400 here is what prevents the
+    // unparseable-date → under-18 → hard-delete path.
+    const message = parsed.error.issues[0]?.message ?? "Both Terms and Privacy must be accepted.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const user = await db.query.users.findFirst({ where: eq(users.id, result.userId) });
@@ -32,8 +37,10 @@ export async function POST(req: Request) {
   const effectiveDob = storedDob ?? parsed.data.dateOfBirth ?? null;
 
   // PDA-invited accounts are exempt from the age gate (the inviting adult's
-  // invitation is proof of consent). Everyone else must clear 18+.
-  if (!result.isPda) {
+  // invitation is proof of consent). Read the exemption from the DB, NOT the
+  // JWT `isPda` flag — that flag goes stale when a user accepts a PDA invite
+  // mid-session, and trusting it would hard-delete a freshly-invited PDA-minor.
+  if (!(await isPdaExempt(result.userId))) {
     if (!effectiveDob) {
       return NextResponse.json({ error: "Date of birth is required." }, { status: 400 });
     }

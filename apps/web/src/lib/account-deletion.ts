@@ -114,9 +114,15 @@ export async function hardDeleteUser(userId: string): Promise<void> {
   if (!u) return;
 
   // Final chance to revoke an Apple grant whose revoke failed earlier (we retain
-  // the token for exactly this). Best-effort.
+  // the token for exactly this). Best-effort: a corrupt/legacy-key ciphertext
+  // makes decrypt() throw, and the delete must still proceed (an undeletable
+  // row would 500 the consent under-18 path and abort the purge batch).
   if (u.appleRefreshToken) {
-    await revokeAppleToken(decrypt(u.appleRefreshToken));
+    try {
+      await revokeAppleToken(decrypt(u.appleRefreshToken));
+    } catch (err) {
+      console.error("[account-deletion] Apple revoke failed during hard delete; deleting anyway", { userId, err });
+    }
   }
   const files = await db.query.incomingFiles.findMany({
     where: eq(incomingFiles.patientId, u.id),
@@ -147,8 +153,16 @@ export async function purgeExpiredAccounts(): Promise<{ purged: number }> {
     columns: { id: true },
   });
 
+  let purged = 0;
   for (const u of due) {
-    await hardDeleteUser(u.id);
+    // Isolate each delete: one bad row (e.g. an R2 / Apple-revoke hiccup) must
+    // not abort the whole batch and strand every account behind it.
+    try {
+      await hardDeleteUser(u.id);
+      purged++;
+    } catch (err) {
+      console.error("[account-deletion] purge failed for user; continuing", { userId: u.id, err });
+    }
   }
-  return { purged: due.length };
+  return { purged };
 }

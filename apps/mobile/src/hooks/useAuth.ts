@@ -281,8 +281,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       await persistSession(sessionToken, nextUser);
       return { ok: true };
     } catch (e) {
-      // 403 → underage: apiFetch has already cleared the session + signed the
-      // user out; surface the flag so the screen can explain why.
+      // 403 → underage: the account was hard-deleted server-side. We suppressed
+      // the automatic sign-out (skipAutoSignout) so the screen can show the
+      // explanation Alert first, then sign out from the Alert's dismiss handler.
       if (e instanceof ApiError && e.status === 403) {
         return { ok: false, underage: true };
       }

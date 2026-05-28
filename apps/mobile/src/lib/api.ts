@@ -28,7 +28,16 @@ export class ApiError extends Error {
   }
 }
 
-type ApiFetchOpts = { auth?: boolean };
+type ApiFetchOpts = {
+  auth?: boolean;
+  /**
+   * Suppress the automatic token-clear + global sign-out that a 401/403
+   * normally triggers. Used by the consent call, whose underage 403 must be
+   * surfaced to the screen (to explain why) before we sign the user out —
+   * letting the global handler fire here would unmount the screen mid-Alert.
+   */
+  skipAutoSignout?: boolean;
+};
 
 /**
  * Called when an authed request 401s — i.e., the bearer was revoked,
@@ -63,7 +72,7 @@ async function apiFetch(path: string, init: RequestInit = {}, opts: ApiFetchOpts
         : null) ?? `Request failed (${res.status})`;
     // Auto-signout on auth failures from authed requests. Covers both
     // explicit revocation ("Session revoked") and suspension/expiry.
-    if (opts.auth && (res.status === 401 || res.status === 403)) {
+    if (opts.auth && !opts.skipAutoSignout && (res.status === 401 || res.status === 403)) {
       await SecureStore.deleteItemAsync(SESSION_TOKEN_KEY);
       unauthorizedHandler?.();
     }
@@ -156,7 +165,9 @@ export async function recordConsent(
         ...(dateOfBirth ? { dateOfBirth } : {}),
       }),
     },
-    { auth: true },
+    // The underage 403 hard-deletes the account; the caller surfaces it and
+    // signs out explicitly, so don't let the global 403 handler race the Alert.
+    { auth: true, skipAutoSignout: true },
   )) as { user: SessionUser; sessionToken: string };
 }
 
