@@ -14,6 +14,7 @@ import PrintButton from "@/components/release-view/PrintButton";
 import SignReleaseSection from "@/components/release-view/SignReleaseSection";
 import SsnDisplay from "@/components/fields/SsnDisplay";
 import { decryptPii } from "@/lib/crypto";
+import { formatDateUS } from "@/lib/dates";
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: "View Release — Veladon" };
@@ -80,7 +81,7 @@ export default async function ViewReleasePage({
             <Field label="First Name" value={release.firstName} />
             <Field label="Middle Name" value={release.middleName} />
             <Field label="Last Name" value={release.lastName} />
-            <Field label="Date of Birth" value={dateOfBirth} />
+            <Field label="Date of Birth" value={formatDateUS(dateOfBirth)} />
             <Stack gap={2}>
               <Text size="xs" c="dimmed" fw={500}>Social Security Number</Text>
               {ssn ? <SsnDisplay ssn={ssn} /> : <Text size="sm">—</Text>}
@@ -185,8 +186,8 @@ export default async function ViewReleasePage({
                 <Text size="sm">All available dates</Text>
               ) : (
                 <SimpleGrid cols={2}>
-                  <Field label="From" value={p.dateRangeFrom} />
-                  <Field label="To" value={p.dateRangeTo} />
+                  <Field label="From" value={formatDateUS(p.dateRangeFrom)} />
+                  <Field label="To" value={formatDateUS(p.dateRangeTo)} />
                 </SimpleGrid>
               )}
 
@@ -236,12 +237,12 @@ export default async function ViewReleasePage({
           </Paper>
 
           <SimpleGrid cols={2}>
-            <Field label="Authorization Expiration Date" value={release.authExpirationDate} />
+            <Field label="Authorization Expiration Date" value={formatDateUS(release.authExpirationDate)} />
             <Field label="Expiration Event" value={release.authExpirationEvent} />
           </SimpleGrid>
           <SimpleGrid cols={2}>
             <Field label="Patient Printed Name" value={release.authPrintedName} />
-            <Field label="Date" value={release.authDate} />
+            <Field label="Date" value={formatDateUS(release.authDate)} />
           </SimpleGrid>
 
           {release.authSignatureImage && (

@@ -12,6 +12,7 @@
     "seed:staff": "bun run scripts/seed-admins.ts",
     "migrate:encrypt-pii": "bun run scripts/encrypt-existing-pii.ts",
     "migrate:encrypt-files": "bun run scripts/encrypt-existing-files.ts",
+    "migrate:iso-dates": "bun run scripts/backfill-iso-dates.ts",
     "type-check": "tsc --noEmit",
     "lint": "oxlint src/",
     "lint:fix": "oxlint src/ --fix"

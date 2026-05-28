@@ -7,10 +7,12 @@ import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
+import { DobField } from "@/components/DobField";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { useOAuthButtons } from "@/hooks/useOAuthButtons";
 import type { AuthParamList } from "@/navigation/types";
+import { isAdult, MINIMUM_AGE, toIsoDate } from "@health-agent/types";
 
 type Nav = NativeStackNavigationProp<AuthParamList>;
 
@@ -22,6 +24,7 @@ export default function CreateAccount() {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [dob, setDob] = useState<Date | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,8 +43,17 @@ export default function CreateAccount() {
       setError("Passwords do not match");
       return;
     }
+    if (!dob) {
+      setError("Date of birth is required");
+      return;
+    }
+    const dobIso = toIsoDate(dob);
+    if (!isAdult(dobIso)) {
+      setError(`You must be ${MINIMUM_AGE} or older to use Veladon.`);
+      return;
+    }
     setSubmitting(true);
-    const result = await register(email.trim(), pw);
+    const result = await register(email.trim(), pw, dobIso);
     setSubmitting(false);
     if (!result.ok) setError(result.error);
   };
@@ -86,6 +98,7 @@ export default function CreateAccount() {
         <Input label="Email" placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
         <Input label="Password" placeholder="Min 8 characters" secureTextEntry value={pw} onChangeText={setPw} />
         <Input label="Confirm Password" placeholder="Repeat password" secureTextEntry value={confirm} onChangeText={setConfirm} />
+        <DobField value={dob} onChange={setDob} />
 
         {error || oauthError ? (
           <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error || oauthError}</Text>

@@ -9,6 +9,7 @@ import { providerSchema } from "@/lib/schemas/release";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
 import { sendReleaseSignatureRequiredEmail, getSiteBaseUrl } from "@/lib/email";
 import { encryptPii, extractLast4Ssn } from "@/lib/crypto";
+import { toIsoDate } from "@/lib/dates";
 
 // Simplified schema for PDA release creation — patient personal info is fetched from DB.
 // Wizard creates exactly one provider per release; the route enforces that contract.
@@ -141,7 +142,7 @@ export async function POST(
     authAgentAddress: pda.address ?? '',
     authAgentPhone: pda.phoneNumber ?? '',
     authAgentEmail: pda.email ?? '',
-    authExpirationDate: data.authExpirationDate || null,
+    authExpirationDate: data.authExpirationDate ? toIsoDate(data.authExpirationDate) : null,
     authExpirationEvent: null,
     authPrintedName: '',
     authSignatureImage: null as null, // patient must sign
@@ -197,8 +198,8 @@ export async function POST(
         sensitivePsychotherapy: p.sensitivePsychotherapy,
         sensitiveOther: p.sensitiveOther,
         sensitiveOtherDesc: p.sensitiveOtherDesc ?? null,
-        dateRangeFrom: p.dateRangeFrom ?? null,
-        dateRangeTo: p.dateRangeTo ?? null,
+        dateRangeFrom: p.dateRangeFrom ? toIsoDate(p.dateRangeFrom) : null,
+        dateRangeTo: p.dateRangeTo ? toIsoDate(p.dateRangeTo) : null,
         allAvailableDates: p.allAvailableDates,
         purpose: p.purpose ?? null,
         purposeOther: p.purposeOther ?? null,

@@ -7,6 +7,7 @@ import { notifications } from "@mantine/notifications";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { releaseSchema, type ReleaseFormData } from "@/lib/schemas/release";
+import { toIsoDate } from "@/lib/dates";
 import { apiClient } from "@/lib/api/client";
 import { errorSchema } from "@/lib/api/response-schemas";
 import PatientSection from "./PatientSection";
@@ -45,11 +46,7 @@ export default function ReleaseForm({ releaseId, defaultValues, recipients, save
       releaseAuthAgent: false,
       releaseAuthZabaca: false,
       authPrintedName: "",
-      authDate: new Date().toLocaleDateString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "numeric",
-      }),
+      authDate: toIsoDate(new Date()),
       ...defaultValues,
     },
   });

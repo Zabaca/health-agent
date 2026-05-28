@@ -7,6 +7,7 @@ import { type ProviderFormData } from "@/lib/schemas/release";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { encrypt, encryptPii, decryptPii, extractLast4Ssn } from "@/lib/crypto";
+import { toIsoDate } from "@/lib/dates";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
 import { sendNewReleaseNotificationEmail } from "@/lib/email";
 
@@ -51,6 +52,7 @@ export const POST = contractRoute(contract.releases.create, async ({ req, body }
     const normalizedReleaseData = {
       ...releaseData,
       ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : "",
+      dateOfBirth: toIsoDate(releaseData.dateOfBirth),
     };
     const encryptedReleaseData = encryptPii(normalizedReleaseData);
 
@@ -89,7 +91,7 @@ export const POST = contractRoute(contract.releases.create, async ({ req, body }
       if (!existingUser?.firstName)   patch.firstName   = releaseData.firstName;
       if (!existingUser?.middleName)  patch.middleName  = releaseData.middleName;
       if (!existingUser?.lastName)    patch.lastName    = releaseData.lastName;
-      if (!existingUser?.dateOfBirth) patch.dateOfBirth = encrypt(releaseData.dateOfBirth);
+      if (!existingUser?.dateOfBirth) patch.dateOfBirth = encrypt(toIsoDate(releaseData.dateOfBirth));
       if (!existingUser?.address)     patch.address     = releaseData.mailingAddress;
       if (!existingUser?.phoneNumber) patch.phoneNumber = releaseData.phoneNumber;
       if (!existingUser?.ssn && normalizedReleaseData.ssn) {

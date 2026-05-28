@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { decrypt, encryptPii, extractLast4Ssn } from "@/lib/crypto";
+import { toIsoDate } from "@/lib/dates";
 import { isUniqueViolation } from "@/lib/account-connections";
 import { z } from "zod";
 
@@ -22,7 +23,7 @@ export const GET = contractRoute(contract.profile.get, async ({ req }) => {
     firstName:   user?.firstName   ?? "",
     middleName:  user?.middleName  ?? "",
     lastName:    user?.lastName    ?? "",
-    dateOfBirth: user?.dateOfBirth ? decrypt(user.dateOfBirth) : "",
+    dateOfBirth: user?.dateOfBirth ? toIsoDate(decrypt(user.dateOfBirth)) : "",
     address:     user?.address     ?? "",
     phoneNumber: user?.phoneNumber ?? "",
     ssn:         user?.ssn         ? decrypt(user.ssn) : "",
@@ -127,7 +128,11 @@ export const PUT = contractRoute(contract.profile.update, async ({ req, body }) 
   // the onboarding-complete gate relies on this invariant.
   const finalEmail = emailUpdate.finalEmail;
 
-  const normalized = { ...rest, ssn: ssn ? extractLast4Ssn(ssn) : null };
+  const normalized = {
+    ...rest,
+    ssn: ssn ? extractLast4Ssn(ssn) : null,
+    ...(rest.dateOfBirth ? { dateOfBirth: toIsoDate(rest.dateOfBirth) } : {}),
+  };
   try {
     await db
       .update(users)

@@ -87,6 +87,12 @@ export async function upsertOAuthUser(
   // 3. New user. Claim the email only if it's free (verified or not); a taken
   //    unverified email is dropped so onboarding collects/verifies a fresh one,
   //    avoiding both a unique clash and an unsafe link to someone else's account.
+  //
+  // TODO(JAM-319): this row is created with no DOB and no consent. The 18+ purge
+  // only fires when the user voluntarily POSTs an under-18 DOB at the consent
+  // gate — if they abandon the gate, a consent-less (possibly minor) account
+  // lingers with a valid session. Proper fix is to defer row creation until
+  // consent, rather than creating-then-purging. Tracked separately.
   const claimEmail = email && emailIsFree ? email : null;
   const claimVerified = !!claimEmail && emailVerified;
 

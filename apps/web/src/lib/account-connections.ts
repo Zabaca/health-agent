@@ -102,7 +102,7 @@ export async function createLinkIntent(userId: string, provider: OAuthProvider):
     nonce,
     userId,
     provider,
-    expiresAt: new Date(Date.now() + LINK_INTENT_TTL_MS),
+    expiresAt: new Date(Date.now() + LINK_INTENT_TTL_MS).toISOString(),
   });
   return nonce;
 }
@@ -119,6 +119,6 @@ export async function consumeLinkIntent(
   const row = await db.query.linkIntents.findFirst({ where: eq(linkIntents.nonce, nonce) });
   await db.delete(linkIntents).where(eq(linkIntents.nonce, nonce));
   if (!row || row.provider !== provider) return null;
-  if (row.expiresAt.getTime() < Date.now()) return null;
+  if (row.expiresAt < new Date().toISOString()) return null;
   return { userId: row.userId };
 }

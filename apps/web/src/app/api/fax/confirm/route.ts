@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getConfiguration } from "@/lib/config";
 import { faxConfirm, releaseRequestLog } from "@/lib/db/schema";
+import { toIsoTimestamp } from "@/lib/dates";
 import { like } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
@@ -40,8 +41,8 @@ export async function POST(req: NextRequest) {
     destnum:      destnum      ?? null,
     shortstatus:  shortstatus  ?? null,
     longstatus:   longstatus   ?? null,
-    sendtime:     sendtime     ?? null,
-    completetime: completetime ?? null,
+    sendtime:     toIsoTimestamp(sendtime)     || null,
+    completetime: toIsoTimestamp(completetime) || null,
     rawBody:      rawBody      ?? null,
   });
 

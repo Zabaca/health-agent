@@ -4,6 +4,7 @@ import { users, userProviders, patientDesignatedAgents } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import ReleaseForm from "@/components/release-form/ReleaseForm";
 import { decrypt } from "@/lib/crypto";
+import { toIsoDate } from "@/lib/dates";
 import type { RecipientOption } from "@/components/release-form/AuthorizationSection";
 
 export const metadata = { title: "New Release — Veladon" };
@@ -52,7 +53,7 @@ export default async function NewReleasePage({ searchParams }: { searchParams: {
         firstName:      user?.firstName      ?? "",
         middleName:     user?.middleName      ?? "",
         lastName:       user?.lastName        ?? "",
-        dateOfBirth:    user?.dateOfBirth ? decrypt(user.dateOfBirth) : "",
+        dateOfBirth:    user?.dateOfBirth ? toIsoDate(decrypt(user.dateOfBirth)) : "",
         mailingAddress: user?.address         ?? "",
         phoneNumber:    user?.phoneNumber     ?? "",
         ssn:            user?.ssn ? decrypt(user.ssn) : "",

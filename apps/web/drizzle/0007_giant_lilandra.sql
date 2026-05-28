@@ -1,1 +1,0 @@
-ALTER TABLE `ReleaseRequestLog` ADD `httpResponse` text;

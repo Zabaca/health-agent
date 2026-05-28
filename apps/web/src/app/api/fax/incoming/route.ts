@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getConfiguration } from "@/lib/config";
 import { incomingFaxLog, incomingFiles } from "@/lib/db/schema";
 import { uploadToR2 } from "@/lib/r2";
+import { toIsoTimestamp } from "@/lib/dates";
 import { eq } from "drizzle-orm";
 
 const FAXAGE_URL = "https://api.faxage.com/httpsfax.php";
@@ -56,8 +57,8 @@ export async function POST(req: NextRequest) {
     await db.insert(incomingFaxLog).values({
       id:        logId,
       recvid,
-      recvdate:  recvdate  ?? '',
-      starttime: starttime ?? '',
+      recvdate:  toIsoTimestamp(recvdate),
+      starttime: toIsoTimestamp(starttime),
       cid:       cid       ?? null,
       dnis:      dnis      ?? null,
       pagecount: pagecount ? parseInt(pagecount) : null,

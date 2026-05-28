@@ -5,6 +5,7 @@ import { releases as releasesTable } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
+import { toIsoDate } from "@/lib/dates";
 
 export const POST = contractRoute(contract.releases.sign, async ({ params, body, req }) => {
   const { result, error } = await resolveUserSession(req);
@@ -27,8 +28,8 @@ export const POST = contractRoute(contract.releases.sign, async ({ params, body,
     .set({
       authSignatureImage: body.signatureImage,
       authPrintedName: body.printedName,
-      authDate: body.authDate,
-      authExpirationDate: body.expirationDate,
+      authDate: toIsoDate(body.authDate),
+      authExpirationDate: toIsoDate(body.expirationDate),
       authExpirationEvent: body.expirationEvent ?? null,
       updatedAt: new Date().toISOString(),
     })

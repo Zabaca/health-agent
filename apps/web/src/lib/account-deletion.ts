@@ -98,43 +98,71 @@ export async function deactivateAccount(userId: string): Promise<DeleteResult> {
 }
 
 /**
- * Hard-delete accounts whose retention window has elapsed. Deletes each user's
- * IncomingFile rows + their R2 objects FIRST (the User delete would otherwise
- * sever the FK link, orphaning the files), then deletes the User (cascading the
- * remaining tables). Returns the count purged.
+ * Permanently delete a single user. Deletes the user's IncomingFile rows + their
+ * R2 objects FIRST (those FKs are NOT `onDelete: cascade`, so the User delete
+ * would otherwise sever the link and orphan the files), then deletes the User
+ * (cascading the remaining tables). Best-effort Apple-grant revocation first.
+ *
+ * Used both by the retention purge and by the consent gate to immediately remove
+ * a freshly-created under-18 row (which has no PHI yet).
+ */
+export async function hardDeleteUser(userId: string): Promise<void> {
+  const u = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { id: true, appleRefreshToken: true },
+  });
+  if (!u) return;
+
+  // Final chance to revoke an Apple grant whose revoke failed earlier (we retain
+  // the token for exactly this). Best-effort: a corrupt/legacy-key ciphertext
+  // makes decrypt() throw, and the delete must still proceed (an undeletable
+  // row would 500 the consent under-18 path and abort the purge batch).
+  if (u.appleRefreshToken) {
+    try {
+      await revokeAppleToken(decrypt(u.appleRefreshToken));
+    } catch (err) {
+      console.error("[account-deletion] Apple revoke failed during hard delete; deleting anyway", { userId, err });
+    }
+  }
+  const files = await db.query.incomingFiles.findMany({
+    where: eq(incomingFiles.patientId, u.id),
+    columns: { id: true, fileURL: true },
+  });
+  for (const f of files) {
+    if (!f.fileURL) continue; // HealthKit rows have no R2 object
+    try {
+      await deleteFromR2(f.fileURL);
+    } catch {
+      /* best-effort; continue */
+    }
+  }
+  if (files.length) {
+    await db.delete(incomingFiles).where(eq(incomingFiles.patientId, u.id));
+  }
+  await db.delete(users).where(eq(users.id, u.id));
+}
+
+/**
+ * Hard-delete accounts whose retention window has elapsed. Returns the count purged.
  */
 export async function purgeExpiredAccounts(): Promise<{ purged: number }> {
   // String-lex comparison is valid because purgeAfter is always toISOString().
   const nowIso = new Date().toISOString();
   const due = await db.query.users.findMany({
     where: and(isNotNull(users.deactivatedAt), isNotNull(users.purgeAfter), lt(users.purgeAfter, nowIso)),
-    columns: { id: true, appleRefreshToken: true },
+    columns: { id: true },
   });
 
   let purged = 0;
   for (const u of due) {
-    // Final chance to revoke an Apple grant whose revoke failed at deactivation
-    // (we retained the token for exactly this). Best-effort.
-    if (u.appleRefreshToken) {
-      await revokeAppleToken(decrypt(u.appleRefreshToken));
+    // Isolate each delete: one bad row (e.g. an R2 / Apple-revoke hiccup) must
+    // not abort the whole batch and strand every account behind it.
+    try {
+      await hardDeleteUser(u.id);
+      purged++;
+    } catch (err) {
+      console.error("[account-deletion] purge failed for user; continuing", { userId: u.id, err });
     }
-    const files = await db.query.incomingFiles.findMany({
-      where: eq(incomingFiles.patientId, u.id),
-      columns: { id: true, fileURL: true },
-    });
-    for (const f of files) {
-      if (!f.fileURL) continue; // HealthKit rows have no R2 object
-      try {
-        await deleteFromR2(f.fileURL);
-      } catch {
-        /* best-effort; continue purging */
-      }
-    }
-    if (files.length) {
-      await db.delete(incomingFiles).where(eq(incomingFiles.patientId, u.id));
-    }
-    await db.delete(users).where(eq(users.id, u.id));
-    purged++;
   }
   return { purged };
 }

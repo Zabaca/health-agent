@@ -19,6 +19,7 @@ import { z } from "zod";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api/client";
+import { isAdult, MINIMUM_AGE } from "@health-agent/types";
 import OAuthButtons from "./OAuthButtons";
 
 const schema = z
@@ -26,10 +27,17 @@ const schema = z
     email: z.string().email("Invalid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
+    dateOfBirth: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Date of birth is required"),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
+  })
+  .refine((d) => isAdult(d.dateOfBirth), {
+    message: `You must be ${MINIMUM_AGE} or older to use Veladon.`,
+    path: ["dateOfBirth"],
   });
 
 type FormData = z.infer<typeof schema>;
@@ -50,7 +58,7 @@ export default function RegisterForm() {
 
     try {
       const result = await apiClient.register({
-        body: { email: data.email, password: data.password },
+        body: { email: data.email, password: data.password, dateOfBirth: data.dateOfBirth },
       });
 
       if (result.status !== 201 && result.status !== 200) {
@@ -113,6 +121,12 @@ export default function RegisterForm() {
               placeholder="Repeat password"
               error={errors.confirmPassword?.message}
               {...register("confirmPassword")}
+            />
+            <TextInput
+              label="Date of Birth"
+              type="date"
+              error={errors.dateOfBirth?.message}
+              {...register("dateOfBirth")}
             />
             <Button type="submit" fullWidth loading={loading} mt="sm">
               Create Account

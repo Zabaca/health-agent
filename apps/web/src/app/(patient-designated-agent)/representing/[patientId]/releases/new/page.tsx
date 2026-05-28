@@ -5,6 +5,7 @@ import { patientDesignatedAgents, users, userProviders } from "@/lib/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import StaffReleaseForm from "@/components/staff/StaffReleaseForm";
 import { decrypt } from "@/lib/crypto";
+import { toIsoDate } from "@/lib/dates";
 
 export const metadata = { title: "New Release Request" };
 
@@ -60,7 +61,7 @@ export default async function RepresentingNewReleasePage({
         firstName: patient.firstName ?? "",
         middleName: patient.middleName ?? "",
         lastName: patient.lastName ?? "",
-        dateOfBirth: patient.dateOfBirth ? decrypt(patient.dateOfBirth) : "",
+        dateOfBirth: patient.dateOfBirth ? toIsoDate(decrypt(patient.dateOfBirth)) : "",
         mailingAddress: patient.address ?? "",
         phoneNumber: patient.phoneNumber ?? "",
         email: patient.email ?? undefined,

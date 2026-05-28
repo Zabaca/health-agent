@@ -29,7 +29,7 @@ export async function GET(req: Request) {
       and(
         eq(sessions.userId, result.userId),
         isNull(sessions.revokedAt),
-        gt(sessions.expires, new Date()),
+        gt(sessions.expires, new Date().toISOString()),
       ),
     )
     .orderBy(desc(sessions.lastSeenAt));
@@ -38,7 +38,6 @@ export async function GET(req: Request) {
     currentSessionId: result.currentJti,
     sessions: rows.map((r) => ({
       ...r,
-      expires: r.expires.toISOString(),
       isCurrent: r.id === result.currentJti,
     })),
   });

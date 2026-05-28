@@ -12,6 +12,7 @@
     "db:generate": "bun run --cwd apps/web db:generate",
     "seed:staff": "bun run --cwd apps/web seed:staff",
     "migrate:encrypt-pii": "bun run --cwd apps/web migrate:encrypt-pii",
+    "migrate:iso-dates": "bun run --cwd apps/web migrate:iso-dates",
     "type-check": "bun run --cwd apps/web type-check",
     "lint": "bun run --cwd apps/web lint",
     "lint:fix": "bun run --cwd apps/web lint:fix"

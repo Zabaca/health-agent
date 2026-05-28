@@ -8,6 +8,7 @@ import Link from "next/link";
 import InlineDocViewer from "@/components/records/InlineDocViewer";
 import FhirRecordView from "@/components/records/FhirRecordView";
 import { decrypt } from "@/lib/crypto";
+import FaxReceivedTime from "@/components/records/FaxReceivedTime";
 import { type StoredClinicalRecord } from "@health-agent/types";
 
 function parseClinical(dataBlob: string | null): StoredClinicalRecord | null {
@@ -59,7 +60,7 @@ export default async function MyRecordDetailPage({
           <Stack gap="xs">
             <Group gap="xs">
               <Text size="sm" fw={500}>Received:</Text>
-              <Text size="sm">{file.faxLog.recvdate} {file.faxLog.starttime}</Text>
+              <FaxReceivedTime recvdate={file.faxLog.recvdate} starttime={file.faxLog.starttime} />
             </Group>
             <Group gap="xs">
               <Text size="sm" fw={500}>Pages:</Text>

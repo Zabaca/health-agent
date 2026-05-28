@@ -26,7 +26,11 @@ export const contract = c.router({
   register: {
     method: 'POST',
     path: '/api/register',
-    body: z.object({ email: z.string().email(), password: z.string().min(8) }),
+    body: z.object({
+      email: z.string().email(),
+      password: z.string().min(8),
+      dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth is required'),
+    }),
     responses: {
       200: registerResponseSchema,
       201: registerResponseSchema,

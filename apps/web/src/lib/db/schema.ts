@@ -64,6 +64,14 @@ export const users = sqliteTable('User', {
   appleRefreshToken: text('appleRefreshToken'),
   /** Set to true when the user grants HealthKit access from the mobile app. */
   healthKitConnected: integer('healthKitConnected', { mode: 'boolean' }).notNull().default(false),
+  /**
+   * Onboarding legal-acceptance gate (JAM-314). `consentedAt` is the ISO-8601
+   * timestamp the user accepted TOS + Privacy; `consentVersion` records which
+   * version (e.g. "v1"). Null until consent is captured; PDA-invited accounts
+   * are exempt and remain null.
+   */
+  consentedAt: text('consentedAt'),
+  consentVersion: text('consentVersion'),
 });
 
 /**
@@ -77,7 +85,8 @@ export const linkIntents = sqliteTable('LinkIntent', {
   nonce: text('nonce').primaryKey(),
   userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
   provider: text('provider', { enum: ['google', 'apple'] }).notNull(),
-  expiresAt: integer('expiresAt', { mode: 'timestamp_ms' }).notNull(),
+  /** ISO-8601 UTC timestamp. */
+  expiresAt: text('expiresAt').notNull(),
 });
 
 /**
@@ -88,7 +97,8 @@ export const linkIntents = sqliteTable('LinkIntent', {
 export const sessions = sqliteTable('Session', {
   sessionToken: text('sessionToken').primaryKey(),
   userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  expires: integer('expires', { mode: 'timestamp_ms' }).notNull(),
+  /** ISO-8601 UTC timestamp. */
+  expires: text('expires').notNull(),
   platform: text('platform', { enum: ['web', 'ios', 'android'] }).notNull().default('web'),
   deviceName: text('deviceName'),
   userAgent: text('userAgent'),
