@@ -300,7 +300,9 @@ CREATE TABLE `User` (
 	`purgeAfter` text,
 	`deletedEmail` text,
 	`appleRefreshToken` text,
-	`healthKitConnected` integer DEFAULT false NOT NULL
+	`healthKitConnected` integer DEFAULT false NOT NULL,
+	`consentedAt` text,
+	`consentVersion` text
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `User_email_unique` ON `User` (`email`);--> statement-breakpoint

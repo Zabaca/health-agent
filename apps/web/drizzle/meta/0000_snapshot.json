@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "73057f83-6c39-4a63-836c-8e3a40103e85",
+  "id": "de0c203b-5e67-479f-bd35-648d25f981dc",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "FaxConfirm": {
@@ -2141,6 +2141,20 @@
           "notNull": true,
           "autoincrement": false,
           "default": false
+        },
+        "consentedAt": {
+          "name": "consentedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "consentVersion": {
+          "name": "consentVersion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {

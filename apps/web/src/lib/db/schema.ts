@@ -64,6 +64,14 @@ export const users = sqliteTable('User', {
   appleRefreshToken: text('appleRefreshToken'),
   /** Set to true when the user grants HealthKit access from the mobile app. */
   healthKitConnected: integer('healthKitConnected', { mode: 'boolean' }).notNull().default(false),
+  /**
+   * Onboarding legal-acceptance gate (JAM-314). `consentedAt` is the ISO-8601
+   * timestamp the user accepted TOS + Privacy; `consentVersion` records which
+   * version (e.g. "v1"). Null until consent is captured; PDA-invited accounts
+   * are exempt and remain null.
+   */
+  consentedAt: text('consentedAt'),
+  consentVersion: text('consentVersion'),
 });
 
 /**
