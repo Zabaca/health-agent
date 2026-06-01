@@ -98,5 +98,8 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|api/me|_next/static|_next/image|uploads|.*\\.png|.*\\.ico|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.webp|.*\\.gif|.*\\.woff2?).*)"],
+  // `relay-Ke8z` is the PostHog reverse-proxy path (see next.config rewrites).
+  // Excluded so unauthenticated /relay-Ke8z/* requests aren't redirected to
+  // /login before the rewrite to us.i.posthog.com gets a chance to run.
+  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|api/me|relay-Ke8z|_next/static|_next/image|uploads|.*\\.png|.*\\.ico|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.webp|.*\\.gif|.*\\.woff2?).*)"],
 };
