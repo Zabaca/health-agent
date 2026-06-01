@@ -8,6 +8,8 @@ import "./globals.css";
 import { MantineProvider, ColorSchemeScript } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { SessionProvider } from "next-auth/react";
+import PostHogProvider from "@/components/analytics/PostHogProvider";
+import PostHogPageView from "@/components/analytics/PostHogPageView";
 
 export default function RootLayout({
   children,
@@ -20,12 +22,15 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body>
-        <SessionProvider>
-          <MantineProvider>
-            <Notifications />
-            {children}
-          </MantineProvider>
-        </SessionProvider>
+        <PostHogProvider>
+          <SessionProvider>
+            <MantineProvider>
+              <Notifications />
+              <PostHogPageView />
+              {children}
+            </MantineProvider>
+          </SessionProvider>
+        </PostHogProvider>
       </body>
     </html>
   );
