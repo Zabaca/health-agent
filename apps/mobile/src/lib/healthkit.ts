@@ -203,6 +203,279 @@ export async function fetchTodayMetrics(): Promise<HealthRecord[]> {
   return records;
 }
 
+// ─── Time-series for expanded views ─────────────────────────────────────────
+// Each metric returns bars + summary stats. "today" = intra-day buckets (hourly
+// for vitals, single value for sleep). "week"/"month" = daily buckets.
+
+export type MetricRange = 'today' | 'week' | 'month';
+
+export type MetricSeries = {
+  bars: number[];           // raw values; chart normalizes
+  labels: string[];         // x-axis labels matching bars
+  selectedIndex: number;    // bar to highlight (latest non-empty by default)
+  summary: {
+    primary: number | null; // headline value (avg or total)
+    min: number | null;
+    max: number | null;
+    unit: string;
+  };
+};
+
+function emptySeries(unit: string): MetricSeries {
+  return { bars: [], labels: [], selectedIndex: -1, summary: { primary: null, min: null, max: null, unit } };
+}
+
+function dayLabel(d: Date): string {
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+}
+
+function startOfDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function rangeBounds(range: MetricRange): { start: Date; end: Date; days: number } {
+  const end = new Date();
+  const start = startOfDay(end);
+  if (range === 'today') return { start, end, days: 1 };
+  const days = range === 'week' ? 7 : 30;
+  start.setDate(start.getDate() - (days - 1));
+  return { start, end, days };
+}
+
+/** Sum samples falling into N equal time buckets across [start, end]. */
+function bucketBySum(samples: { startDate: string; value: number }[], start: Date, end: Date, n: number): number[] {
+  const bars = new Array(n).fill(0);
+  const span = end.getTime() - start.getTime();
+  if (span <= 0) return bars;
+  for (const s of samples) {
+    const t = new Date(s.startDate).getTime();
+    if (t < start.getTime() || t > end.getTime()) continue;
+    const idx = Math.min(n - 1, Math.floor(((t - start.getTime()) / span) * n));
+    bars[idx] += s.value;
+  }
+  return bars;
+}
+
+/** Average samples falling into N equal time buckets; 0 when bucket empty. */
+function bucketByAvg(samples: { startDate: string; value: number }[], start: Date, end: Date, n: number): number[] {
+  const sums = new Array(n).fill(0);
+  const counts = new Array(n).fill(0);
+  const span = end.getTime() - start.getTime();
+  if (span <= 0) return sums;
+  for (const s of samples) {
+    const t = new Date(s.startDate).getTime();
+    if (t < start.getTime() || t > end.getTime()) continue;
+    const idx = Math.min(n - 1, Math.floor(((t - start.getTime()) / span) * n));
+    sums[idx] += s.value;
+    counts[idx] += 1;
+  }
+  return sums.map((sum, i) => counts[i] ? sum / counts[i] : 0);
+}
+
+function lastNonZero(bars: number[]): number {
+  for (let i = bars.length - 1; i >= 0; i--) if (bars[i] > 0) return i;
+  return bars.length - 1;
+}
+
+function todayHourlyLabels(): string[] {
+  // 12 two-hour buckets across the day → "12a","2a"…"10p"
+  return ['12a','2a','4a','6a','8a','10a','12p','2p','4p','6p','8p','10p'];
+}
+
+function dailyLabels(start: Date, days: number): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    out.push(days <= 7 ? dayLabel(d) : String(d.getDate()));
+  }
+  return out;
+}
+
+export async function fetchStepsSeries(range: MetricRange): Promise<MetricSeries> {
+  if (Platform.OS !== 'ios') return emptySeries('count');
+  const AppleHealthKit = getAppleHealthKit();
+  const { start, end, days } = rangeBounds(range);
+  const samples = await promiseSamples<HealthValue[]>(
+    AppleHealthKit.getDailyStepCountSamples.bind(AppleHealthKit),
+    { startDate: start.toISOString(), endDate: end.toISOString() },
+  );
+  if (!samples || samples.length === 0) return emptySeries('count');
+
+  if (range === 'today') {
+    const bars = bucketBySum(samples, start, end, 12).map(Math.round);
+    const total = bars.reduce((a, b) => a + b, 0);
+    return {
+      bars,
+      labels: todayHourlyLabels(),
+      selectedIndex: lastNonZero(bars),
+      summary: { primary: total, min: total > 0 ? Math.min(...bars.filter(b => b > 0)) : null, max: total > 0 ? Math.max(...bars) : null, unit: 'count' },
+    };
+  }
+
+  // Week / Month: one bar per day.
+  const bars = new Array(days).fill(0);
+  for (const s of samples) {
+    const idx = Math.floor((new Date(s.startDate).getTime() - start.getTime()) / 86400000);
+    if (idx >= 0 && idx < days) bars[idx] += s.value;
+  }
+  const rounded = bars.map(Math.round);
+  const nonZero = rounded.filter(b => b > 0);
+  return {
+    bars: rounded,
+    labels: dailyLabels(start, days),
+    selectedIndex: lastNonZero(rounded),
+    summary: {
+      primary: nonZero.length ? Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length) : null,
+      min: nonZero.length ? Math.min(...nonZero) : null,
+      max: nonZero.length ? Math.max(...nonZero) : null,
+      unit: 'count',
+    },
+  };
+}
+
+export async function fetchHeartRateSeries(range: MetricRange): Promise<MetricSeries> {
+  if (Platform.OS !== 'ios') return emptySeries('bpm');
+  const AppleHealthKit = getAppleHealthKit();
+  const { start, end, days } = rangeBounds(range);
+  const samples = await promiseSamples<HealthValue[]>(
+    AppleHealthKit.getHeartRateSamples.bind(AppleHealthKit),
+    { startDate: start.toISOString(), endDate: end.toISOString(), ascending: true, limit: 5000 },
+  );
+  if (!samples || samples.length === 0) return emptySeries('bpm');
+
+  const n = range === 'today' ? 12 : days;
+  const bars = bucketByAvg(samples, start, end, n).map(v => Math.round(v));
+  const allValues = samples.map(s => s.value);
+  const labels = range === 'today' ? todayHourlyLabels() : dailyLabels(start, days);
+  return {
+    bars,
+    labels,
+    selectedIndex: lastNonZero(bars),
+    summary: {
+      primary: Math.round(allValues.reduce((a, b) => a + b, 0) / allValues.length),
+      min: Math.round(Math.min(...allValues)),
+      max: Math.round(Math.max(...allValues)),
+      unit: 'bpm',
+    },
+  };
+}
+
+export async function fetchGlucoseSeries(range: MetricRange): Promise<MetricSeries> {
+  if (Platform.OS !== 'ios') return emptySeries('mg/dL');
+  const AppleHealthKit = getAppleHealthKit();
+  const { start, end, days } = rangeBounds(range);
+  const samples = await promiseSamples<HealthValue[]>(
+    AppleHealthKit.getBloodGlucoseSamples.bind(AppleHealthKit),
+    { startDate: start.toISOString(), endDate: end.toISOString(), ascending: true, limit: 1000, unit: 'mgPerdL' as never },
+  );
+  if (!samples || samples.length === 0) return emptySeries('mg/dL');
+
+  const n = range === 'today' ? 12 : days;
+  const bars = bucketByAvg(samples, start, end, n).map(v => Math.round(v));
+  const allValues = samples.map(s => s.value);
+  const labels = range === 'today' ? todayHourlyLabels() : dailyLabels(start, days);
+  return {
+    bars,
+    labels,
+    selectedIndex: lastNonZero(bars),
+    summary: {
+      primary: Math.round(allValues.reduce((a, b) => a + b, 0) / allValues.length),
+      min: Math.round(Math.min(...allValues)),
+      max: Math.round(Math.max(...allValues)),
+      unit: 'mg/dL',
+    },
+  };
+}
+
+/** Sleep is per-night: Today shows last night with stage breakdown; Week/Month show
+ *  nightly totals in minutes. Stages exposed via the returned `stages` field. */
+export type SleepSeries = MetricSeries & {
+  stages: { asleepMin: number; deepMin: number; remMin: number; coreMin: number; awakeMin: number };
+};
+
+function emptySleepSeries(): SleepSeries {
+  return { ...emptySeries('min'), stages: { asleepMin: 0, deepMin: 0, remMin: 0, coreMin: 0, awakeMin: 0 } };
+}
+
+export async function fetchSleepSeries(range: MetricRange): Promise<SleepSeries> {
+  if (Platform.OS !== 'ios') return emptySleepSeries();
+  const AppleHealthKit = getAppleHealthKit();
+  const { start, end, days } = rangeBounds(range);
+  // For "today" we still pull last night, so widen to 24h before start.
+  const queryStart = range === 'today' ? new Date(start.getTime() - 24 * 3600 * 1000) : start;
+  const samples = await promiseSamples<HealthValue[]>(
+    AppleHealthKit.getSleepSamples.bind(AppleHealthKit),
+    { startDate: queryStart.toISOString(), endDate: end.toISOString(), ascending: true, limit: 1000 },
+  );
+  if (!samples || samples.length === 0) return emptySleepSeries();
+
+  // Bucket samples by their startDate's local calendar day, then sum minutes by stage.
+  const stagesByDay = new Map<string, { asleep: number; deep: number; rem: number; core: number; awake: number }>();
+  for (const s of samples) {
+    const d = new Date(s.startDate);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const ms = new Date(s.endDate).getTime() - d.getTime();
+    const min = ms / 60000;
+    const cur = stagesByDay.get(key) ?? { asleep: 0, deep: 0, rem: 0, core: 0, awake: 0 };
+    const val = s.value as unknown as string;
+    if (val === 'ASLEEP') cur.asleep += min;
+    else if (val === 'ASLEEPDEEP') { cur.deep += min; cur.asleep += min; }
+    else if (val === 'ASLEEPREM') { cur.rem += min; cur.asleep += min; }
+    else if (val === 'ASLEEPCORE') { cur.core += min; cur.asleep += min; }
+    else if (val === 'AWAKE') cur.awake += min;
+    stagesByDay.set(key, cur);
+  }
+
+  if (range === 'today') {
+    // Last night = the most recent day with sleep data.
+    const keys = [...stagesByDay.keys()].sort();
+    const lastKey = keys[keys.length - 1];
+    const st = lastKey ? stagesByDay.get(lastKey)! : { asleep: 0, deep: 0, rem: 0, core: 0, awake: 0 };
+    return {
+      bars: [Math.round(st.asleep)],
+      labels: ['Last night'],
+      selectedIndex: 0,
+      summary: { primary: Math.round(st.asleep), min: null, max: null, unit: 'min' },
+      stages: { asleepMin: Math.round(st.asleep), deepMin: Math.round(st.deep), remMin: Math.round(st.rem), coreMin: Math.round(st.core), awakeMin: Math.round(st.awake) },
+    };
+  }
+
+  const bars = new Array(days).fill(0);
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    bars[i] = Math.round(stagesByDay.get(key)?.asleep ?? 0);
+  }
+  const nonZero = bars.filter(b => b > 0);
+  // Stage totals across the whole range.
+  const totals = [...stagesByDay.values()].reduce(
+    (acc, s) => ({ asleep: acc.asleep + s.asleep, deep: acc.deep + s.deep, rem: acc.rem + s.rem, core: acc.core + s.core, awake: acc.awake + s.awake }),
+    { asleep: 0, deep: 0, rem: 0, core: 0, awake: 0 },
+  );
+  return {
+    bars,
+    labels: dailyLabels(start, days),
+    selectedIndex: lastNonZero(bars),
+    summary: {
+      primary: nonZero.length ? Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length) : null,
+      min: nonZero.length ? Math.min(...nonZero) : null,
+      max: nonZero.length ? Math.max(...nonZero) : null,
+      unit: 'min',
+    },
+    stages: {
+      asleepMin: Math.round(totals.asleep),
+      deepMin: Math.round(totals.deep),
+      remMin: Math.round(totals.rem),
+      coreMin: Math.round(totals.core),
+      awakeMin: Math.round(totals.awake),
+    },
+  };
+}
+
 // ─── Clinical records (FHIR) ────────────────────────────────────────────────
 // Apple returns these as FHIR (DSTU2/R4). Foreground-only — no background
 // delivery for clinical records.
