@@ -157,7 +157,7 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
                     <Stack gap={2}>
                       <Text size="sm">{option.label}</Text>
                       <Badge size="xs" variant="light" color={r?.type === 'agent' ? 'violet' : 'teal'}>
-                        {r?.type === 'agent' ? 'Zabaca Agent' : (r?.relationship ?? 'Representative')}
+                        {r?.type === 'agent' ? 'Veladon Agent' : (r?.relationship ?? 'Representative')}
                       </Badge>
                     </Stack>
                   );

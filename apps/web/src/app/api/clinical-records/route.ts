@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
 import { incomingFiles } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { randomUUID } from "crypto";
-import { encrypt } from "@/lib/crypto";
+import { encrypt, decrypt } from "@/lib/crypto";
 
 // HealthKit clinical records (FHIR) are stored as IncomingFile rows with
 // source='healthkitFHIR' — records-visible (PDA via permission). The full FHIR
@@ -27,6 +27,8 @@ const recordSchema = z.object({
   fhirVersion: z.string().optional(),
   /** The raw FHIR resource JSON. */
   fhirData: z.unknown(),
+  /** HKSource name — Apple's display string for the source ("MyQuest"). */
+  sourceName: z.string().optional(),
 });
 
 const postBodySchema = z.object({ records: z.array(recordSchema).min(1).max(500) });
@@ -59,6 +61,7 @@ export async function POST(req: NextRequest) {
         displayName: r.displayName ?? null,
         fhirRelease: r.fhirRelease ?? null,
         fhirVersion: r.fhirVersion ?? null,
+        sourceName: r.sourceName ?? null,
         fhirData: r.fhirData,
       }),
     ),
@@ -86,4 +89,41 @@ export async function POST(req: NextRequest) {
     });
 
   return NextResponse.json({ success: true });
+}
+
+// GET /api/clinical-records — summary used by the Connect Apple Health screen
+// to reflect what actually synced (instead of a hard-coded glucose check).
+// Counts per HealthKit recordType + the most recent updatedAt. Decrypts each
+// row's blob to read the recordType; cheap at user scale (≤ low thousands of
+// records). If this gets hot we can promote recordType to a cleartext column.
+export async function GET(req: NextRequest) {
+  const { result, error } = await resolveUserSession(req);
+  if (error) return error;
+
+  const rows = await db.query.incomingFiles.findMany({
+    where: and(
+      eq(incomingFiles.patientId, result.userId),
+      eq(incomingFiles.source, FHIR_SOURCE),
+      isNull(incomingFiles.deletedAt),
+    ),
+    columns: { dataBlob: true, updatedAt: true },
+  });
+
+  const counts: Record<string, number> = {};
+  let latestUpdatedAt: string | null = null;
+  for (const r of rows) {
+    if (r.updatedAt && (!latestUpdatedAt || r.updatedAt > latestUpdatedAt)) {
+      latestUpdatedAt = r.updatedAt;
+    }
+    if (!r.dataBlob) continue;
+    try {
+      const parsed = JSON.parse(decrypt(r.dataBlob)) as { recordType?: string | null };
+      const rt = parsed.recordType;
+      if (rt) counts[rt] = (counts[rt] ?? 0) + 1;
+    } catch {
+      // skip undecryptable
+    }
+  }
+
+  return NextResponse.json({ counts, latestUpdatedAt, total: rows.length });
 }

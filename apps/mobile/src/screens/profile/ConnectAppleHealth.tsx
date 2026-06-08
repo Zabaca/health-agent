@@ -7,16 +7,24 @@ import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { useTheme } from "@/theme/ThemeProvider";
 import { requestHealthKitAccess, fetchTodayMetrics, fetchClinicalRecords, recordHealthSync, getLastHealthSync, clearHealthSync } from "@/lib/healthkit";
-import { patchProfile, postHealthData, postClinicalRecords, getSetupStatus, getHealthData, type HealthDataRow } from "@/lib/api";
+import { patchProfile, postHealthData, postClinicalRecords, getSetupStatus, getHealthData, getClinicalRecordSummary, type HealthDataRow, type ClinicalRecordSummary } from "@/lib/api";
 import type { ProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
 
-// Each card row maps a user-facing category to the HealthData `type`s it covers.
-const CATEGORIES = [
-  { id: "vitals", label: "Heart Rate & Vitals", Icon: Activity, types: ["heartRateAvg", "heartRateMin", "heartRateMax"] },
+// Each card row maps a user-facing category to (a) the HealthData `type`s it
+// covers (from `/api/health-data`) and (b) HealthKit clinical recordTypes from
+// `/api/clinical-records`. A category is "synced" if either source has data.
+const CATEGORIES: Array<{
+  id: string;
+  label: string;
+  Icon: typeof Activity;
+  types: string[];
+  fhirRecordTypes?: string[];
+}> = [
+  { id: "vitals", label: "Heart Rate & Vitals", Icon: Activity, types: ["heartRateAvg", "heartRateMin", "heartRateMax"], fhirRecordTypes: ["VitalSignRecord"] },
   { id: "sleep", label: "Sleep Analysis", Icon: Moon, types: ["sleepMinutes"] },
-  { id: "labs", label: "Lab Results", Icon: FlaskConical, types: ["glucoseAvg", "glucoseMin", "glucoseMax"] },
+  { id: "labs", label: "Lab Results", Icon: FlaskConical, types: [], fhirRecordTypes: ["LabResultRecord"] },
   { id: "steps", label: "Steps & Activity", Icon: Footprints, types: ["steps"] },
 ];
 
@@ -49,6 +57,7 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
   // null = still checking connection status
   const [connected, setConnected] = useState<boolean | null>(null);
   const [rows, setRows] = useState<HealthDataRow[]>([]);
+  const [clinical, setClinical] = useState<ClinicalRecordSummary | null>(null);
   const [lastSync, setLastSync] = useState<string | null>(null);
 
   useFocusEffect(
@@ -59,6 +68,9 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
           if (s.healthKitConnected) {
             getHealthData({ from: daysAgo(30), to: dateStr(new Date()) })
               .then(setRows)
+              .catch(() => {});
+            getClinicalRecordSummary()
+              .then(setClinical)
               .catch(() => {});
             getLastHealthSync().then(setLastSync).catch(() => {});
           }
@@ -126,8 +138,17 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
     );
   }
 
-  function syncStatus(types: string[]): string {
+  function syncStatus(types: string[], fhirRecordTypes?: string[]): string {
+    // FHIR count for this category — pull from the clinical-records summary.
+    const fhirCount = fhirRecordTypes && clinical
+      ? fhirRecordTypes.reduce((sum, rt) => sum + (clinical.counts[rt] ?? 0), 0)
+      : 0;
     const matching = rows.filter((r) => types.includes(r.type));
+    if (fhirCount > 0) {
+      const label = fhirCount === 1 ? "1 result" : `${fhirCount} results`;
+      if (clinical?.latestUpdatedAt) return `${label} · synced ${timeAgo(clinical.latestUpdatedAt)}`;
+      return label;
+    }
     if (matching.length > 0) {
       const latest = matching.reduce((a, b) => (a.updatedAt > b.updatedAt ? a : b));
       return `Updated ${timeAgo(latest.updatedAt)}`;
@@ -203,7 +224,7 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
               >
                 <c.Icon size={18} color={t.colors.primary} />
                 <Text style={[t.type.body, { flex: 1 }]}>{c.label}</Text>
-                <Text style={t.type.caption}>{syncStatus(c.types)}</Text>
+                <Text style={t.type.caption}>{syncStatus(c.types, c.fhirRecordTypes)}</Text>
               </View>
             ))}
           </View>

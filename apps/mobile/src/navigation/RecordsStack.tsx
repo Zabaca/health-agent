@@ -3,6 +3,8 @@ import RecordsList from "@/screens/records/RecordsList";
 import RecordDetailLabs from "@/screens/records/RecordDetailLabs";
 import RecordDetailImaging from "@/screens/records/RecordDetailImaging";
 import RecordDetailNotes from "@/screens/records/RecordDetailNotes";
+import RecordDetailFHIR from "@/screens/records/RecordDetailFHIR";
+import RecordDetailLabPanel from "@/screens/records/RecordDetailLabPanel";
 import UploadSheet from "@/screens/records/UploadSheet";
 import FilterSheet from "@/screens/records/FilterSheet";
 import DocumentViewer from "@/screens/records/DocumentViewer";
@@ -22,6 +24,8 @@ export function RecordsStack() {
       <Stack.Screen name="RecordDetailLabs" component={RecordDetailLabs} />
       <Stack.Screen name="RecordDetailImaging" component={RecordDetailImaging} />
       <Stack.Screen name="RecordDetailNotes" component={RecordDetailNotes} />
+      <Stack.Screen name="RecordDetailFHIR" component={RecordDetailFHIR} />
+      <Stack.Screen name="RecordDetailLabPanel" component={RecordDetailLabPanel} />
       <Stack.Screen name="UploadSheet" component={UploadSheet} options={{ presentation: "modal" }} />
       <Stack.Screen name="FilterSheet" component={FilterSheet} options={{ presentation: "modal" }} />
       <Stack.Screen name="DocumentViewer" component={DocumentViewer} options={{ presentation: "fullScreenModal" }} />

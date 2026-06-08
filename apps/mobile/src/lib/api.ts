@@ -327,6 +327,16 @@ export async function postClinicalRecords(records: ClinicalRecordInput[]): Promi
   )) as { success: boolean };
 }
 
+export type ClinicalRecordSummary = {
+  counts: Record<string, number>;
+  latestUpdatedAt: string | null;
+  total: number;
+};
+
+export async function getClinicalRecordSummary(): Promise<ClinicalRecordSummary> {
+  return (await apiFetch("/api/clinical-records", {}, { auth: true })) as ClinicalRecordSummary;
+}
+
 // ─── Connected accounts (link/unlink OAuth providers) ──────────────────────────
 
 export type Connections = {
@@ -832,7 +842,26 @@ export type IncomingFile = {
   deletedById: string | null;
   faxLog?: { pagecount?: number | null } | null;
   uploadLog?: { originalName: string } | null;
+  // FHIR-only (source === "healthkitFHIR"). `type` holds the FHIR resourceType
+  // (Observation, Condition, …), `time` the clinical effective date.
+  type?: string | null;
+  time?: string | null;
+  fhirDisplayName?: string | null;
+  fhirRecordType?: string | null;
+  fhirSource?: string | null;
 };
+
+export type FhirRecord = IncomingFile & {
+  fhirRelease?: string | null;
+  fhirVersion?: string | null;
+  fhirData: unknown;
+};
+
+export async function getMyRecord(id: string): Promise<IncomingFile | FhirRecord> {
+  return (await apiFetch(`/api/my-records/${encodeURIComponent(id)}`, {}, { auth: true })) as
+    | IncomingFile
+    | FhirRecord;
+}
 
 export type RecordsPage = { items: IncomingFile[]; nextCursor: string | null };
 

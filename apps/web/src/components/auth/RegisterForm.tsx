@@ -98,7 +98,7 @@ export default function RegisterForm() {
         )}
 
         <Stack mb="md">
-          <OAuthButtons />
+          <OAuthButtons mode="register" />
         </Stack>
 
         <form onSubmit={handleSubmit(onSubmit)}>

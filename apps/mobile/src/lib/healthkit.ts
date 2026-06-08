@@ -87,6 +87,17 @@ export function requestHealthKitAccess(): Promise<boolean> {
         AppleHealthKit.Constants.Permissions.SleepAnalysis,
         AppleHealthKit.Constants.Permissions.BloodGlucose,
         AppleHealthKit.Constants.Permissions.ActiveEnergyBurned,
+        // Clinical (FHIR) records — gated by com.apple.developer.healthkit.access
+        // entitlement with "health-records". Each type prompts separately in the
+        // Apple Health permission sheet; the user can grant per-type.
+        AppleHealthKit.Constants.Permissions.AllergyRecord,
+        AppleHealthKit.Constants.Permissions.ConditionRecord,
+        AppleHealthKit.Constants.Permissions.ImmunizationRecord,
+        AppleHealthKit.Constants.Permissions.LabResultRecord,
+        AppleHealthKit.Constants.Permissions.MedicationRecord,
+        AppleHealthKit.Constants.Permissions.ProcedureRecord,
+        AppleHealthKit.Constants.Permissions.VitalSignRecord,
+        AppleHealthKit.Constants.Permissions.CoverageRecord,
       ],
       write: [],
     },
@@ -195,11 +206,6 @@ export async function fetchTodayMetrics(): Promise<HealthRecord[]> {
 // ─── Clinical records (FHIR) ────────────────────────────────────────────────
 // Apple returns these as FHIR (DSTU2/R4). Foreground-only — no background
 // delivery for clinical records.
-// TODO(fhir): clinical reads need the "Clinical Health Records" capability on
-// the App ID (paid Apple Developer Program) + clinical read permissions in
-// requestHealthKitAccess() + NSHealthClinicalHealthRecordsShareUsageDescription
-// (added to Info.plist). Until enabled, getClinicalRecords errors and this
-// returns []. Validate field handling against real provider data on a device.
 const CLINICAL_TYPES = [
   'AllergyRecord',
   'ConditionRecord',
@@ -220,6 +226,10 @@ export type ClinicalRecordInput = {
   fhirRelease?: string;
   fhirVersion?: string;
   fhirData: unknown;
+  /** HKSource name — Apple's display string for the source app/integration
+   *  (e.g. "MyQuest", "MyChart"). Apple's FHIR JSON typically omits performer
+   *  for consumer-sourced records, so this is the only reliable signal. */
+  sourceName?: string;
 };
 
 /**
@@ -256,6 +266,7 @@ export async function fetchClinicalRecords(sinceDays = 365): Promise<ClinicalRec
         fhirRelease: r.fhirRelease,
         fhirVersion: r.fhirVersion,
         fhirData: fhir,
+        sourceName: r.sourceName,
       });
     }
   }

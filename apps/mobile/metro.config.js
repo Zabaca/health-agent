@@ -18,4 +18,7 @@ config.resolver.nodeModulesPaths = [
 // Prevent Metro from following symlinks out of the workspace
 config.resolver.disableHierarchicalLookup = true;
 
+// Honor package.json `exports` so subpath imports (e.g. `@posthog/core/surveys`) resolve.
+config.resolver.unstable_enablePackageExports = true;
+
 module.exports = config;

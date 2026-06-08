@@ -6,6 +6,7 @@ import { ChevronRight, LogOut } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
+import { VersionFooter } from "@/components/VersionFooter";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { useOAuthButtons } from "@/hooks/useOAuthButtons";
@@ -139,11 +140,13 @@ export default function AccountSettings() {
         <Pressable onPress={() => setDeleteOpen(true)} style={{ alignItems: "center" }}>
           <Text style={{ color: t.colors.destructive, fontWeight: "600" }}>Delete Account</Text>
         </Pressable>
+
+        <VersionFooter />
       </Screen>
 
       <ConfirmDrawer
         visible={signOutOpen}
-        title="Sign out of Zabaca?"
+        title="Sign out of Veladon?"
         message="You'll need to sign in again next time you open the app."
         confirmLabel="Sign Out"
         onCancel={() => setSignOutOpen(false)}

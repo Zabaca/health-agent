@@ -308,16 +308,16 @@ export async function sendStaffInviteEmail({
   inviterName,
 }: StaffInviteEmailOptions): Promise<void> {
   const roleLabel = role === 'admin' ? 'Admin' : 'Agent';
-  const subject = `You've been invited to join Zabaca as a ${roleLabel}`;
+  const subject = `You've been invited to join Veladon as a ${roleLabel}`;
 
   const safeFirstName = escapeHtml(firstName);
   const safeInviterName = escapeHtml(inviterName);
   const safeInviteUrl = escapeHtml(inviteUrl);
 
   const html = emailShell(`
-    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">You've been invited to Zabaca</h2>
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">You've been invited to Veladon</h2>
     <p style="margin:0 0 16px;">Hi ${safeFirstName},</p>
-    <p style="margin:0 0 16px;"><strong>${safeInviterName}</strong> has invited you to join the Zabaca platform as an <strong>${roleLabel}</strong>.</p>
+    <p style="margin:0 0 16px;"><strong>${safeInviterName}</strong> has invited you to join the Veladon platform as an <strong>${roleLabel}</strong>.</p>
     <p style="margin:0 0 24px;">Click the button below to set up your account. This invite link expires in <strong>48 hours</strong>.</p>
     <div style="margin:32px 0;">
       <a href="${safeInviteUrl}" style="display:inline-block;background:#228be6;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">Accept Invitation</a>
@@ -325,7 +325,7 @@ export async function sendStaffInviteEmail({
     ${contactFooterHtml(null)}
   `);
 
-  const text = `Hi ${firstName},\n\n${inviterName} has invited you to join the Zabaca platform as an ${roleLabel}.\n\nAccept your invitation here: ${inviteUrl}\n\nThis link expires in 48 hours.`;
+  const text = `Hi ${firstName},\n\n${inviterName} has invited you to join the Veladon platform as an ${roleLabel}.\n\nAccept your invitation here: ${inviteUrl}\n\nThis link expires in 48 hours.`;
 
   await sendEmail({ to, subject, html, text });
 }
@@ -336,32 +336,32 @@ export interface AccountStatusEmailOptions {
 }
 
 export async function sendAccountSuspendedEmail({ to, firstName }: AccountStatusEmailOptions): Promise<void> {
-  const subject = 'Your Zabaca account access has been paused';
+  const subject = 'Your Veladon account access has been paused';
 
   const html = emailShell(`
     <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">Account Access Paused</h2>
     <p style="margin:0 0 16px;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;">Your Zabaca account has been temporarily paused by an administrator. You will not be able to log in while your account is paused.</p>
+    <p style="margin:0 0 16px;">Your Veladon account has been temporarily paused by an administrator. You will not be able to log in while your account is paused.</p>
     <p style="margin:0 0 16px;">If you believe this is a mistake or have questions, please reach out to your care team or administrator.</p>
     ${contactFooterHtml(undefined)}
   `);
 
-  const text = `Hi ${firstName},\n\nYour Zabaca account has been temporarily paused by an administrator. You will not be able to log in while your account is paused.\n\nIf you believe this is a mistake, please contact your care team or administrator.`;
+  const text = `Hi ${firstName},\n\nYour Veladon account has been temporarily paused by an administrator. You will not be able to log in while your account is paused.\n\nIf you believe this is a mistake, please contact your care team or administrator.`;
 
   await sendEmail({ to, subject, html, text });
 }
 
 export async function sendAccountReinstatedEmail({ to, firstName }: AccountStatusEmailOptions): Promise<void> {
-  const subject = 'Your Zabaca account has been restored';
+  const subject = 'Your Veladon account has been restored';
 
   const html = emailShell(`
     <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">Account Access Restored</h2>
     <p style="margin:0 0 16px;">Hi ${firstName},</p>
-    <p style="margin:0 0 16px;">Great news — your Zabaca account has been restored by an administrator. You can now log in and access your account as usual.</p>
+    <p style="margin:0 0 16px;">Great news — your Veladon account has been restored by an administrator. You can now log in and access your account as usual.</p>
     ${contactFooterHtml(undefined)}
   `);
 
-  const text = `Hi ${firstName},\n\nGreat news — your Zabaca account has been restored by an administrator. You can now log in and access your account as usual.`;
+  const text = `Hi ${firstName},\n\nGreat news — your Veladon account has been restored by an administrator. You can now log in and access your account as usual.`;
 
   await sendEmail({ to, subject, html, text });
 }

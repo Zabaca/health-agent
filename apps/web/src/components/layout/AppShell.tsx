@@ -19,7 +19,7 @@ interface Props {
   bottomNavItems?: NavItem[];
 }
 
-export default function AppShell({ children, title = "Zabaca", primaryColor = "blue", navItems, bottomNavItems }: Props) {
+export default function AppShell({ children, title = "Veladon", primaryColor = "blue", navItems, bottomNavItems }: Props) {
   const [opened, { toggle, close }] = useDisclosure();
   const theme = createTheme({ primaryColor: primaryColor as any });
 
@@ -33,7 +33,7 @@ export default function AppShell({ children, title = "Zabaca", primaryColor = "b
         <MantineAppShell.Header>
           <Group h="100%" px="md" gap="sm">
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <img src="/logomark.png" alt="Zabaca" width={32} height={32} style={{ borderRadius: 8 }} />
+            <img src="/logomark.png" alt="Veladon" width={32} height={32} style={{ borderRadius: 8 }} />
             <Text fw={700} size="lg" c={primaryColor}>{title}</Text>
           </Group>
         </MantineAppShell.Header>
