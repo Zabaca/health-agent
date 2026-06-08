@@ -6,6 +6,7 @@ import { ChevronRight, Bell, ShieldCheck, Repeat, Monitor, LogOut, UserRound } f
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
+import { VersionFooter } from "@/components/VersionFooter";
 import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
@@ -188,6 +189,8 @@ export default function PdaProfile() {
             onPress={() => switchTo("patient")}
           />
         </View>
+
+        <VersionFooter />
       </View>
 
       <ConfirmDrawer
