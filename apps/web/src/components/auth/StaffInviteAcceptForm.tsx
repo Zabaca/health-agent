@@ -112,7 +112,7 @@ export default function StaffInviteAcceptForm({ token, invite }: StaffInviteAcce
               <Badge color={roleColor} variant="light">{roleLabel}</Badge>
             </Group>
             <Text c="dimmed" size="sm">
-              You&apos;ve been invited to join Zabaca as a {roleLabel}. Complete your profile to get started.
+              You&apos;ve been invited to join Veladon as a {roleLabel}. Complete your profile to get started.
             </Text>
           </Stack>
 

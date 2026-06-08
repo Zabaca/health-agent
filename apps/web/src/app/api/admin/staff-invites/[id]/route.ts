@@ -32,7 +32,7 @@ export async function PATCH(
   const newToken = crypto.randomUUID();
   const newTokenExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
   const inviter = await db.query.users.findFirst({ where: eq(users.id, session.user.id) });
-  const inviterName = [inviter?.firstName, inviter?.lastName].filter(Boolean).join(" ") || session.user.email || "Zabaca Admin";
+  const inviterName = [inviter?.firstName, inviter?.lastName].filter(Boolean).join(" ") || session.user.email || "Veladon Admin";
 
   if (action === "resend") {
     await db

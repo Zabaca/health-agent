@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   ChevronRight,
   FileText,
+  FlaskConical,
   FolderHeart,
   Image as ImageIcon,
   Search,
@@ -50,13 +51,90 @@ function isFilterActive(f: RecordsFilters): boolean {
 const PAGE_SIZE = 30;
 const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "gif", "webp", "tiff", "tif", "heic", "heif"]);
 
+// ─── Lab panel grouping ─────────────────────────────────────────────────────
+// Apple Health delivers each lab observation as its own FHIR row, so a single
+// chem panel arrives as 10–15 sibling records. Collapse them into one panel
+// row keyed by (effective date, source) when the user isn't actively
+// filtering — search/filter rebroaden to per-row so single-test lookups still
+// work.
+
+type RecordRow =
+  | { kind: "item"; key: string; item: IncomingFile }
+  | { kind: "panel"; key: string; date: string; source: string | null; records: IncomingFile[] };
+
+function dayKey(iso: string | null | undefined): string {
+  if (!iso) return "";
+  return iso.slice(0, 10);
+}
+
+function groupLabPanels(records: IncomingFile[]): RecordRow[] {
+  const labs: IncomingFile[] = [];
+  const others: IncomingFile[] = [];
+  for (const r of records) {
+    if (r.source === "healthkitFHIR" && r.fhirRecordType === "LabResultRecord") labs.push(r);
+    else others.push(r);
+  }
+  const panels = new Map<string, { date: string; source: string | null; records: IncomingFile[] }>();
+  for (const lab of labs) {
+    const date = dayKey(lab.time ?? lab.createdAt);
+    const sourceKey = lab.fhirSource ?? "__apple__";
+    const key = `${date}|${sourceKey}`;
+    const slot = panels.get(key);
+    if (slot) slot.records.push(lab);
+    else panels.set(key, { date, source: lab.fhirSource ?? null, records: [lab] });
+  }
+  const rows: RecordRow[] = [];
+  for (const [key, panel] of panels) {
+    if (panel.records.length === 1) {
+      const item = panel.records[0]!;
+      rows.push({ kind: "item", key: item.id, item });
+    } else {
+      rows.push({ kind: "panel", key, date: panel.date, source: panel.source, records: panel.records });
+    }
+  }
+  for (const item of others) rows.push({ kind: "item", key: item.id, item });
+  // Sort: panels by their date, items by time/createdAt — both desc.
+  rows.sort((a, b) => {
+    const aDate = a.kind === "panel" ? a.date : dayKey(a.item.time ?? a.item.createdAt);
+    const bDate = b.kind === "panel" ? b.date : dayKey(b.item.time ?? b.item.createdAt);
+    return bDate.localeCompare(aDate);
+  });
+  return rows;
+}
+
 function isImage(fileType: string): boolean {
   return IMAGE_EXTS.has(fileType.toLowerCase().replace(/^\./, ""));
 }
 
+function isFhir(file: IncomingFile): boolean {
+  return file.source === "healthkitFHIR";
+}
+
+// HealthKit recordType → friendly label for the sub-text. Mirrors the map in
+// RecordDetailFHIR so both surfaces stay in sync.
+const FHIR_LABEL: Record<string, string> = {
+  AllergyRecord: "Allergy",
+  ConditionRecord: "Condition",
+  ImmunizationRecord: "Immunization",
+  LabResultRecord: "Lab Result",
+  MedicationRecord: "Medication",
+  ProcedureRecord: "Procedure",
+  VitalSignRecord: "Vital Sign",
+  CoverageRecord: "Coverage",
+};
+
+function fhirSubLabel(file: IncomingFile): string {
+  if (file.fhirRecordType && FHIR_LABEL[file.fhirRecordType]) return FHIR_LABEL[file.fhirRecordType];
+  return file.type ?? "Record";
+}
+
 // List label — matches web (`apps/web/src/components/records/MyRecordsTable.tsx`):
-// fax-sourced files have no originalName, fall back to em-dash.
+// fax-sourced files have no originalName, fall back to em-dash. FHIR rows use
+// the resource's displayName / recordType so they read as real records.
 function displayName(file: IncomingFile): string {
+  if (isFhir(file)) {
+    return file.fhirDisplayName ?? FHIR_LABEL[file.fhirRecordType ?? ""] ?? file.type ?? "Health Record";
+  }
   return file.uploadLog?.originalName ?? "—";
 }
 
@@ -199,8 +277,21 @@ export default function RecordsList() {
       : null;
     return records.filter((r) => {
       // Match on the descriptive label so "fax" / "tiff" find fax records
-      // even though the list renders them as "—".
-      if (q && !viewerTitle(r).toLowerCase().includes(q)) return false;
+      // even though the list renders them as "—". For FHIR rows, also match on
+      // the rendered display name + record-type label since viewerTitle returns
+      // the raw MIME ("APPLICATION/FHIR+JSON") which the user won't type.
+      if (q) {
+        const haystack = [
+          viewerTitle(r),
+          isFhir(r) ? displayName(r) : null,
+          isFhir(r) ? fhirSubLabel(r) : null,
+          isFhir(r) ? r.fhirSource : null,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       const createdMs = new Date(r.createdAt).getTime();
       if (fromMs !== null && createdMs < fromMs) return false;
       if (toMs !== null && createdMs > toMs) return false;
@@ -211,6 +302,18 @@ export default function RecordsList() {
       return true;
     });
   }, [records, query, filters, selectedProviderIds]);
+
+  // Group lab observations into panels when there's nothing narrowing the
+  // list — a search for "basophils" should still surface the individual row,
+  // so we bypass grouping whenever a query or filter is active.
+  const displayRows = useMemo<RecordRow[] | null>(() => {
+    if (!filteredRecords) return null;
+    const filtering = query.trim().length > 0 || isFilterActive(filters);
+    if (filtering) {
+      return filteredRecords.map((r) => ({ kind: "item", key: r.id, item: r }));
+    }
+    return groupLabPanels(filteredRecords);
+  }, [filteredRecords, query, filters]);
 
   const canGoBack = nav.canGoBack();
 
@@ -225,6 +328,10 @@ export default function RecordsList() {
   ) : null;
 
   const goToViewer = (record: IncomingFile) => {
+    if (isFhir(record)) {
+      nav.navigate("RecordDetailFHIR", { recordId: record.id });
+      return;
+    }
     nav.navigate("DocumentViewer", {
       fileId: record.id,
       fileURL: record.fileURL,
@@ -397,50 +504,104 @@ export default function RecordsList() {
     </View>
   );
 
-  const renderItem = ({ item }: { item: IncomingFile }) => {
-    const image = isImage(item.fileType);
-    const Icon = image ? ImageIcon : FileText;
-    const tile = image ? t.colors.primaryBg : t.colors.surfaceSubtle;
-    const tone = image ? t.colors.primary : t.colors.textSecondary;
+  const RowShell = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
+    <Pressable onPress={onPress} style={{ paddingHorizontal: t.spacing.gutter }}>
+      <View
+        style={{
+          backgroundColor: t.colors.surface,
+          borderRadius: t.radius.card,
+          borderWidth: 1,
+          borderColor: t.colors.border,
+          padding: 14,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        {children}
+      </View>
+    </Pressable>
+  );
+
+  const renderItemRow = (item: IncomingFile) => {
+    const fhir = isFhir(item);
+    const image = !fhir && isImage(item.fileType);
+    const Icon = fhir ? FlaskConical : image ? ImageIcon : FileText;
+    const tile = fhir ? t.colors.primaryBg : image ? t.colors.primaryBg : t.colors.surfaceSubtle;
+    const tone = fhir ? t.colors.primary : image ? t.colors.primary : t.colors.textSecondary;
+    const subLabel = fhir ? fhirSubLabel(item) : image ? "Image" : "Document";
+    // FHIR clinical effective date is the meaningful date for the user; fall
+    // back to createdAt for non-FHIR rows.
+    const dateLabel = formatDate((fhir && item.time) ? item.time : item.createdAt);
+    const sourceLabel = fhir ? item.fhirSource : null;
     return (
-      <Pressable onPress={() => goToViewer(item)} style={{ paddingHorizontal: t.spacing.gutter }}>
+      <RowShell onPress={() => goToViewer(item)}>
         <View
           style={{
-            backgroundColor: t.colors.surface,
-            borderRadius: t.radius.card,
-            borderWidth: 1,
-            borderColor: t.colors.border,
-            padding: 14,
-            flexDirection: "row",
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            backgroundColor: tile,
             alignItems: "center",
-            gap: 12,
+            justifyContent: "center",
           }}
         >
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              backgroundColor: tile,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Icon size={20} color={tone} />
-          </View>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={t.type.bodyStrong} numberOfLines={1}>
-              {displayName(item)}
-            </Text>
-            <Text style={t.type.caption}>
-              {(image ? "Image" : "Document")} · {formatDate(item.createdAt)}
-            </Text>
-          </View>
-          <ChevronRight size={18} color={t.colors.textSecondary} />
+          <Icon size={20} color={tone} />
         </View>
-      </Pressable>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={t.type.bodyStrong} numberOfLines={1}>
+            {displayName(item)}
+          </Text>
+          <Text style={t.type.caption} numberOfLines={1}>
+            {subLabel} · {dateLabel}{sourceLabel ? ` · ${sourceLabel}` : ""}
+          </Text>
+        </View>
+        <ChevronRight size={18} color={t.colors.textSecondary} />
+      </RowShell>
     );
   };
+
+  const renderPanelRow = (row: Extract<RecordRow, { kind: "panel" }>) => {
+    const dateLabel = formatDate(row.date);
+    const count = row.records.length;
+    const sourceLabel = row.source ?? null;
+    return (
+      <RowShell
+        onPress={() =>
+          nav.navigate("RecordDetailLabPanel", {
+            recordIds: row.records.map((r) => r.id),
+            date: row.date,
+            source: row.source,
+          })
+        }
+      >
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            backgroundColor: t.colors.primaryBg,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <FlaskConical size={20} color={t.colors.primary} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={t.type.bodyStrong} numberOfLines={1}>
+            Lab Panel
+          </Text>
+          <Text style={t.type.caption} numberOfLines={1}>
+            {count} results · {dateLabel}{sourceLabel ? ` · ${sourceLabel}` : ""}
+          </Text>
+        </View>
+        <ChevronRight size={18} color={t.colors.textSecondary} />
+      </RowShell>
+    );
+  };
+
+  const renderRow = ({ item }: { item: RecordRow }) =>
+    item.kind === "panel" ? renderPanelRow(item) : renderItemRow(item.item);
 
   // ─── Initial loading screen ───────────────────────────────────────────────
   if (loading && !records) {
@@ -509,10 +670,10 @@ export default function RecordsList() {
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
       {DragHandle}
       {Header}
-      <FlatList
-        data={filteredRecords ?? []}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
+      <FlatList<RecordRow>
+        data={displayRows ?? []}
+        keyExtractor={(row) => row.key}
+        renderItem={renderRow}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListEmptyComponent={
           noRecords ? (

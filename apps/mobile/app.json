@@ -50,8 +50,7 @@
           "photosPermission": "Veladon accesses your photo library so you can upload existing photos of health documents."
         }
       ],
-      "@react-native-community/datetimepicker",
-      "expo-localization"
+      "@react-native-community/datetimepicker"
     ],
     "updates": {
       "enabled": false

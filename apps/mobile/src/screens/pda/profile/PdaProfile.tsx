@@ -192,7 +192,7 @@ export default function PdaProfile() {
 
       <ConfirmDrawer
         visible={signOutOpen}
-        title="Sign out of Zabaca?"
+        title="Sign out of Veladon?"
         message="You'll need to sign in again next time you open the app."
         confirmLabel="Sign Out"
         onCancel={() => setSignOutOpen(false)}

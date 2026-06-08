@@ -35,6 +35,8 @@ export type RecordsParamList = {
   RecordDetailLabs: { recordId: string };
   RecordDetailImaging: { recordId: string };
   RecordDetailNotes: { recordId: string };
+  RecordDetailFHIR: { recordId: string };
+  RecordDetailLabPanel: { recordIds: string[]; date: string; source: string | null };
   UploadSheet: undefined;
   FilterSheet:
     | {

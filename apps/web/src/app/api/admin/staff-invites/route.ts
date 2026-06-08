@@ -88,7 +88,7 @@ export async function POST(req: Request) {
 
   const inviteUrl = `${getSiteBaseUrl()}/staff-invite/${token}`;
   const inviter = await db.query.users.findFirst({ where: eq(users.id, session.user.id) });
-  const inviterName = [inviter?.firstName, inviter?.lastName].filter(Boolean).join(" ") || session.user.email || "Zabaca Admin";
+  const inviterName = [inviter?.firstName, inviter?.lastName].filter(Boolean).join(" ") || session.user.email || "Veladon Admin";
 
   await sendStaffInviteEmail({
     to: normalizedEmail,

@@ -7,6 +7,8 @@ import { signIn } from "next-auth/react";
 type Props = {
   /** Where to land after a successful OAuth sign-in. Defaults to /dashboard. */
   callbackUrl?: string;
+  /** Controls button verb: "signin" → "Continue with X", "register" → "Create with X". */
+  mode?: "signin" | "register";
 };
 
 /**
@@ -14,7 +16,9 @@ type Props = {
  * OAuth users skip the register flow entirely (the signIn callback in
  * `auth.config.ts` upserts the user on first sign-in).
  */
-export default function OAuthButtons({ callbackUrl = "/dashboard" }: Props) {
+export default function OAuthButtons({ callbackUrl = "/dashboard", mode = "signin" }: Props) {
+  const verb = mode === "register" ? "Create" : "Continue";
+  const dividerLabel = mode === "register" ? "or sign up with email" : "or continue with email";
   return (
     <Stack gap="sm">
       <Button
@@ -24,7 +28,7 @@ export default function OAuthButtons({ callbackUrl = "/dashboard" }: Props) {
         onClick={() => signIn("apple", { redirectTo: callbackUrl })}
         fullWidth
       >
-        Continue with Apple
+        {verb} with Apple
       </Button>
       <Button
         variant="default"
@@ -32,12 +36,12 @@ export default function OAuthButtons({ callbackUrl = "/dashboard" }: Props) {
         onClick={() => signIn("google", { redirectTo: callbackUrl })}
         fullWidth
       >
-        Continue with Google
+        {verb} with Google
       </Button>
       <Divider
         label={
           <Text size="xs" c="dimmed">
-            or continue with email
+            {dividerLabel}
           </Text>
         }
         labelPosition="center"
