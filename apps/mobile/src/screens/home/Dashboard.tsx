@@ -1,14 +1,15 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Circle, CheckCircle2, ChevronRight, Heart } from "lucide-react-native";
+import { Circle, CheckCircle2, ChevronRight } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { MetricCard } from "@/components/MetricCard";
+import { HealthSyncPill } from "@/components/HealthSyncPill";
 import { useTheme } from "@/theme/ThemeProvider";
 import { getSetupStatus, getHealthData, postHealthData, type SetupStatus, type HealthDataRow } from "@/lib/api";
-import { fetchTodayMetrics, recordHealthSync } from "@/lib/healthkit";
+import { fetchTodayMetrics, getLastHealthSync, recordHealthSync } from "@/lib/healthkit";
 import type { HomeParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<HomeParamList>;
@@ -59,6 +60,13 @@ export default function Dashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastSynced, setLastSynced] = useState<Date | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    getLastHealthSync().then((iso) => {
+      if (iso) setLastSynced(new Date(iso));
+    });
+  }, []);
 
   // Local YYYY-MM-DD — must match the local date healthkit.ts stamps on stored
   // telemetry, or the evening UTC rollover makes the dashboard query "tomorrow".
@@ -66,16 +74,20 @@ export default function Dashboard() {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   async function syncHealthKit() {
+    setSyncing(true);
     try {
       const fresh = await fetchTodayMetrics();
       if (fresh.length > 0) {
         await postHealthData(fresh);
-        setLastSynced(new Date());
       }
-      // Record the attempt even when HealthKit returned nothing.
+      // Record the attempt even when HealthKit returned nothing, so the
+      // label reflects "we tried" rather than getting stuck on "Syncing…".
       await recordHealthSync();
+      setLastSynced(new Date());
     } catch {
       // Non-fatal — stale data is acceptable
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -111,14 +123,6 @@ export default function Dashboard() {
   const completed = steps ? steps.filter((s) => s.complete).length : 0;
   const firstName = setupStatus?.firstName ?? "";
   const connected = setupStatus?.healthKitConnected ?? false;
-
-  function syncLabel() {
-    if (!lastSynced) return "Syncing...";
-    const diffMin = Math.round((Date.now() - lastSynced.getTime()) / 60000);
-    if (diffMin < 1) return "Synced just now";
-    if (diffMin === 1) return "Synced 1 min ago";
-    return `Synced ${diffMin} min ago`;
-  }
 
   return (
     <Screen
@@ -178,48 +182,13 @@ export default function Dashboard() {
         </View>
       </Pressable>
 
-      {/* Apple Health status pill */}
-      {connected ? (
-        <View
-          style={{
-            backgroundColor: t.colors.primaryBg,
-            borderRadius: t.radius.pill,
-            paddingVertical: 8,
-            paddingHorizontal: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            alignSelf: "stretch",
-          }}
-        >
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.colors.primary }} />
-          <Text style={[t.type.caption, { color: t.colors.primary, fontWeight: "500" }]}>
-            Apple Health connected · {syncLabel()}
-          </Text>
-        </View>
-      ) : (
-        <Pressable
-          onPress={() => nav.navigate("ConnectAppleHealth" as never)}
-          style={{
-            backgroundColor: t.colors.surface,
-            borderRadius: t.radius.pill,
-            paddingVertical: 8,
-            paddingHorizontal: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            alignSelf: "stretch",
-            borderWidth: 1,
-            borderColor: t.colors.border,
-          }}
-        >
-          <Heart size={14} color={t.colors.textSecondary} />
-          <Text style={[t.type.caption, { color: t.colors.textSecondary, fontWeight: "500", flex: 1 }]}>
-            Connect Apple Health to see your vitals
-          </Text>
-          <ChevronRight size={14} color={t.colors.textSecondary} />
-        </Pressable>
-      )}
+      <HealthSyncPill
+        connected={connected}
+        syncing={syncing}
+        lastSynced={lastSynced}
+        onPressDisconnected={() => nav.navigate("ConnectAppleHealth" as never)}
+      />
+
 
       {/* Today's Overview */}
       <Text style={[t.type.h3, { marginTop: 4 }]}>Today's Overview</Text>

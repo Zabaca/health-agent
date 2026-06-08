@@ -69,7 +69,7 @@ export default function CreateAccount() {
             disabled={oauthBusy}
           >
             <Apple size={18} color="#FFFFFF" />
-            <Text style={[styles.providerLabel, { color: "#FFFFFF" }]}>Sign in with Apple</Text>
+            <Text style={[styles.providerLabel, { color: "#FFFFFF" }]}>Create account with Apple</Text>
           </Pressable>
         ) : null}
         <Pressable
@@ -86,7 +86,7 @@ export default function CreateAccount() {
           disabled={!googleReady || oauthBusy}
         >
           <Text style={{ fontSize: 18, fontWeight: "700", color: "#DB4437" }}>G</Text>
-          <Text style={[styles.providerLabel, { color: t.colors.textPrimary }]}>Sign in with Google</Text>
+          <Text style={[styles.providerLabel, { color: t.colors.textPrimary }]}>Create account with Google</Text>
         </Pressable>
 
         <View style={styles.dividerRow}>
