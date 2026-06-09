@@ -6,7 +6,7 @@ export default function HomePage() {
   return (
     <main>
       <section className="section">
-        <div className="col col-wide stack-5">
+        <div className="col col-prose stack-5">
           <p className="eyebrow">Veladon · Your personal health record storage</p>
           <div className="headline-row">
             <Image
@@ -296,7 +296,7 @@ export default function HomePage() {
       </section>
 
       <section className="section">
-        <div className="col col-wide stack-4">
+        <div className="col col-prose stack-4">
           <p className="eyebrow">Ready</p>
           <h2 style={{ maxWidth: "22ch" }}>
             Get the record you should've had all along<span className="accent">.</span>
