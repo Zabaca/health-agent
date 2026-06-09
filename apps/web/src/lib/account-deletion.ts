@@ -46,6 +46,11 @@ export async function deactivateAccount(userId: string): Promise<DeleteResult> {
   if ("error" in res) return { ok: false, reason: res.error };
   const user = res.user;
 
+  // Already soft-deleted — return idempotently so we don't (a) overwrite the
+  // preserved `deletedEmail` with null (the row's `email` is already null),
+  // (b) push `purgeAfter` further out, or (c) re-hit Apple's revoke endpoint.
+  if (user.deactivatedAt) return { ok: true };
+
   // 1. Apple token revocation (App Store 5.1.1(v)). Best-effort: deletion must
   //    ALWAYS complete (cutting access is the requirement, and blocking on a
   //    revoke failure would both trap users whose token is already invalid and
