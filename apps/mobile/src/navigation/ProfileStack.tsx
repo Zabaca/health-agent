@@ -9,6 +9,8 @@ import InviteRepresentative from "@/screens/access/InviteRepresentative";
 import RepresentativeDetail from "@/screens/access/RepresentativeDetail";
 import ActiveDevices from "@/screens/profile/ActiveDevices";
 import RoleSwitcher from "@/screens/pda/profile/RoleSwitcher";
+import TermsScreen from "@/screens/legal/TermsScreen";
+import PrivacyScreen from "@/screens/legal/PrivacyScreen";
 import type { ProfileParamList } from "./types";
 
 const Stack = createNativeStackNavigator<ProfileParamList>();
@@ -33,6 +35,8 @@ export function ProfileStack() {
         component={RoleSwitcher}
         options={{ presentation: "transparentModal", animation: "fade" }}
       />
+      <Stack.Screen name="TermsScreen" component={TermsScreen} />
+      <Stack.Screen name="PrivacyScreen" component={PrivacyScreen} />
     </Stack.Navigator>
   );
 }

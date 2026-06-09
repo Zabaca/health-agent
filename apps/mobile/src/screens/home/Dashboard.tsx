@@ -9,7 +9,7 @@ import { MetricCard } from "@/components/MetricCard";
 import { HealthSyncPill } from "@/components/HealthSyncPill";
 import { useTheme } from "@/theme/ThemeProvider";
 import { getSetupStatus, getHealthData, postHealthData, type SetupStatus, type HealthDataRow } from "@/lib/api";
-import { fetchTodayMetrics, getLastHealthSync, recordHealthSync } from "@/lib/healthkit";
+import { fetchTodayMetrics, getLastHealthSync, recordHealthSync, requestHealthKitAccess } from "@/lib/healthkit";
 import type { HomeParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<HomeParamList>;
@@ -76,6 +76,11 @@ export default function Dashboard() {
   async function syncHealthKit() {
     setSyncing(true);
     try {
+      // Silent re-init: covers the case where iOS dropped the HealthKit grant
+      // (reinstall, re-sign, user-revoked in Settings) while our server flag
+      // still says connected. iOS no-ops if already authorized; surfaces the
+      // system prompt only when truly needed.
+      try { await requestHealthKitAccess(); } catch { /* user-denied is fine */ }
       const fresh = await fetchTodayMetrics();
       if (fresh.length > 0) {
         await postHealthData(fresh);

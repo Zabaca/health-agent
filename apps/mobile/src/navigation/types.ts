@@ -100,6 +100,8 @@ export type ProfileParamList = {
   RepresentativeDetail: { agent: import("@/lib/api").DesignatedAgent };
   ActiveDevices: undefined;
   RoleSwitcher: undefined;
+  TermsScreen: undefined;
+  PrivacyScreen: undefined;
 };
 
 export type TabsParamList = {
