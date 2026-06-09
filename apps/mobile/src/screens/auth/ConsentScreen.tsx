@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { ShieldCheck, Square, CheckSquare } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { DobField } from "@/components/DobField";
+import { LegalModal } from "@/screens/legal/LegalModal";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { getProfile } from "@/lib/api";
-import { TERMS_URL, PRIVACY_URL, MINIMUM_AGE, toIsoDate } from "@health-agent/types";
+import { MINIMUM_AGE, toIsoDate } from "@health-agent/types";
 
 export default function ConsentScreen() {
   const t = useTheme();
@@ -19,6 +20,7 @@ export default function ConsentScreen() {
   const [privacy, setPrivacy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [legalOpen, setLegalOpen] = useState<"terms" | "privacy" | null>(null);
 
   useEffect(() => {
     getProfile()
@@ -89,7 +91,7 @@ export default function ConsentScreen() {
           <CheckboxRow checked={tos} onToggle={() => setTos((v) => !v)}>
             <Text style={{ fontSize: 15, color: t.colors.textPrimary }}>
               I agree to the{" "}
-              <Text style={{ color: t.colors.primary, fontWeight: "600" }} onPress={() => Linking.openURL(TERMS_URL)}>
+              <Text style={{ color: t.colors.primary, fontWeight: "600" }} onPress={() => setLegalOpen("terms")}>
                 Terms of Service
               </Text>
             </Text>
@@ -97,7 +99,7 @@ export default function ConsentScreen() {
           <CheckboxRow checked={privacy} onToggle={() => setPrivacy((v) => !v)}>
             <Text style={{ fontSize: 15, color: t.colors.textPrimary }}>
               I agree to the{" "}
-              <Text style={{ color: t.colors.primary, fontWeight: "600" }} onPress={() => Linking.openURL(PRIVACY_URL)}>
+              <Text style={{ color: t.colors.primary, fontWeight: "600" }} onPress={() => setLegalOpen("privacy")}>
                 Privacy Policy
               </Text>
             </Text>
@@ -115,6 +117,7 @@ export default function ConsentScreen() {
           />
         </View>
       </Screen>
+      <LegalModal kind={legalOpen} onClose={() => setLegalOpen(null)} />
     </View>
   );
 }

@@ -70,9 +70,16 @@ next-env.d.ts
 # Docs
 docs/*
 !docs/app-store-checklist.md
+!docs/legal/
 
 # QA test plans (kept local only)
 qa/test plans/
+
+# Local scrape artifacts (Firecrawl, etc.)
+.firecrawl/
+
+# Pencil design backups
+*_backup.pen
 
 # Expo / React Native (apps/mobile)
 apps/mobile/.expo/

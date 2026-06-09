@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!--
+  Keep in lockstep with apps/mobile/src/screens/legal/content.ts (PRIVACY_POLICY).
+  This is the canonical hostable copy for outside-counsel review and future
+  veladon.com publication; the in-app screen renders the same text from the TS
+  module. Any edit here MUST be reflected there.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Veladon — Privacy Policy</title>
+  <link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+  <main>
+    <header class="doc-header">
+      <h1>Veladon Privacy Policy</h1>
+      <p class="meta">Effective June 9, 2026 · Version v1</p>
+      <p class="draft-banner"><strong>Draft for review.</strong> This Privacy Policy describes the data flows in the Veladon mobile app today. It is a working draft for outside-counsel review and is not legal advice. The placeholders <code>{{LEGAL_ADDRESS}}</code> remain to be filled before public release.</p>
+    </header>
+
+    <h2>1. Who we are</h2>
+    <p>Zabaca, Inc. ("Veladon", "we", "us", or "our") operates the Veladon mobile application (the "App"). This Privacy Policy explains what information the App collects, how we use it, with whom we share it, and the choices you have.</p>
+
+    <h2>2. Scope of this Policy</h2>
+    <p>This Policy covers the Veladon mobile application for iOS and Android, and the back-end services that the App talks to. There is no public Veladon website or web product covered by this Policy at this time. If we launch a web product later, we will update this Policy and notify you in-app.</p>
+
+    <h2>3. Our HIPAA-equivalent commitment</h2>
+    <p>Veladon is a consumer-direct personal health record (PHR) app. As a PHR vendor we may not technically be a "Covered Entity" under the U.S. Health Insurance Portability and Accountability Act ("HIPAA"). Regardless, we have voluntarily adopted safeguards that mirror HIPAA's Security and Privacy Rules — encryption of sensitive identifiers at rest, transport-layer encryption in transit, role-based access controls, session revocation, audit logging of administrative actions, and a six-year minimum retention window for health data we hold.</p>
+    <p>If a breach of unsecured health information occurs, we will notify affected users without unreasonable delay and consistent with the U.S. Federal Trade Commission's Health Breach Notification Rule and applicable state laws.</p>
+
+    <h2>4. Information we collect</h2>
+    <p>We collect only the information needed to provide the features you use. Specifically:</p>
+    <p><strong>Account and profile.</strong> When you create an account we collect your email address and a hashed copy of your password (or, if you sign in with Apple or Google, the subject identifier they return to us). When you complete your profile we collect your first, middle, and last name, your date of birth, mailing address, phone number, the last four digits of your Social Security Number (for record-request authorizations), and an optional avatar image.</p>
+    <p><strong>Apple Health (iOS only).</strong> When you connect Apple Health, the App reads — with your permission, granted in Apple's system permission sheet — the following data types: heart rate, step count, sleep analysis, blood glucose, and active energy. If you have FHIR clinical records in Apple Health, the App also reads, over a one-year lookback window: allergies, conditions, immunizations, lab results, medications, procedures, vital signs, and coverage records. We do not enable HealthKit background delivery; HealthKit data is read only while the App is open.</p>
+    <p><strong>Documents you upload.</strong> If you upload photographs or scans of health documents, we store the encrypted file and metadata you provide (such as the document type and the provider it relates to).</p>
+    <p><strong>Providers and Releases.</strong> We store the insurance and physician information you enter, the providers you choose as recipients of Releases, and the contents of any Release you create (including the signature image and authorization period).</p>
+    <p><strong>User-Designated Agent (UDA) relationships.</strong> We store the email of anyone you invite as a UDA, your relationship to them, and the permissions you granted, so that the App can enforce your access decisions.</p>
+    <p><strong>Sessions and device information.</strong> For each device you sign in from, we store the operating system, device name, IP address, and a coarse geographic location derived from the IP address (country, region, city). This lets you see and revoke sessions from Active Devices.</p>
+    <p><strong>Diagnostic information.</strong> If something goes wrong we may record error reports that contain technical details about the failure but not the contents of your health records.</p>
+
+    <h2>5. How we use information</h2>
+    <p>We use the information we collect to:</p>
+    <ul>
+      <li>Operate the App and the features you enable.</li>
+      <li>Sync your data with Apple Health when you ask us to.</li>
+      <li>Generate, transmit, and track the Releases you authorize.</li>
+      <li>Enforce the permissions you have granted to UDAs.</li>
+      <li>Authenticate you and protect your account from unauthorized access.</li>
+      <li>Diagnose and fix problems in the App.</li>
+      <li>Comply with our legal obligations and respond to lawful requests.</li>
+    </ul>
+
+    <h2>6. What we do NOT do with your health information</h2>
+    <p>We do not sell your health information. We do not serve targeted advertising based on it. We do not share it with insurance companies, employers, or marketers without your explicit Release. We do not use your protected health information to train artificial-intelligence models, ours or anyone else's.</p>
+
+    <h2>7. With whom we share information</h2>
+    <p>We share information only as follows:</p>
+    <ul>
+      <li>With User-Designated Agents you have invited, limited to the categories and permission level you granted.</li>
+      <li>With healthcare providers you have named as recipients of a Release, only after you have signed and dated the corresponding authorization.</li>
+      <li>With service providers that operate the infrastructure for us — currently Vercel (application hosting), Cloudflare R2 (encrypted document storage), Apple and Google (for sign-in identification), and our transactional-email provider. Each of these vendors is contractually limited to processing information on our behalf.</li>
+      <li>To comply with valid legal process, when we reasonably believe disclosure is necessary to protect against fraud or harm, or in connection with a corporate transaction such as a merger or acquisition (in which case we will notify you and your data continues to be protected by this Policy).</li>
+    </ul>
+
+    <h2>8. Apple Health (HealthKit) specifics</h2>
+    <p>Apple Health data read by the App is governed in addition by Apple's HealthKit rules:</p>
+    <ul>
+      <li>Apple Health permissions are managed by you in Apple's own system permission sheet. You can grant or revoke individual data types at any time in Settings → Privacy & Security → Health.</li>
+      <li>We do not use Apple Health data for advertising or other use-based data mining, and we do not sell Apple Health data.</li>
+      <li>We do not share Apple Health data with third parties for advertising or similar services.</li>
+      <li>We do not share Apple Health data with anyone without your consent (other than as needed to provide the service to you, e.g. transmitting it on your behalf as part of a Release you signed).</li>
+    </ul>
+
+    <h2>9. How we protect your information</h2>
+    <p>We use industry-standard safeguards, including:</p>
+    <ul>
+      <li>AES-256-GCM encryption at rest for sensitive identifiers (date of birth, last four of SSN), for Apple Health data we have stored, and for files you upload.</li>
+      <li>TLS encryption in transit for every connection between the App and our servers.</li>
+      <li>Per-session JSON Web Tokens with server-side revocation, so a stolen session can be cut immediately.</li>
+      <li>Optional biometric unlock (Face ID / Touch ID) on your device.</li>
+      <li>Role-based permission checks on every request that could expose another user's data.</li>
+    </ul>
+    <p>No security measure is perfect. If you believe your account has been compromised, contact <a href="mailto:privacy@veladon.com">privacy@veladon.com</a> right away.</p>
+
+    <h2>10. How long we keep your information</h2>
+    <p>Account and health data are kept for as long as your account is active and then for six (6) years after the date you delete your account, after which they are permanently purged by an automated job. This six-year window mirrors the HIPAA records-retention default and supports audit, regulatory, and dispute-resolution needs.</p>
+    <p>Disconnecting Apple Health from inside the App stops future syncs but does not, by itself, delete the data already synced to Veladon. To remove that data you can delete your account, or you can email <a href="mailto:privacy@veladon.com">privacy@veladon.com</a> to ask us to wipe the synced HealthKit data while keeping your account.</p>
+    <p>Diagnostic and audit logs are kept for as long as we need them for security investigation and legal compliance, which is generally no longer than six years.</p>
+
+    <h2>11. Your rights and choices</h2>
+    <p>You can:</p>
+    <ul>
+      <li>View and correct your profile information at any time from Edit Profile.</li>
+      <li>Disconnect Apple Health from inside the App.</li>
+      <li>Manage your User-Designated Agents — invite, change permissions, or revoke — from the Designated Agents screen.</li>
+      <li>See and sign out of any device from Active Devices.</li>
+      <li>Delete your account from Account Settings, with the retention period described in Section 10.</li>
+      <li>Request a copy of the information we hold about you by emailing <a href="mailto:privacy@veladon.com">privacy@veladon.com</a>. We will respond in a reasonable timeframe and, where required by law, within statutory deadlines.</li>
+      <li>Withdraw your consent to these Terms or this Policy by deleting your account. If we materially change either document, we will re-prompt you to accept the new version before you continue.</li>
+    </ul>
+
+    <h2>12. Children</h2>
+    <p>Veladon does not allow users under the age of 18 to create their own accounts. A parent, legal guardian, or other authorized adult User may enroll a minor by designating them through the User-Designated Agent flow described in our Terms. In that case, the adult User (or the User's legal guardian) is responsible for the minor's use of the App and for confirming that doing so is lawful in their jurisdiction.</p>
+    <p>If you believe a child under 18 has created an account directly with us, please contact <a href="mailto:privacy@veladon.com">privacy@veladon.com</a> and we will remove the account.</p>
+
+    <h2>13. Breach notification</h2>
+    <p>If a breach of unsecured personally identifiable health information occurs, we will notify affected users without unreasonable delay and consistent with the FTC Health Breach Notification Rule (16 C.F.R. Part 318) and applicable state laws. Notice will describe, to the extent known at the time, what happened, the types of information involved, what we are doing in response, and what you can do to protect yourself.</p>
+
+    <h2>14. International users</h2>
+    <p>Veladon is operated from the United States and is intended for users in the United States. The App is not currently designed for users in the European Economic Area or the United Kingdom; we do not address the General Data Protection Regulation (GDPR) or UK GDPR in this Policy. If you access the App from outside the United States, you do so on your own initiative and at your own risk.</p>
+
+    <h2>15. Changes to this Policy</h2>
+    <p>We may update this Policy from time to time. Material changes will bump the version and we will ask you to review and accept the new Policy in-app before you continue. The current version and effective date appear at the top of the document.</p>
+
+    <h2>16. Contact us</h2>
+    <p>Questions about this Policy, requests for access to your information, or breach reports? Email <a href="mailto:privacy@veladon.com">privacy@veladon.com</a>. You can also write to us at Zabaca, Inc., {{LEGAL_ADDRESS}}.</p>
+
+    <footer class="doc-footer">
+      <p>© 2026 Zabaca, Inc. All rights reserved.</p>
+    </footer>
+  </main>
+</body>
+</html>

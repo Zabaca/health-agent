@@ -1,0 +1,91 @@
+/* Veladon legal documents — shared styles.
+ * Print-friendly, single-column, generous line-height. No JS dependencies. */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #F5F4F1;
+  color: #1A1A1A;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+header.doc-header {
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #E0DDD6;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: #1A1A1A;
+}
+
+.meta {
+  color: #6B6B6B;
+  font-size: 14px;
+  margin: 0;
+}
+
+.draft-banner {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  background: #FEF7E5;
+  border: 1px solid #F4D58A;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #6B4F00;
+}
+
+h2 {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 32px 0 10px;
+  color: #1A1A1A;
+}
+
+p {
+  margin: 0 0 14px;
+}
+
+ul {
+  margin: 0 0 14px;
+  padding-left: 22px;
+}
+
+ul li {
+  margin-bottom: 6px;
+}
+
+a {
+  color: #3D8A5A;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+footer.doc-footer {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid #E0DDD6;
+  color: #6B6B6B;
+  font-size: 13px;
+}
+
+@media print {
+  body { background: #FFFFFF; }
+  .draft-banner { display: none; }
+}

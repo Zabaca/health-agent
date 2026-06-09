@@ -117,8 +117,12 @@ export default function AccountSettings() {
         ) : null}
 
         <Group>
-          <Row label="Privacy Policy" chevron />
-          <Row label="Delete Health Data" chevron />
+          <Pressable onPress={() => nav.navigate("TermsScreen")}>
+            <Row label="Terms of Service" chevron />
+          </Pressable>
+          <Pressable onPress={() => nav.navigate("PrivacyScreen")}>
+            <Row label="Privacy Policy" chevron />
+          </Pressable>
         </Group>
 
         <Pressable

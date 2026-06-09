@@ -115,6 +115,32 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
     }
   }
 
+  async function handleReauthorize() {
+    setLoading(true);
+    try {
+      // Force a fresh HealthKit init. If iOS dropped the grant (reinstall,
+      // re-sign, user-revoked) it will prompt; otherwise it's a no-op.
+      await requestHealthKitAccess();
+      const metrics = await fetchTodayMetrics();
+      if (metrics.length > 0) await postHealthData(metrics);
+      await recordHealthSync();
+      try {
+        const clinical = await fetchClinicalRecords();
+        for (let i = 0; i < clinical.length; i += 500) {
+          await postClinicalRecords(clinical.slice(i, i + 500));
+        }
+      } catch {
+        // Clinical access may not be granted; non-fatal.
+      }
+      Alert.alert("Re-authorized", "Apple Health permissions refreshed.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unable to refresh permissions.";
+      Alert.alert("Re-authorize failed", msg);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleDisconnect() {
     Alert.alert(
       "Disconnect Apple Health",
@@ -228,6 +254,29 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
               </View>
             ))}
           </View>
+
+          <Pressable
+            onPress={handleReauthorize}
+            disabled={loading}
+            style={{
+              height: 52,
+              borderRadius: t.radius.button,
+              backgroundColor: t.colors.primary,
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 8,
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 16 }}>
+                Re-authorize Apple Health
+              </Text>
+            )}
+          </Pressable>
 
           <Pressable
             onPress={handleDisconnect}
