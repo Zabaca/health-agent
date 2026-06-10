@@ -17,14 +17,17 @@ export const LEGAL_DOC_VERSION = "v1";
 /** Plain-language effective date shown in the document headers. */
 export const LEGAL_EFFECTIVE_DATE = "June 9, 2026";
 
-/** Best-guess company values for v1; replace before production launch. */
-export const COMPANY_LEGAL_NAME = "Zabaca, Inc.";
+/**
+ * Filled-in company values (JAM-323). Zabaca, LLC is a California LLC;
+ * all user-facing legal contact is consolidated to a single mailbox.
+ */
+export const COMPANY_LEGAL_NAME = "Zabaca, LLC";
 export const COMPANY_BRAND = "Veladon";
-export const COMPANY_ADDRESS = "Zabaca, Inc., {{LEGAL_ADDRESS}}";
-export const PRIVACY_EMAIL = "privacy@veladon.com";
-export const LEGAL_EMAIL = "legal@veladon.com";
-export const SUPPORT_EMAIL = "support@veladon.com";
-export const GOVERNING_STATE = "Delaware";
+export const COMPANY_ADDRESS = "Zabaca, LLC, 717 Brea Canyon Rd Ste 6, Walnut, CA 91789";
+export const PRIVACY_EMAIL = "info@veladon.com";
+export const LEGAL_EMAIL = "info@veladon.com";
+export const SUPPORT_EMAIL = "info@veladon.com";
+export const GOVERNING_STATE = "California";
 
-export const TERMS_URL = "https://veladon.com/terms";
-export const PRIVACY_URL = "https://veladon.com/privacy";
+export const TERMS_URL = "https://www.veladon.com/terms";
+export const PRIVACY_URL = "https://www.veladon.com/privacy";

@@ -1,10 +1,114 @@
 import Image from "next/image";
 import iconPng from "./icon.png";
-import { AppStoreButton } from "./_components/AppStoreButton";
+import { AppStoreButton, APP_STORE_URL } from "./_components/AppStoreButton";
+
+const SITE_URL = "https://www.veladon.com";
+
+const mobileApplicationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "MobileApplication",
+  name: "Veladon",
+  applicationCategory: "HealthApplication",
+  operatingSystem: "iOS",
+  url: SITE_URL,
+  downloadUrl: APP_STORE_URL,
+  installUrl: APP_STORE_URL,
+  description:
+    "Veladon is your personal health record storage. Request your medical records from any provider, organize them in one app, and share them on your terms.",
+  publisher: {
+    "@type": "Organization",
+    name: "Zabaca, LLC",
+    url: SITE_URL,
+  },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+};
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What's a personal health record?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "A PHR is a copy of your health information that you — not a hospital or insurer — control. Veladon is a consumer-direct PHR.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How does Veladon get my records from a provider?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Veladon doesn't get them — you do. We help you generate a HIPAA-compliant authorization, pre-filled and signable in the app. You submit it, and the provider sends the records to the address or contact you specified on the release: your home, your email, your hands at the next visit. Veladon is where you upload and keep them once they arrive. Federal law gives providers up to thirty days to respond, though most respond in one to two weeks.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Does it work with any provider?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Any U.S. provider that accepts a HIPAA-compliant authorization — which, by law, is all of them. If a particular provider has an unusual intake process, we'll flag it before you sign and walk you through it.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Where does my data live?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "On your phone and on our servers. Sensitive identifiers and health data are encrypted at rest with AES-256-GCM; everything in transit uses TLS. Documents are stored in encrypted object storage.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is Veladon HIPAA-compliant?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "As a PHR vendor we may not technically be a HIPAA Covered Entity, but we have voluntarily adopted safeguards that mirror HIPAA's Security and Privacy Rules — encryption at rest and in transit, role-based access, session revocation, audit logging, and a six-year retention floor on health data we hold.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I share records with another doctor?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes — that's part of why Veladon exists. Generate a Release naming the recipient, sign it, and submit. Same authorization flow as a request; you direct where the records go. You can also assign a Designated Agent — a family member, caregiver, or other trusted person — to help manage your records on your behalf.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is there an Android version?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "iPhone first. Android is on the roadmap; we'd rather ship one platform well than two halfway.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Who built Veladon?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Veladon is built by Zabaca, LLC. Questions: info@veladon.com.",
+      },
+    },
+  ],
+};
 
 export default function HomePage() {
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(mobileApplicationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <section className="section">
         <div className="col col-prose stack-5">
           <p className="eyebrow">Veladon · Your personal health record storage</p>
@@ -288,8 +392,8 @@ export default function HomePage() {
           <details className="faq">
             <summary>Who built this?</summary>
             <p>
-              Veladon is built by Zabaca, Inc. Questions:{" "}
-              <a href="mailto:support@veladon.com">support@veladon.com</a>.
+              Veladon is built by Zabaca, LLC. Questions:{" "}
+              <a href="mailto:info@veladon.com">info@veladon.com</a>.
             </p>
           </details>
         </div>

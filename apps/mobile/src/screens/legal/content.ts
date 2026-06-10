@@ -16,6 +16,7 @@
  */
 
 import {
+  COMPANY_ADDRESS,
   COMPANY_BRAND,
   COMPANY_LEGAL_NAME,
   GOVERNING_STATE,
@@ -351,7 +352,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: "16. Contact us",
       body: [
-        `Questions about this Policy, requests for access to your information, or breach reports? Email ${PRIVACY_EMAIL}. You can also write to us at ${COMPANY_LEGAL_NAME}, {{LEGAL_ADDRESS}}.`,
+        `Questions about this Policy, requests for access to your information, or breach reports? Email ${PRIVACY_EMAIL}. You can also write to us at ${COMPANY_ADDRESS}.`,
       ],
     },
   ],

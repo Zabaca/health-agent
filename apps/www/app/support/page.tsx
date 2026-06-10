@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Support",
-  description: "Get help with Veladon — your personal health record storage.",
+  description:
+    "Email a person on the Veladon team for help with the app, your account, security disclosures, or data requests.",
+  alternates: { canonical: "/support" },
 };
 
 export default function SupportPage() {
@@ -22,31 +24,26 @@ export default function SupportPage() {
       <section className="section">
         <div className="col col-prose">
           <div className="row2">
-            <div className="label">General help</div>
+            <div className="label">Email us</div>
             <div className="body">
-              <a href="mailto:support@veladon.com">support@veladon.com</a>
+              <a href="mailto:info@veladon.com">info@veladon.com</a>
               <p style={{ margin: "var(--space-2) 0 0", color: "var(--color-text-muted)" }}>
-                App questions, bug reports, account help, feature requests.
+                One mailbox for everything: app questions, bug reports, account help,
+                feature requests, data-access and deletion requests, security
+                disclosures, breach inquiries, service of process, and regulatory
+                questions. Tell us what you need in the subject line and a person
+                will route it.
               </p>
             </div>
           </div>
           <div className="row2">
-            <div className="label">Privacy</div>
+            <div className="label">Write to us</div>
             <div className="body">
-              <a href="mailto:privacy@veladon.com">privacy@veladon.com</a>
-              <p style={{ margin: "var(--space-2) 0 0", color: "var(--color-text-muted)" }}>
-                Data access requests, deletion requests, security disclosures, breach
-                inquiries.
-              </p>
-            </div>
-          </div>
-          <div className="row2">
-            <div className="label">Legal</div>
-            <div className="body">
-              <a href="mailto:legal@veladon.com">legal@veladon.com</a>
-              <p style={{ margin: "var(--space-2) 0 0", color: "var(--color-text-muted)" }}>
-                Service of process, terms questions, regulatory inquiries.
-              </p>
+              Zabaca, LLC
+              <br />
+              717 Brea Canyon Rd Ste 6
+              <br />
+              Walnut, CA 91789
             </div>
           </div>
         </div>
@@ -63,7 +60,7 @@ export default function SupportPage() {
               identity providers creates a new account. If you used email and password,
               tap "Forgot password" on the sign-in screen. If the reset email doesn't
               arrive within five minutes, write to{" "}
-              <a href="mailto:support@veladon.com">support@veladon.com</a>.
+              <a href="mailto:info@veladon.com">info@veladon.com</a>.
             </p>
           </details>
           <details className="faq">
@@ -73,7 +70,7 @@ export default function SupportPage() {
               active sessions and clear your sign-in identifiers. Health data enters a
               six-year retention window required for audit, regulatory, and dispute-
               resolution purposes. You can request a shorter window in writing to{" "}
-              <a href="mailto:privacy@veladon.com">privacy@veladon.com</a>.
+              <a href="mailto:info@veladon.com">info@veladon.com</a>.
             </p>
           </details>
           <details className="faq">
@@ -88,7 +85,7 @@ export default function SupportPage() {
           <details className="faq">
             <summary>I want to report a security issue.</summary>
             <p>
-              Email <a href="mailto:privacy@veladon.com">privacy@veladon.com</a> with
+              Email <a href="mailto:info@veladon.com">info@veladon.com</a> with
               "security" in the subject. We respond to security reports within one
               business day and confirm fixes before public disclosure.
             </p>
