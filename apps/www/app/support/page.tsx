@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Support",
-  description: "Get help with Veladon — your personal health record storage.",
+  description:
+    "Email a person on the Veladon team for help with the app, your account, security disclosures, or data requests.",
+  alternates: { canonical: "/support" },
 };
 
 export default function SupportPage() {

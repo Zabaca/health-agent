@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Newsreader, Inter_Tight } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+
+const SITE_URL = "https://www.veladon.com";
 
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -18,26 +20,65 @@ const interTight = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://veladon.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Veladon — Your medical record. Yours.",
     template: "%s — Veladon",
   },
   description:
-    "Veladon is your personal health record storage. Request your medical records from any provider, organize them in one app, and share them on your terms.",
+    "Request your medical records from any provider, organize them in one app, share them on your terms. Veladon — your personal health record storage.",
+  alternates: {
+    canonical: "/",
+  },
+  applicationName: "Veladon",
+  appleWebApp: {
+    title: "Veladon",
+    capable: true,
+    statusBarStyle: "default",
+  },
   openGraph: {
     title: "Veladon — Your medical record. Yours.",
     description:
       "Your personal health record storage. Request your records from any provider, organize them in one app, share them on your terms.",
-    url: "https://veladon.com",
+    url: SITE_URL,
     siteName: "Veladon",
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "Veladon — Your medical record. Yours.",
     description:
       "Your personal health record storage. Request your records from any provider, organize them in one app, share them on your terms.",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#FBFAF7",
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Zabaca, LLC",
+  url: SITE_URL,
+  logo: `${SITE_URL}/icon.png`,
+  contactPoint: [
+    {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: "info@veladon.com",
+      areaServed: "US",
+      availableLanguage: ["English"],
+    },
+  ],
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "717 Brea Canyon Rd Ste 6",
+    addressLocality: "Walnut",
+    addressRegion: "CA",
+    postalCode: "91789",
+    addressCountry: "US",
   },
 };
 
@@ -66,6 +107,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </nav>
           </div>
         </footer>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
       </body>
     </html>
   );

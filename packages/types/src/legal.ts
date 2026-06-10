@@ -29,5 +29,5 @@ export const LEGAL_EMAIL = "info@veladon.com";
 export const SUPPORT_EMAIL = "info@veladon.com";
 export const GOVERNING_STATE = "California";
 
-export const TERMS_URL = "https://veladon.com/terms";
-export const PRIVACY_URL = "https://veladon.com/privacy";
+export const TERMS_URL = "https://www.veladon.com/terms";
+export const PRIVACY_URL = "https://www.veladon.com/privacy";
