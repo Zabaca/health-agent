@@ -36,6 +36,9 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
   openGraph: {
     title: "Veladon — Your medical record. Yours.",
     description:

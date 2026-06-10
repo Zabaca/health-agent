@@ -38,16 +38,6 @@ h1 {
   margin: 0;
 }
 
-.draft-banner {
-  margin: 16px 0 0;
-  padding: 12px 14px;
-  background: #FEF7E5;
-  border: 1px solid #F4D58A;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #6B4F00;
-}
-
 h2 {
   font-size: 19px;
   font-weight: 700;
@@ -87,5 +77,4 @@ footer.doc-footer {
 
 @media print {
   body { background: #FFFFFF; }
-  .draft-banner { display: none; }
 }
