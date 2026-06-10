@@ -1,6 +1,6 @@
 import Image from "next/image";
 import iconPng from "./icon.png";
-import { AppStoreButton } from "./_components/AppStoreButton";
+import { AppStoreButton, APP_STORE_URL } from "./_components/AppStoreButton";
 
 const SITE_URL = "https://www.veladon.com";
 
@@ -11,6 +11,8 @@ const mobileApplicationJsonLd = {
   applicationCategory: "HealthApplication",
   operatingSystem: "iOS",
   url: SITE_URL,
+  downloadUrl: APP_STORE_URL,
+  installUrl: APP_STORE_URL,
   description:
     "Veladon is your personal health record storage. Request your medical records from any provider, organize them in one app, and share them on your terms.",
   publisher: {

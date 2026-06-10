@@ -1,6 +1,4 @@
-// Apple App Store CTA. The href is intentionally a placeholder ("#") until
-// Veladon ships to the App Store — wire the real URL here in one place.
-export const APP_STORE_URL = "#";
+export const APP_STORE_URL = "https://apps.apple.com/us/app/veladon/id6773436877";
 
 export function AppStoreButton({ label = "Download on the App Store" }: { label?: string }) {
   return (
