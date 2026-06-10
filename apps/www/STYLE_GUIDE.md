@@ -33,13 +33,12 @@ Rules of thumb:
 | Token | Value | Use |
 | --- | --- | --- |
 | Brand name | **Veladon** | Product name. Never "Veladon App" or "the Veladon platform" — just Veladon. |
-| Legal entity | **Zabaca, Inc.** | Footer + legal pages only. |
+| Legal entity | **Zabaca, LLC** | California LLC. Footer + legal pages only. |
 | Tagline | "Your medical record. Yours." | Hero H1 only. Don't reuse. |
 | Eyebrow | "Veladon · Your personal health record storage" | Hero eyebrow. Frames Veladon as the storage layer the user controls. |
 | Domain | `veladon.com` | Public-facing. |
-| Support email | `support@veladon.com` | Listed in footer + support page. |
-| Privacy email | `privacy@veladon.com` | Privacy policy only. |
-| Legal email | `legal@veladon.com` | Terms only. |
+| Email | `info@veladon.com` | Single mailbox for everything user-facing — support, privacy, legal, regulatory. Don't introduce category-specific aliases (`support@`, `privacy@`, `legal@`) on the marketing site; the docs route everything through `info@`. |
+| Mailing address | `Zabaca, LLC, 717 Brea Canyon Rd Ste 6, Walnut, CA 91789` | Used in Privacy Policy §16 and the support page. |
 | Platform | iOS first (iPhone) | Hide Google Play until launch. |
 
 ---

@@ -288,8 +288,8 @@ export default function HomePage() {
           <details className="faq">
             <summary>Who built this?</summary>
             <p>
-              Veladon is built by Zabaca, Inc. Questions:{" "}
-              <a href="mailto:support@veladon.com">support@veladon.com</a>.
+              Veladon is built by Zabaca, LLC. Questions:{" "}
+              <a href="mailto:info@veladon.com">info@veladon.com</a>.
             </p>
           </details>
         </div>
