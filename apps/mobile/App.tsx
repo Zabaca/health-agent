@@ -22,21 +22,29 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <PostHogProvider
-          apiKey={POSTHOG_KEY}
-          options={{ host: "https://us.i.posthog.com" }}
-        >
-          <ThemeProvider>
-            <AuthProvider>
-              <RoleProvider>
-                <NavigationContainer linking={linking}>
+        <ThemeProvider>
+          <AuthProvider>
+            <RoleProvider>
+              <NavigationContainer linking={linking}>
+                {/* PostHogProvider must live INSIDE NavigationContainer: its
+                    autocapture calls useNavigation/useNavigationState, which throw
+                    when run outside the container. On React Navigation v7 hook-based
+                    screen autocapture isn't supported, so we disable captureScreens
+                    (capture screen views manually if/when we want them) and keep
+                    touch autocapture. Nothing consumes the PostHog context outside
+                    the navigator, so this nesting is safe. */}
+                <PostHogProvider
+                  apiKey={POSTHOG_KEY}
+                  options={{ host: "https://us.i.posthog.com" }}
+                  autocapture={{ captureScreens: false, captureTouches: true }}
+                >
                   <RootNavigator />
                   <StatusBar style="dark" />
-                </NavigationContainer>
-              </RoleProvider>
-            </AuthProvider>
-          </ThemeProvider>
-        </PostHogProvider>
+                </PostHogProvider>
+              </NavigationContainer>
+            </RoleProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

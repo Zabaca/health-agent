@@ -12,7 +12,8 @@ type Props = ScrollViewProps & {
 
 /**
  * Screen body: applies bg, side gutter (24), 20px top padding, and an
- * optional pinned bottom area for buttons/sheets.
+ * optional pinned bottom area for buttons/sheets. Content fills the full
+ * width (edge-to-edge minus the gutter) on every device, including iPad.
  */
 export function Screen({
   children,
