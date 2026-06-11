@@ -2,7 +2,7 @@
 
 React Native / Expo bare-workflow app for HealthAgent.
 
-- **Bundle ID**: `com.zabaca.healthagent`
+- **Bundle ID**: `com.zabaca.veladon`
 - **Min iOS**: 16.0 · **Min Android**: 9 (SDK 28)
 - **Expo SDK**: 52 (bare workflow — native `ios/` and `android/` committed)
 
