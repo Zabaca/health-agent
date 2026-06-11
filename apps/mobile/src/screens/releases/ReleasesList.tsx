@@ -7,6 +7,7 @@ import { Plus, Search, SlidersHorizontal, ChevronRight, ListChecks, ClipboardLis
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { useTheme } from "@/theme/ThemeProvider";
 import { listReleases, getSetupStatus, type ReleaseSummary, type SetupStatus } from "@/lib/api";
 import type { ReleasesFilter, ReleasesParamList } from "@/navigation/types";
@@ -118,6 +119,7 @@ export default function ReleasesList() {
   const [releases, setReleases] = useState<ReleaseSummary[]>([]);
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Sync tab when a status filter is applied from the filter sheet
   useEffect(() => {
@@ -128,13 +130,18 @@ export default function ReleasesList() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
+      // setup status is best-effort (drives the "complete setup" banner); the
+      // releases list is the primary content, so a failure there is a real error.
       const [summaries, status] = await Promise.all([
-        listReleases().catch(() => [] as ReleaseSummary[]),
+        listReleases(),
         getSetupStatus().catch(() => null),
       ]);
       setSetupStatus(status);
       setReleases(summaries);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load releases");
     } finally {
       setLoading(false);
     }
@@ -228,6 +235,15 @@ export default function ReleasesList() {
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={t.colors.primary} />
         </View>
+      </Screen>
+    );
+  }
+
+  if (error) {
+    return (
+      <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
+        {headerRow}
+        <ErrorState title="Couldn't load releases" message={error} onRetry={load} />
       </Screen>
     );
   }

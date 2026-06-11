@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ChevronRight, Plus, Eye, Pencil, ShieldOff, Stethoscope } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { ProviderAvatar } from "@/components/ProviderAvatar";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
@@ -56,8 +57,8 @@ export default function PdaProviders() {
     try {
       const list = await listRepresentingProviders(currentPatient.patientId);
       setProviders(list);
-    } catch {
-      setError("Could not load providers.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load providers");
     } finally {
       setLoading(false);
     }
@@ -118,9 +119,7 @@ export default function PdaProviders() {
     return (
       <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
         {headerRow}
-        <View style={{ paddingVertical: 40, alignItems: "center" }}>
-          <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
-        </View>
+        <ErrorState title="Couldn't load providers" message={error} onRetry={load} />
       </Screen>
     );
   }
