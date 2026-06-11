@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { users, passwordResetTokens } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import { sendPasswordResetEmail, getSiteBaseUrl } from '@/lib/email';
+import { sendPasswordResetEmail, sendOAuthSignInReminderEmail, getSiteBaseUrl } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     const user = await db.query.users.findFirst({
       where: eq(users.email, email.toLowerCase().trim()),
-      columns: { id: true, email: true, type: true },
+      columns: { id: true, email: true, type: true, password: true, appleId: true, googleId: true },
     });
 
     // Always return 200 to avoid leaking whether the email exists
@@ -30,8 +30,22 @@ export async function POST(req: NextRequest) {
     // Only patients and PDAs — admins and agents use admin-managed resets
     if (user.type === 'admin') return NextResponse.json({ ok: true });
 
-    // OAuth-only accounts have no email/password to reset.
+    // Accounts created without an email (e.g. Apple withheld it) have nothing to reset.
     if (!user.email) return NextResponse.json({ ok: true });
+
+    // OAuth-only account (no password): don't let them silently create a password —
+    // point them back to the social-login button instead. Same 200 either way.
+    if (!user.password && (user.appleId || user.googleId)) {
+      try {
+        await sendOAuthSignInReminderEmail({
+          to: user.email,
+          provider: user.appleId ? 'apple' : 'google',
+        });
+      } catch {
+        // swallow — don't leak email delivery failures
+      }
+      return NextResponse.json({ ok: true });
+    }
 
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();

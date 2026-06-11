@@ -18,7 +18,10 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
+import OAuthButtons from "./OAuthButtons";
+
+const APP_STORE_URL = "https://apps.apple.com/us/app/veladon/id6773436877";
 
 const registerSchema = z
   .object({
@@ -61,6 +64,11 @@ export default function InviteAcceptForm({
 }) {
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  // True when the "Create account" tab actually linked the invite to a PRE-EXISTING
+  // account (the typed password didn't match) — so the success copy doesn't imply the
+  // just-typed password works.
+  const [usedExistingAccount, setUsedExistingAccount] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>("register");
 
   const isSignedInAsInvitee =
@@ -99,11 +107,17 @@ export default function InviteAcceptForm({
       lastName: data.lastName,
     });
     if (!ok) return;
-    await signIn("credentials", {
+    // Establish a web session for the eventual web portal — best-effort, the
+    // invite is already accepted regardless. A sign-in error here means the email
+    // already had an account (the register action linked to it without changing the
+    // password), so the typed password isn't this account's password.
+    const signInResult = await signIn("credentials", {
       email: invite.inviteeEmail,
       password: data.password,
-      redirectTo: "/representing",
+      redirect: false,
     });
+    if (signInResult?.error) setUsedExistingAccount(true);
+    setSuccess(true);
   };
 
   const onLogin = async (data: LoginData) => {
@@ -118,14 +132,38 @@ export default function InviteAcceptForm({
     }
     const ok = await acceptInvite('login');
     if (!ok) return;
-    window.location.href = "/representing";
+    setSuccess(true);
   };
 
+  // Accept under the currently signed-in account (e.g. after OAuth, where the
+  // provider email may differ from the invited email). The token is the bearer
+  // secret, so the API binds the invite to this session regardless of email.
   const onAcceptAsCurrentUser = async () => {
     const ok = await acceptInvite('login');
     if (!ok) return;
-    window.location.href = "/representing";
+    setSuccess(true);
   };
+
+  if (success) {
+    return (
+      <Center mih="100vh">
+        <Paper shadow="md" p={40} w={460} radius="md">
+          <Title order={2} mb="xs" ta="center">
+            You&apos;re all set
+          </Title>
+          <Text c="dimmed" size="sm" ta="center" mb="lg">
+            You now have access to <strong>{invite.patientName}</strong>&apos;s health records.
+            {usedExistingAccount
+              ? " This email already had a Veladon account — download the app and sign in with your existing password."
+              : " Download the Veladon app and sign in to get started."}
+          </Text>
+          <Button component="a" href={APP_STORE_URL} fullWidth>
+            Download the Veladon app
+          </Button>
+        </Paper>
+      </Center>
+    );
+  }
 
   return (
     <Center mih="100vh">
@@ -161,8 +199,14 @@ export default function InviteAcceptForm({
         ) : currentUser?.email ? (
           <Stack>
             <Alert color="orange" variant="light">
-              You&apos;re signed in as <strong>{currentUser.email}</strong>, but this invite is for <strong>{invite.inviteeEmail}</strong>. Please sign in with the correct account to accept.
+              You&apos;re signed in as <strong>{currentUser.email}</strong>, but this invite was sent to <strong>{invite.inviteeEmail}</strong>. You can accept it with the account you&apos;re signed in as, or sign out to use a different one.
             </Alert>
+            <Button fullWidth loading={loading} onClick={onAcceptAsCurrentUser}>
+              Accept as {currentUser.email}
+            </Button>
+            <Button variant="subtle" fullWidth onClick={() => signOut({ redirectTo: `/invite/${token}` })}>
+              Sign out
+            </Button>
           </Stack>
         ) : (
           <Tabs value={activeTab} onChange={setActiveTab}>
@@ -172,6 +216,10 @@ export default function InviteAcceptForm({
             </Tabs.List>
 
             <Tabs.Panel value="register">
+              {/* OAuth account creation. Returns to this page authenticated; the
+                  provider email may differ from the invited email, so the page then
+                  offers "Accept as {email}" via the bearer-token login action. */}
+              <OAuthButtons mode="register" callbackUrl={`/invite/${token}`} />
               <form onSubmit={registerForm.handleSubmit(onRegister)}>
                 <Stack>
                   <TextInput
