@@ -292,6 +292,38 @@ export async function sendPasswordResetEmail({ to, resetUrl }: PasswordResetEmai
   await sendEmail({ to, subject, html, text });
 }
 
+export interface OAuthSignInReminderEmailOptions {
+  to: string;
+  /** Linked social providers for the account — usually one, but an account can have both. */
+  providers: Array<'apple' | 'google'>;
+}
+
+/**
+ * Sent when someone requests a password reset for an account that has no password
+ * because it was created with social login. Rather than letting them silently set a
+ * password, we point them back to the button they actually use. The forgot endpoint
+ * still returns an identical 200, so this never reveals which accounts are OAuth-only.
+ */
+export async function sendOAuthSignInReminderEmail({ to, providers }: OAuthSignInReminderEmailOptions): Promise<void> {
+  // Account can have more than one provider linked — name all of them so we never
+  // point a Google-primary user at the wrong button.
+  const names = (providers.length ? providers : ['apple' as const]).map(p => (p === 'apple' ? 'Apple' : 'Google'));
+  const label = names.join(' or ');
+  const subject = 'About your password reset request';
+
+  const html = emailShell(`
+    <h2 style="margin:0 0 24px;font-size:24px;font-weight:700;color:#111827;">You sign in with ${label}</h2>
+    <p style="margin:0 0 16px;">We received a request to reset the password for your account, but this account doesn't use a password — it was set up with <strong>Sign in with ${label}</strong>.</p>
+    <p style="margin:0 0 16px;">Open the Veladon app and tap <strong>Continue with ${label}</strong> to sign in. There's no password to reset.</p>
+    ${contactFooterHtml(null)}
+    <p style="margin:16px 0 0;color:#6b7280;font-size:14px;">If you did not request this, you can safely ignore this email.</p>
+  `);
+
+  const text = `We received a request to reset the password for your account, but this account doesn't use a password — it was set up with Sign in with ${label}.\n\nOpen the Veladon app and tap "Continue with ${label}" to sign in. There's no password to reset.\n\nIf you did not request this, you can safely ignore this email.`;
+
+  await sendEmail({ to, subject, html, text });
+}
+
 export interface StaffInviteEmailOptions {
   to: string;
   firstName: string;

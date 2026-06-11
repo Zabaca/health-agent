@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { PasswordInput, Button, Paper, Title, Text, Anchor, Alert, Stack, Center } from '@mantine/core';
 import Link from 'next/link';
+import { APP_STORE_URL } from '@/lib/constants';
 
 interface Props {
   token: string;
@@ -72,11 +73,11 @@ export default function ResetPasswordForm({ token }: Props) {
         {done ? (
           <Stack gap="md" mt="md">
             <Text size="sm" ta="center" c="dimmed">
-              Your password has been updated. You can now sign in with your new password.
+              Your password has been updated. Open the Veladon app and sign in with your new password.
             </Text>
-            <Anchor component={Link} href="/login" size="sm" ta="center">
-              Sign in
-            </Anchor>
+            <Button component="a" href={APP_STORE_URL} fullWidth>
+              Download the Veladon app
+            </Button>
           </Stack>
         ) : (
           <>

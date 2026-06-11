@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { patientDesignatedAgents, patientAssignments, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { normalizeEmail } from "@/lib/auth-helpers";
 import { sendInviteEmail, getSiteBaseUrl } from "@/lib/email";
 
 // GET /api/my-designated-agents — list patient's PDAs + assigned agent
@@ -78,11 +79,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "inviteeEmail is required" }, { status: 400 });
   }
 
+  // Normalize so it matches the account email (stored lowercased) on acceptance —
+  // otherwise a capitalized invite email never links to the user's account.
+  const inviteeEmail = normalizeEmail(body.inviteeEmail);
+
   // Check for existing pending/accepted invite for this email
   const existing = await db.query.patientDesignatedAgents.findFirst({
     where: and(
       eq(patientDesignatedAgents.patientId, patientId),
-      eq(patientDesignatedAgents.inviteeEmail, body.inviteeEmail),
+      eq(patientDesignatedAgents.inviteeEmail, inviteeEmail),
     ),
   });
   if (existing && (existing.status === 'pending' || existing.status === 'accepted')) {
@@ -99,7 +104,7 @@ export async function POST(req: NextRequest) {
   await db.insert(patientDesignatedAgents).values({
     id,
     patientId,
-    inviteeEmail: body.inviteeEmail,
+    inviteeEmail,
     relationship: body.relationship ?? null,
     token,
     tokenExpiresAt,
@@ -114,7 +119,7 @@ export async function POST(req: NextRequest) {
 
   try {
     await sendInviteEmail({
-      to: body.inviteeEmail,
+      to: inviteeEmail,
       inviteUrl,
       patientName,
       relationship: body.relationship,
