@@ -6,6 +6,7 @@ import { Plus, ChevronRight, Info, ShieldOff, ClipboardList, Eye } from "lucide-
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
 import { listRepresentingReleases, type RepresentingReleaseSummary } from "@/lib/api";
@@ -53,8 +54,8 @@ export default function PdaReleases() {
     try {
       const list = await listRepresentingReleases(currentPatient.patientId);
       setReleases(list);
-    } catch {
-      setError("Could not load releases.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load releases");
     } finally {
       setLoading(false);
     }
@@ -115,9 +116,7 @@ export default function PdaReleases() {
     return (
       <Screen safeTop contentContainerStyle={{ gap: 16, flexGrow: 1 }}>
         {headerRow}
-        <View style={{ paddingVertical: 40, alignItems: "center" }}>
-          <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error}</Text>
-        </View>
+        <ErrorState title="Couldn't load releases" message={error} onRetry={load} />
       </Screen>
     );
   }

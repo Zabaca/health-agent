@@ -6,6 +6,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Plus, ChevronRight, Stethoscope } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { ProviderAvatar } from "@/components/ProviderAvatar";
 import { useTheme } from "@/theme/ThemeProvider";
 import { listMyProviders, type UserProvider } from "@/lib/api";
@@ -54,10 +55,11 @@ export default function MyProviders() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const empty = !loading && providers.length === 0;
+  const empty = !loading && !error && providers.length === 0;
+  const fillScreen = loading || !!error || empty;
 
   return (
-    <Screen safeTop contentContainerStyle={{ gap: 12, flexGrow: empty ? 1 : undefined }}>
+    <Screen safeTop contentContainerStyle={{ gap: 12, flexGrow: fillScreen ? 1 : undefined }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <Text
           style={[t.type.h1, { flex: 1 }]}
@@ -89,12 +91,7 @@ export default function MyProviders() {
           <ActivityIndicator color={t.colors.primary} />
         </View>
       ) : error ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <Text style={[t.type.body, { color: t.colors.destructive, textAlign: "center" }]}>{error}</Text>
-          <Pressable onPress={load}>
-            <Text style={[t.type.body, { color: t.colors.primary }]}>Retry</Text>
-          </Pressable>
-        </View>
+        <ErrorState title="Couldn't load providers" message={error} onRetry={load} />
       ) : empty ? (
         <EmptyState
           icon={<Stethoscope size={32} color={t.colors.textSecondary} />}

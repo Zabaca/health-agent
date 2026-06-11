@@ -12,7 +12,6 @@ import {
 import { useNavigation, useRoute, useFocusEffect, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
-  AlertTriangle,
   ChevronRight,
   Eye,
   FileText,
@@ -25,6 +24,7 @@ import {
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
 import {
@@ -104,8 +104,8 @@ export default function PdaRecords() {
       const res = await listRepresentingRecords(currentPatient.patientId);
       setFiles(res.files);
       setPerm(res.permission);
-    } catch {
-      setError("Could not load records.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load records");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -416,33 +416,7 @@ export default function PdaRecords() {
       <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
         {DragHandle}
         {Header}
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 24 }}>
-          <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: t.colors.destructiveBg,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <AlertTriangle size={24} color={t.colors.destructive} />
-          </View>
-          <Text style={[t.type.h3, { textAlign: "center" }]}>Couldn't load records</Text>
-          <Text style={[t.type.caption, { textAlign: "center" }]}>{error}</Text>
-          <Pressable
-            onPress={() => void load("initial")}
-            style={{
-              backgroundColor: t.colors.primary,
-              borderRadius: t.radius.button,
-              paddingVertical: 12,
-              paddingHorizontal: 24,
-            }}
-          >
-            <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 16 }}>Retry</Text>
-          </Pressable>
-        </View>
+        <ErrorState title="Couldn't load records" message={error} onRetry={() => void load("initial")} />
       </View>
     );
   }

@@ -9,11 +9,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useNavigationState, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  AlertTriangle,
   ChevronRight,
   FileText,
   FlaskConical,
@@ -24,6 +23,7 @@ import {
   Upload,
 } from "lucide-react-native";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 import { useTheme } from "@/theme/ThemeProvider";
 import { listMyRecordProviders, listMyRecords, type IncomingFile, type RecordProvider } from "@/lib/api";
 import type { RecordsFilters, RecordsParamList } from "@/navigation/types";
@@ -315,9 +315,15 @@ export default function RecordsList() {
     return groupLabPanels(filteredRecords);
   }, [filteredRecords, query, filters]);
 
-  const canGoBack = nav.canGoBack();
+  // Only show the swipe-to-dismiss grabber when this screen is actually presented
+  // on top of something in its OWN stack (pushed / modal sheet). `nav.canGoBack()`
+  // is the wrong signal here: the screen's nav is a composite (stack + tabs), so it
+  // returns true on the Records tab root merely because Records isn't the first tab
+  // (back would switch to Home) — which left a stray grabber + extra top gap on the
+  // tab root. The host stack's index is 0 only when this screen is that stack's root.
+  const isPresented = useNavigationState((state) => state.index > 0);
 
-  const DragHandle = canGoBack ? (
+  const DragHandle = isPresented ? (
     <Pressable
       onPress={() => nav.goBack()}
       hitSlop={{ top: 10, bottom: 10, left: 60, right: 60 }}
@@ -622,41 +628,7 @@ export default function RecordsList() {
       <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
         {DragHandle}
         {Header}
-        <View
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 16,
-            paddingHorizontal: 24,
-          }}
-        >
-          <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: t.colors.destructiveBg,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <AlertTriangle size={24} color={t.colors.accent} />
-          </View>
-          <Text style={[t.type.h3, { textAlign: "center" }]}>Couldn&rsquo;t load records</Text>
-          <Text style={[t.type.caption, { textAlign: "center" }]}>{error}</Text>
-          <Pressable
-            onPress={() => loadInitial("initial")}
-            style={{
-              backgroundColor: t.colors.primary,
-              borderRadius: t.radius.button,
-              paddingVertical: 12,
-              paddingHorizontal: 24,
-            }}
-          >
-            <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 16 }}>Retry</Text>
-          </Pressable>
-        </View>
+        <ErrorState title="Couldn't load records" message={error} onRetry={() => loadInitial("initial")} />
       </View>
     );
   }
