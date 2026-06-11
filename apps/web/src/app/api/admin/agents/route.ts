@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireActiveSession } from "@/lib/auth-guards";
 import { db } from "@/lib/db";
 import { users, zabacaAgentRoles } from "@/lib/db/schema";
-import { hashPassword } from "@/lib/auth-helpers";
+import { hashPassword, normalizeEmail } from "@/lib/auth-helpers";
 import { eq } from "drizzle-orm";
 
 function generatePassword(length = 16): string {
@@ -25,8 +25,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "First name, last name, and email are required" }, { status: 400 });
   }
 
+  const normalizedEmail = normalizeEmail(email);
+
   const existing = await db.query.users.findFirst({
-    where: eq(users.email, email.toLowerCase().trim()),
+    where: eq(users.email, normalizedEmail),
   });
 
   if (existing) {
@@ -42,7 +44,7 @@ export async function POST(req: Request) {
 
   await db.insert(users).values({
     id,
-    email: email.toLowerCase().trim(),
+    email: normalizedEmail,
     password: hashedPassword,
     type: "user",
     mustChangePassword: true,
@@ -56,7 +58,7 @@ export async function POST(req: Request) {
   await db.insert(zabacaAgentRoles).values({ id: crypto.randomUUID(), userId: id });
 
   return NextResponse.json(
-    { id, email: email.toLowerCase().trim(), firstName: firstName.trim(), lastName: lastName.trim(), plainPassword },
+    { id, email: normalizedEmail, firstName: firstName.trim(), lastName: lastName.trim(), plainPassword },
     { status: 201 }
   );
 }

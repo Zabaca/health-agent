@@ -20,8 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { signIn, signOut } from "next-auth/react";
 import OAuthButtons from "./OAuthButtons";
-
-const APP_STORE_URL = "https://apps.apple.com/us/app/veladon/id6773436877";
+import { APP_STORE_URL } from "@/lib/constants";
 
 const registerSchema = z
   .object({
@@ -65,10 +64,10 @@ export default function InviteAcceptForm({
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  // True when the "Create account" tab actually linked the invite to a PRE-EXISTING
-  // account (the typed password didn't match) — so the success copy doesn't imply the
-  // just-typed password works.
-  const [usedExistingAccount, setUsedExistingAccount] = useState(false);
+  // Set when the "Create account" tab linked the invite to a PRE-EXISTING account
+  // instead of creating one — so the success copy points the user at how that
+  // account actually signs in ('password' vs 'oauth') rather than the typed password.
+  const [existingAccount, setExistingAccount] = useState<null | 'password' | 'oauth'>(null);
   const [activeTab, setActiveTab] = useState<string | null>("register");
 
   const isSignedInAsInvitee =
@@ -77,7 +76,13 @@ export default function InviteAcceptForm({
   const registerForm = useForm<RegisterData>({ resolver: zodResolver(registerSchema) });
   const loginForm = useForm<LoginData>({ resolver: zodResolver(loginSchema) });
 
-  const acceptInvite = async (action: 'register' | 'login', extra?: object) => {
+  type AcceptResult = {
+    success?: boolean;
+    linkedExisting?: boolean;
+    existingAuthMethod?: 'password' | 'oauth' | null;
+  };
+
+  const acceptInvite = async (action: 'register' | 'login', extra?: object): Promise<AcceptResult | null> => {
     setLoading(true);
     setServerError("");
     try {
@@ -86,37 +91,41 @@ export default function InviteAcceptForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ...extra }),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         setServerError(data.error || "Failed to accept invite");
-        return false;
+        return null;
       }
-      return true;
+      return data as AcceptResult;
     } catch {
       setServerError("Unexpected error. Please try again.");
-      return false;
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
   const onRegister = async (data: RegisterData) => {
-    const ok = await acceptInvite('register', {
+    const result = await acceptInvite('register', {
       password: data.password,
       firstName: data.firstName,
       lastName: data.lastName,
     });
-    if (!ok) return;
-    // Establish a web session for the eventual web portal — best-effort, the
-    // invite is already accepted regardless. A sign-in error here means the email
-    // already had an account (the register action linked to it without changing the
-    // password), so the typed password isn't this account's password.
-    const signInResult = await signIn("credentials", {
-      email: invite.inviteeEmail,
-      password: data.password,
-      redirect: false,
-    });
-    if (signInResult?.error) setUsedExistingAccount(true);
+    if (!result) return;
+    if (result.linkedExisting) {
+      // The email already had an account; the register action linked to it without
+      // touching its credentials. Remember how it signs in so the success copy is
+      // honest (don't tell an OAuth-only user to use "your existing password").
+      setExistingAccount(result.existingAuthMethod ?? 'password');
+    } else {
+      // Freshly created with the typed password — establish a web session for the
+      // eventual web portal. Best-effort; the invite is already accepted.
+      await signIn("credentials", {
+        email: invite.inviteeEmail,
+        password: data.password,
+        redirect: false,
+      });
+    }
     setSuccess(true);
   };
 
@@ -153,9 +162,11 @@ export default function InviteAcceptForm({
           </Title>
           <Text c="dimmed" size="sm" ta="center" mb="lg">
             You now have access to <strong>{invite.patientName}</strong>&apos;s health records.
-            {usedExistingAccount
-              ? " This email already had a Veladon account — download the app and sign in with your existing password."
-              : " Download the Veladon app and sign in to get started."}
+            {existingAccount === 'oauth'
+              ? " This email already had a Veladon account — download the app and sign in with Apple or Google, the way you set it up."
+              : existingAccount === 'password'
+                ? " This email already had a Veladon account — download the app and sign in with your existing password."
+                : " Download the Veladon app and sign in to get started."}
           </Text>
           <Button component="a" href={APP_STORE_URL} fullWidth>
             Download the Veladon app

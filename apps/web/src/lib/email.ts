@@ -294,7 +294,8 @@ export async function sendPasswordResetEmail({ to, resetUrl }: PasswordResetEmai
 
 export interface OAuthSignInReminderEmailOptions {
   to: string;
-  provider: 'apple' | 'google';
+  /** Linked social providers for the account — usually one, but an account can have both. */
+  providers: Array<'apple' | 'google'>;
 }
 
 /**
@@ -303,8 +304,11 @@ export interface OAuthSignInReminderEmailOptions {
  * password, we point them back to the button they actually use. The forgot endpoint
  * still returns an identical 200, so this never reveals which accounts are OAuth-only.
  */
-export async function sendOAuthSignInReminderEmail({ to, provider }: OAuthSignInReminderEmailOptions): Promise<void> {
-  const label = provider === 'apple' ? 'Apple' : 'Google';
+export async function sendOAuthSignInReminderEmail({ to, providers }: OAuthSignInReminderEmailOptions): Promise<void> {
+  // Account can have more than one provider linked — name all of them so we never
+  // point a Google-primary user at the wrong button.
+  const names = (providers.length ? providers : ['apple' as const]).map(p => (p === 'apple' ? 'Apple' : 'Google'));
+  const label = names.join(' or ');
   const subject = 'About your password reset request';
 
   const html = emailShell(`

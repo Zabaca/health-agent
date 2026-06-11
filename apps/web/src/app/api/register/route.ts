@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users, patientAssignments } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { hashPassword } from "@/lib/auth-helpers";
+import { hashPassword, normalizeEmail } from "@/lib/auth-helpers";
 import { contract } from "@/lib/api/contract";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { isAdult, MINIMUM_AGE } from "@health-agent/types";
@@ -10,7 +10,8 @@ import { encryptPii } from "@/lib/crypto";
 import { toIsoDate } from "@/lib/dates";
 
 export const POST = contractRoute(contract.register, async ({ body }) => {
-  const { email, password, dateOfBirth } = body;
+  const { email: rawEmail, password, dateOfBirth } = body;
+  const email = normalizeEmail(rawEmail);
 
   // Age gate up front: never create an under-18 row (sidesteps COPPA in v1).
   if (!isAdult(dateOfBirth)) {

@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { patientDesignatedAgents, users } from "@/lib/db/schema";
 import { eq, and, ne } from "drizzle-orm";
 import { auth } from "@/auth";
-import { hashPassword } from "@/lib/auth-helpers";
+import { hashPassword, normalizeEmail } from "@/lib/auth-helpers";
 import { randomUUID } from "crypto";
 
 // GET /api/invites/[token] — validate invite token (public, no auth required)
@@ -63,6 +63,15 @@ export async function POST(
   }
 
   let agentUserId: string;
+  // Tells the client whether the register tab linked to a pre-existing account
+  // (so the typed password may not apply) and, if so, how that account signs in —
+  // the invitee owns this email + holds the bearer token, so this isn't enumeration.
+  let linkedExisting = false;
+  let existingAuthMethod: 'password' | 'oauth' | null = null;
+
+  // Normalize defensively: invites created before email normalization may store
+  // mixed-case addresses; accounts are always stored lowercased.
+  const inviteeEmail = normalizeEmail(invite.inviteeEmail);
 
   if (body.action === 'register') {
     if (!body.password) {
@@ -71,19 +80,22 @@ export async function POST(
 
     // Check if user already exists with this email
     const existing = await db.query.users.findFirst({
-      where: eq(users.email, invite.inviteeEmail),
+      where: eq(users.email, inviteeEmail),
     });
 
     if (existing) {
       // Link to existing user without changing their type
       agentUserId = existing.id;
+      linkedExisting = true;
+      existingAuthMethod =
+        existing.password ? 'password' : (existing.appleId || existing.googleId) ? 'oauth' : null;
     } else {
       // Create new user as patient_designated_agent
       const hashed = await hashPassword(body.password);
       agentUserId = randomUUID();
       await db.insert(users).values({
         id: agentUserId,
-        email: invite.inviteeEmail,
+        email: inviteeEmail,
         password: hashed,
         type: 'user',
         firstName: body.firstName ?? null,
@@ -122,5 +134,5 @@ export async function POST(
       ne(patientDesignatedAgents.id, invite.id),
     ));
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, linkedExisting, existingAuthMethod });
 }

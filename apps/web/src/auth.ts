@@ -13,7 +13,7 @@ import {
   patientAssignments,
 } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { verifyPassword } from "@/lib/auth-helpers";
+import { verifyPassword, normalizeEmail } from "@/lib/auth-helpers";
 import { parseDeviceName } from "@/lib/device-name";
 import { extractRequestGeo } from "@/lib/request-geo";
 import { generateAppleClientSecret } from "@/lib/apple-secret";
@@ -180,7 +180,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
 
         const user = await db.query.users.findFirst({
-          where: eq(users.email, credentials.email as string),
+          where: eq(users.email, normalizeEmail(credentials.email as string)),
         });
 
         if (!user) return null;

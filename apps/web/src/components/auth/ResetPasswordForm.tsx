@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { PasswordInput, Button, Paper, Title, Text, Anchor, Alert, Stack, Center } from '@mantine/core';
 import Link from 'next/link';
-
-const APP_STORE_URL = 'https://apps.apple.com/us/app/veladon/id6773436877';
+import { APP_STORE_URL } from '@/lib/constants';
 
 interface Props {
   token: string;

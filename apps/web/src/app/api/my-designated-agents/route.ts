@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { patientDesignatedAgents, patientAssignments, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { normalizeEmail } from "@/lib/auth-helpers";
 import { sendInviteEmail, getSiteBaseUrl } from "@/lib/email";
 
 // GET /api/my-designated-agents — list patient's PDAs + assigned agent
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
 
   // Normalize so it matches the account email (stored lowercased) on acceptance —
   // otherwise a capitalized invite email never links to the user's account.
-  const inviteeEmail = body.inviteeEmail.toLowerCase().trim();
+  const inviteeEmail = normalizeEmail(body.inviteeEmail);
 
   // Check for existing pending/accepted invite for this email
   const existing = await db.query.patientDesignatedAgents.findFirst({
