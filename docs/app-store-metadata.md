@@ -167,15 +167,16 @@ train AI on PHI" commitments. Encryption export compliance: declare per the laun
 ## Google Play (Android) — *FUTURE / not the current submission*
 
 Android is on the roadmap, not in this release. Hold this copy until the Android build is
-ready; Play allows platform-neutral phrasing, so the iOS description above can be reused
-verbatim for the full description.
+ready. The iOS description is the starting point for the full description, but it needs a
+platform pass first: replace the Apple Health / iPhone / Face ID-Touch ID references with
+their Android equivalents (Health Connect, Android, biometric unlock) before submitting.
 
 - **Title** (max 30): `Veladon: Health Records`
 - **Short description** (max 80):
   ```
   Request, organize, and share your medical records — your personal health record.
   ```
-- **Full description** (max 4000): reuse the iOS Description above.
+- **Full description** (max 4000): the iOS Description above, after the platform pass.
 - **Data safety:** mirror the App Privacy declarations.
 
 ---
@@ -189,4 +190,3 @@ verbatim for the full description.
 - [ ] URLs resolve: support, marketing, privacy, terms
 - [ ] App Privacy matches the live Privacy Policy (incl. anonymous analytics)
 - [ ] Screenshot captions match shipped UI
-```
