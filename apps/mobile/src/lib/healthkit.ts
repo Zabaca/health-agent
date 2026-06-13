@@ -72,40 +72,78 @@ function getAppleHealthKit(): any {
   return mod.default ?? mod;
 }
 
+/** Extract a human-readable message from react-native-health's native error
+ *  callback, which may hand back a string OR an object. `new Error(obj)`
+ *  stringifies to "[object Object]", so normalize before surfacing to the UI. */
+function nativeErrMessage(e: unknown): string {
+  if (typeof e === 'string') return e;
+  if (e && typeof e === 'object') {
+    const m = (e as { message?: unknown }).message;
+    if (typeof m === 'string' && m) return m;
+    try {
+      const s = JSON.stringify(e);
+      if (s && s !== '{}') return s;
+    } catch {
+      /* non-serializable — fall through */
+    }
+  }
+  return 'Apple Health authorization failed.';
+}
+
+// Core, account-free metrics (no provider account required) plus clinical
+// (FHIR) record types. Requested together in a single initHealthKit call —
+// presenting a second authorization sheet right after the first one dismisses
+// deadlocks on iOS (the completion handler never fires), so do NOT split this.
+const CORE_READ_PERMS = [
+  'HeartRate',
+  'StepCount',
+  'SleepAnalysis',
+  'BloodGlucose',
+  'ActiveEnergyBurned',
+] as const;
+
 /**
- * Request HealthKit authorization. Resolves to true when granted, false on
- * non-iOS platforms (Android, web). Rejects if the user explicitly denies.
+ * Request HealthKit authorization. Resolves false on non-iOS; otherwise always
+ * resolves true once the authorization sheet is dismissed.
+ *
+ * Core metrics only by default — pass `{ clinical: true }` to also request the
+ * clinical (FHIR) record types. Clinical access presents Apple's "Share Health
+ * Records" account-linking sheet, so it must be reserved for explicit user
+ * actions (Connect / Re-authorize). Background/silent re-inits (e.g. the
+ * dashboard) must omit it, or the sheet re-appears on every visit.
+ *
+ * An init error is treated as NON-FATAL: HealthKit never reliably reports
+ * read-permission denial (Apple's privacy model), and dismissing the "Share
+ * Health Records" sheet with no linked provider account surfaces here as an
+ * error too. Neither should fail the connection — core metric reads still work
+ * and clinical reads degrade to empty. We log and resolve rather than reject so
+ * a missing provider account can't break Apple Health entirely.
  */
-export function requestHealthKitAccess(): Promise<boolean> {
+export function requestHealthKitAccess(
+  opts: { clinical?: boolean } = {},
+): Promise<boolean> {
   if (Platform.OS !== 'ios') return Promise.resolve(false);
   const AppleHealthKit = getAppleHealthKit();
+  const types = opts.clinical ? [...CORE_READ_PERMS, ...CLINICAL_TYPES] : [...CORE_READ_PERMS];
   const perms: HealthKitPermissions = {
     permissions: {
-      read: [
-        AppleHealthKit.Constants.Permissions.HeartRate,
-        AppleHealthKit.Constants.Permissions.StepCount,
-        AppleHealthKit.Constants.Permissions.SleepAnalysis,
-        AppleHealthKit.Constants.Permissions.BloodGlucose,
-        AppleHealthKit.Constants.Permissions.ActiveEnergyBurned,
-        // Clinical (FHIR) records — gated by com.apple.developer.healthkit.access
-        // entitlement with "health-records". Each type prompts separately in the
-        // Apple Health permission sheet; the user can grant per-type.
-        AppleHealthKit.Constants.Permissions.AllergyRecord,
-        AppleHealthKit.Constants.Permissions.ConditionRecord,
-        AppleHealthKit.Constants.Permissions.ImmunizationRecord,
-        AppleHealthKit.Constants.Permissions.LabResultRecord,
-        AppleHealthKit.Constants.Permissions.MedicationRecord,
-        AppleHealthKit.Constants.Permissions.ProcedureRecord,
-        AppleHealthKit.Constants.Permissions.VitalSignRecord,
-        AppleHealthKit.Constants.Permissions.CoverageRecord,
-      ],
+      read: types.map((k) => AppleHealthKit.Constants.Permissions[k]),
       write: [],
     },
   };
-  return new Promise((resolve, reject) => {
-    AppleHealthKit.initHealthKit(perms, (error: string) => {
-      if (error) reject(new Error(error));
-      else resolve(true);
+  return new Promise((resolve) => {
+    AppleHealthKit.initHealthKit(perms, (error: unknown) => {
+      if (error) {
+        const msg = nativeErrMessage(error);
+        // HKErrorCode 7 = user canceled (e.g. dismissed the "Share Health
+        // Records" sheet) — a normal outcome, not worth surfacing. Only warn on
+        // genuine errors.
+        if (!/Code=7|cancel/i.test(msg)) {
+          // eslint-disable-next-line no-console
+          console.warn('[healthkit] init returned a non-fatal error:', msg);
+        }
+      }
+      resolve(true);
     });
   });
 }
