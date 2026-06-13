@@ -393,6 +393,15 @@ export async function changePassword(currentPassword: string, newPassword: strin
   )) as { ok: boolean };
 }
 
+// Set an initial password for an OAuth-only account (no current password to verify).
+export async function setPassword(newPassword: string): Promise<{ ok: boolean }> {
+  return (await apiFetch(
+    "/api/password/set",
+    { method: "POST", body: JSON.stringify({ newPassword }) },
+    { auth: true }
+  )) as { ok: boolean };
+}
+
 // ─── Providers ────────────────────────────────────────────────────────────────
 
 export type UserProvider = {
