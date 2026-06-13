@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { resolveUserSession } from "@/lib/session-resolver";
 import { unlinkProvider } from "@/lib/account-connections";
 
-// DELETE — unlink an OAuth provider from the current account. Blocked when it
-// would remove the user's only remaining sign-in method.
+// DELETE — unlink an OAuth provider from the current account. Blocked unless the
+// user has an email+password login to fall back on, so they can't strand
+// themselves with only revocable OAuth sign-ins.
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ provider: string }> },
@@ -18,9 +19,9 @@ export async function DELETE(
 
   const res = await unlinkProvider(result.userId, provider);
   if (!res.ok) {
-    if (res.reason === "last_method") {
+    if (res.reason === "password_required") {
       return NextResponse.json(
-        { error: "You can't unlink your only sign-in method. Set a password or link another provider first." },
+        { error: "Set up an email and password before unlinking. It keeps a sign-in method you won't lose access to." },
         { status: 400 },
       );
     }

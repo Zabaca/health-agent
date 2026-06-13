@@ -24,15 +24,6 @@ export function getConnections(user: MethodFields): Connections {
   };
 }
 
-/** Count of usable sign-in methods — credentials counts only with email AND password. */
-export function signInMethodCount(user: MethodFields): number {
-  return (
-    (user.password && user.email ? 1 : 0) +
-    (user.appleId ? 1 : 0) +
-    (user.googleId ? 1 : 0)
-  );
-}
-
 export type LinkResult = { ok: true } | { ok: false; reason: "conflict" };
 
 /** Attach a provider sub to a user. Fails if that sub is already on another account. */
@@ -64,9 +55,16 @@ export function isUniqueViolation(err: unknown): boolean {
   return err instanceof Error && /UNIQUE constraint failed/i.test(err.message);
 }
 
-export type UnlinkResult = { ok: true } | { ok: false; reason: "not_linked" | "last_method" };
+export type UnlinkResult = { ok: true } | { ok: false; reason: "not_linked" | "password_required" };
 
-/** Remove a provider from a user, unless it's their only remaining sign-in method. */
+/**
+ * Remove a provider from a user. Allowed only when the user has an email+password
+ * login to fall back on. OAuth grants can be revoked or lost (a changed Apple
+ * Relay address, a deleted Google account), so a password is the one durable,
+ * self-recoverable sign-in method — without it, unlinking risks locking the user
+ * out. This is stricter than "keep at least one method": a second OAuth provider
+ * is not accepted as the fallback.
+ */
 export async function unlinkProvider(
   userId: string,
   provider: OAuthProvider,
@@ -77,9 +75,9 @@ export async function unlinkProvider(
     columns: { password: true, email: true, appleId: true, googleId: true },
   });
   if (!user || !user[idKey]) return { ok: false, reason: "not_linked" };
-  // Block if removing this would leave the user with no way to sign in.
-  if (signInMethodCount({ ...user, [idKey]: null }) < 1) {
-    return { ok: false, reason: "last_method" };
+  // Require a durable email+password fallback before unlinking any provider.
+  if (!user.password || !user.email) {
+    return { ok: false, reason: "password_required" };
   }
   await db.update(users).set({ [idKey]: null }).where(eq(users.id, userId));
   return { ok: true };
