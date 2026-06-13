@@ -6,7 +6,7 @@ One-time configuration checklist for publishing the mobile app. Code-side scaffo
 
 ### App Store Connect
 
-- [ ] Register bundle ID `com.zabaca.healthagent` under the Zabaca team in the Apple Developer portal
+- [ ] Register bundle ID `com.zabaca.veladon` under the Zabaca team in the Apple Developer portal
 - [ ] Create the app record in App Store Connect (iOS + App Store distribution)
 - [ ] Fill in App Information: privacy policy URL (e.g. `https://zabaca.com/privacy`), category, support URL
 - [ ] Upload app icon (1024×1024, no alpha, no transparency)
@@ -33,7 +33,7 @@ One-time configuration checklist for publishing the mobile app. Code-side scaffo
 
 ### Play Console
 
-- [ ] Create the app in Play Console with package name `com.zabaca.healthagent`
+- [ ] Create the app in Play Console with package name `com.zabaca.veladon`
 - [ ] Fill in store listing: description, icon, screenshots, category, privacy policy URL
 - [ ] Declare Data Safety (mirror App Store Privacy declarations)
 - [ ] Set minimum SDK to **28** (Android 9)
