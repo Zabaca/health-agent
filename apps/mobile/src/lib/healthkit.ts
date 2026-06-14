@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { isHealthKitMockEnabled, wrapWithMock } from './healthkitMock';
 import type {
   HealthKitPermissions,
   HealthValue,
@@ -13,6 +14,14 @@ export type HealthRecord = {
   unit: string;
   source?: string;
 };
+
+// Sleep stage strings react-native-health reports. iOS 16+ uses the short forms
+// (CORE/DEEP/REM/AWAKE/INBED); older OSes / some sources use ASLEEP and the
+// ASLEEP* spellings. We accept both so sleep isn't silently dropped.
+const ASLEEP_STAGES = new Set(['ASLEEP', 'CORE', 'DEEP', 'REM', 'ASLEEPCORE', 'ASLEEPDEEP', 'ASLEEPREM']);
+const DEEP_STAGES = new Set(['DEEP', 'ASLEEPDEEP']);
+const REM_STAGES = new Set(['REM', 'ASLEEPREM']);
+const CORE_STAGES = new Set(['CORE', 'ASLEEPCORE']);
 
 // Persisted timestamp of the last sync *attempt* (independent of whether data
 // was found). Lets the UI distinguish "synced, no data" from "never synced".
@@ -69,7 +78,12 @@ function getAppleHealthKit(): any {
   const mod = require('react-native-health');
   // react-native-health is CommonJS (`module.exports = HealthKit`), so there is
   // no `.default`; fall back to the module itself for ESM-interop builds.
-  return mod.default ?? mod;
+  const hk = mod.default ?? mod;
+  // Dev-only: feed synthetic history into the get*Samples reads so the Week/Month
+  // charts render with a full 30-day history on the simulator. No-op in prod
+  // builds (guarded by __DEV__ inside isHealthKitMockEnabled).
+  if (isHealthKitMockEnabled()) return wrapWithMock(hk);
+  return hk;
 }
 
 /** Extract a human-readable message from react-native-health's native error
@@ -98,7 +112,7 @@ const CORE_READ_PERMS = [
   'HeartRate',
   'StepCount',
   'SleepAnalysis',
-  'BloodGlucose',
+  'OxygenSaturation',
   'ActiveEnergyBurned',
 ] as const;
 
@@ -203,8 +217,9 @@ export async function fetchTodayMetrics(): Promise<HealthRecord[]> {
   }
 
   // Sleep — sum of asleep intervals in minutes.
-  // react-native-health returns value as "INBED" | "ASLEEP" | "ASLEEPCORE" |
-  // "ASLEEPDEEP" | "ASLEEPREM" | "AWAKE" despite the TS type saying `number`.
+  // react-native-health returns `value` as a stage string despite the TS type
+  // saying `number`. iOS 16+ emits "CORE" | "DEEP" | "REM" | "AWAKE" | "INBED";
+  // older OSes / sources use "ASLEEP" and the "ASLEEP*" spellings. Match both.
   const sleepSamples = await promiseSamples<HealthValue[]>(
     AppleHealthKit.getSleepSamples.bind(AppleHealthKit),
     { startDate, endDate, ascending: true, limit: 200 },
@@ -213,7 +228,7 @@ export async function fetchTodayMetrics(): Promise<HealthRecord[]> {
     let totalMin = 0;
     for (const s of sleepSamples) {
       const val = s.value as unknown as string;
-      if (val === 'ASLEEP' || val === 'ASLEEPCORE' || val === 'ASLEEPDEEP' || val === 'ASLEEPREM') {
+      if (ASLEEP_STAGES.has(val)) {
         const ms = new Date(s.endDate).getTime() - new Date(s.startDate).getTime();
         totalMin += ms / 60000;
       }
@@ -223,18 +238,19 @@ export async function fetchTodayMetrics(): Promise<HealthRecord[]> {
     }
   }
 
-  // Blood glucose — request in mg/dL (US standard)
-  const glucoseSamples = await promiseSamples<HealthValue[]>(
-    AppleHealthKit.getBloodGlucoseSamples.bind(AppleHealthKit),
-    { startDate, endDate, ascending: true, limit: 100, unit: 'mgPerdL' as never },
+  // Blood oxygen (SpO2). HealthKit reports a 0–1 fraction; show as a percentage.
+  const spo2Samples = await promiseSamples<HealthValue[]>(
+    AppleHealthKit.getOxygenSaturationSamples.bind(AppleHealthKit),
+    { startDate, endDate, ascending: true, limit: 500 },
   );
-  if (glucoseSamples && glucoseSamples.length > 0) {
-    const values = glucoseSamples.map((s) => s.value);
+  if (spo2Samples && spo2Samples.length > 0) {
+    const toPct = (v: number) => Math.round(v <= 1.5 ? v * 100 : v);
+    const values = spo2Samples.map((s) => s.value);
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     records.push(
-      { type: 'glucoseAvg', date, value: Math.round(avg), unit: 'mg/dL' },
-      { type: 'glucoseMin', date, value: Math.min(...values), unit: 'mg/dL' },
-      { type: 'glucoseMax', date, value: Math.max(...values), unit: 'mg/dL' },
+      { type: 'spo2Avg', date, value: toPct(avg), unit: '%' },
+      { type: 'spo2Min', date, value: toPct(Math.min(...values)), unit: '%' },
+      { type: 'spo2Max', date, value: toPct(Math.max(...values)), unit: '%' },
     );
   }
 
@@ -401,19 +417,21 @@ export async function fetchHeartRateSeries(range: MetricRange): Promise<MetricSe
   };
 }
 
-export async function fetchGlucoseSeries(range: MetricRange): Promise<MetricSeries> {
-  if (Platform.OS !== 'ios') return emptySeries('mg/dL');
+export async function fetchSpo2Series(range: MetricRange): Promise<MetricSeries> {
+  if (Platform.OS !== 'ios') return emptySeries('%');
   const AppleHealthKit = getAppleHealthKit();
   const { start, end, days } = rangeBounds(range);
   const samples = await promiseSamples<HealthValue[]>(
-    AppleHealthKit.getBloodGlucoseSamples.bind(AppleHealthKit),
-    { startDate: start.toISOString(), endDate: end.toISOString(), ascending: true, limit: 1000, unit: 'mgPerdL' as never },
+    AppleHealthKit.getOxygenSaturationSamples.bind(AppleHealthKit),
+    { startDate: start.toISOString(), endDate: end.toISOString(), ascending: true, limit: 5000 },
   );
-  if (!samples || samples.length === 0) return emptySeries('mg/dL');
+  if (!samples || samples.length === 0) return emptySeries('%');
 
+  // HealthKit reports SpO2 as a 0–1 fraction; normalize to a percentage.
+  const pct = samples.map(s => ({ startDate: s.startDate, value: s.value <= 1.5 ? s.value * 100 : s.value }));
   const n = range === 'today' ? 12 : days;
-  const bars = bucketByAvg(samples, start, end, n).map(v => Math.round(v));
-  const allValues = samples.map(s => s.value);
+  const bars = bucketByAvg(pct, start, end, n).map(v => Math.round(v));
+  const allValues = pct.map(s => s.value);
   const labels = range === 'today' ? todayHourlyLabels() : dailyLabels(start, days);
   return {
     bars,
@@ -423,19 +441,32 @@ export async function fetchGlucoseSeries(range: MetricRange): Promise<MetricSeri
       primary: Math.round(allValues.reduce((a, b) => a + b, 0) / allValues.length),
       min: Math.round(Math.min(...allValues)),
       max: Math.round(Math.max(...allValues)),
-      unit: 'mg/dL',
+      unit: '%',
     },
   };
 }
 
 /** Sleep is per-night: Today shows last night with stage breakdown; Week/Month show
- *  nightly totals in minutes. Stages exposed via the returned `stages` field. */
+ *  nightly totals in minutes. Stages exposed via `stages` (range totals) and
+ *  `stageBars` (per-bar Deep/Core/REM split that drives the stacked chart). */
+export type SleepStageBar = { deepMin: number; coreMin: number; remMin: number };
 export type SleepSeries = MetricSeries & {
   stages: { asleepMin: number; deepMin: number; remMin: number; coreMin: number; awakeMin: number };
+  /** Aligned 1:1 with `bars`/`labels`; deepMin+coreMin+remMin === that bar's asleep height. */
+  stageBars: SleepStageBar[];
 };
 
+/** Split one night into Deep/Core/REM so the three sum exactly to its asleep
+ *  total. Any unstaged "ASLEEP" minutes (legacy data) fold into Core/light. */
+function toStageBar(s: { asleep: number; deep: number; rem: number }): SleepStageBar {
+  const deepMin = Math.round(s.deep);
+  const remMin = Math.round(s.rem);
+  const coreMin = Math.max(0, Math.round(s.asleep) - deepMin - remMin);
+  return { deepMin, coreMin, remMin };
+}
+
 function emptySleepSeries(): SleepSeries {
-  return { ...emptySeries('min'), stages: { asleepMin: 0, deepMin: 0, remMin: 0, coreMin: 0, awakeMin: 0 } };
+  return { ...emptySeries('min'), stages: { asleepMin: 0, deepMin: 0, remMin: 0, coreMin: 0, awakeMin: 0 }, stageBars: [] };
 }
 
 export async function fetchSleepSeries(range: MetricRange): Promise<SleepSeries> {
@@ -459,10 +490,12 @@ export async function fetchSleepSeries(range: MetricRange): Promise<SleepSeries>
     const min = ms / 60000;
     const cur = stagesByDay.get(key) ?? { asleep: 0, deep: 0, rem: 0, core: 0, awake: 0 };
     const val = s.value as unknown as string;
+    // "ASLEEP" is the unstaged catch-all; the staged values each also count
+    // toward total asleep time. (CORE/DEEP/REM are iOS 16+; ASLEEP* are legacy.)
     if (val === 'ASLEEP') cur.asleep += min;
-    else if (val === 'ASLEEPDEEP') { cur.deep += min; cur.asleep += min; }
-    else if (val === 'ASLEEPREM') { cur.rem += min; cur.asleep += min; }
-    else if (val === 'ASLEEPCORE') { cur.core += min; cur.asleep += min; }
+    else if (DEEP_STAGES.has(val)) { cur.deep += min; cur.asleep += min; }
+    else if (REM_STAGES.has(val)) { cur.rem += min; cur.asleep += min; }
+    else if (CORE_STAGES.has(val)) { cur.core += min; cur.asleep += min; }
     else if (val === 'AWAKE') cur.awake += min;
     stagesByDay.set(key, cur);
   }
@@ -478,15 +511,19 @@ export async function fetchSleepSeries(range: MetricRange): Promise<SleepSeries>
       selectedIndex: 0,
       summary: { primary: Math.round(st.asleep), min: null, max: null, unit: 'min' },
       stages: { asleepMin: Math.round(st.asleep), deepMin: Math.round(st.deep), remMin: Math.round(st.rem), coreMin: Math.round(st.core), awakeMin: Math.round(st.awake) },
+      stageBars: [toStageBar(st)],
     };
   }
 
   const bars = new Array(days).fill(0);
+  const stageBars: SleepStageBar[] = new Array(days);
   for (let i = 0; i < days; i++) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    bars[i] = Math.round(stagesByDay.get(key)?.asleep ?? 0);
+    const day = stagesByDay.get(key) ?? { asleep: 0, deep: 0, rem: 0, core: 0, awake: 0 };
+    bars[i] = Math.round(day.asleep);
+    stageBars[i] = toStageBar(day);
   }
   const nonZero = bars.filter(b => b > 0);
   // Stage totals across the whole range.
@@ -511,6 +548,7 @@ export async function fetchSleepSeries(range: MetricRange): Promise<SleepSeries>
       coreMin: Math.round(totals.core),
       awakeMin: Math.round(totals.awake),
     },
+    stageBars,
   };
 }
 

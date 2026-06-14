@@ -1,22 +1,20 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { Badge } from "@/components/Badge";
-import { BarChart } from "@/components/BarChart";
+import { StackedBarChart } from "@/components/StackedBarChart";
 import { useTheme } from "@/theme/ThemeProvider";
 import { fetchSleepSeries, type MetricRange, type SleepSeries } from "@/lib/healthkit";
+import { ChartLabels } from "@/components/ChartLabels";
+import { sleepStatus } from "@/lib/metricStatus";
 import { ExpandedShell, TabSelector } from "./_ExpandedShell";
+
+// Dark → light green ramp for the stacked sleep stages (Deep at the bottom).
+const STAGE_COLORS = { deep: "#2C6B45", core: "#5FA77D", rem: "#A7CDB8" } as const;
 
 function fmtHm(min: number): string {
   const h = Math.floor(min / 60);
   const m = Math.round(min % 60);
   return `${h}h ${m}m`;
-}
-
-function sleepBadge(asleepMin: number): { label: string; tone: "good" | "warn" } {
-  if (asleepMin === 0) return { label: "No data", tone: "warn" };
-  if (asleepMin < 360) return { label: "Short", tone: "warn" };
-  if (asleepMin > 540) return { label: "Long", tone: "warn" };
-  return { label: "Good", tone: "good" };
 }
 
 export default function SleepExpanded() {
@@ -34,7 +32,8 @@ export default function SleepExpanded() {
   }, [range]);
 
   const asleep = series?.stages.asleepMin ?? 0;
-  const badge = sleepBadge(asleep);
+  const badge = sleepStatus(asleep);
+  const barCaption = range === "today" ? "Time asleep last night" : "Hours asleep per day";
 
   return (
     <ExpandedShell
@@ -51,7 +50,19 @@ export default function SleepExpanded() {
               <ActivityIndicator color={t.colors.primary} />
             </View>
           ) : series && series.bars.length > 0 && asleep > 0 ? (
-            <BarChart bars={series.bars} selectedIndex={series.selectedIndex} />
+            <>
+              <Text style={[t.type.caption, { color: t.colors.textSecondary }]}>{barCaption}</Text>
+              <StackedBarChart
+                bars={series.stageBars.map((s) => [
+                  { value: s.deepMin, color: STAGE_COLORS.deep },
+                  { value: s.coreMin, color: STAGE_COLORS.core },
+                  { value: s.remMin, color: STAGE_COLORS.rem },
+                ])}
+                selectedIndex={series.selectedIndex}
+              />
+              <ChartLabels labels={series.labels} selectedIndex={series.selectedIndex} />
+              <StageLegend />
+            </>
           ) : (
             <View style={{ height: 120, justifyContent: "center", alignItems: "center" }}>
               <Text style={[t.type.caption, { color: t.colors.textSecondary }]}>No sleep data</Text>
@@ -65,6 +76,25 @@ export default function SleepExpanded() {
         </>
       }
     />
+  );
+}
+
+function StageLegend() {
+  const t = useTheme();
+  const items = [
+    { label: "Deep", color: STAGE_COLORS.deep },
+    { label: "Core", color: STAGE_COLORS.core },
+    { label: "REM", color: STAGE_COLORS.rem },
+  ];
+  return (
+    <View style={{ flexDirection: "row", justifyContent: "center", gap: 16, paddingTop: 4 }}>
+      {items.map((it) => (
+        <View key={it.label} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: it.color }} />
+          <Text style={t.type.caption}>{it.label}</Text>
+        </View>
+      ))}
+    </View>
   );
 }
 

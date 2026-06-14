@@ -65,7 +65,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
         `${COMPANY_BRAND} is a personal health record ("PHR") application that helps you collect, organize, view, and share copies of your own health information. The App may, depending on the features you enable, do any of the following:`,
         {
           bullets: [
-            "Read vitals you have stored in Apple Health (heart rate, step count, sleep analysis, blood glucose, active energy) and display trends and summaries.",
+            "Read vitals you have stored in Apple Health (heart rate, step count, sleep analysis, blood oxygen, active energy) and display trends and summaries.",
             "Read FHIR clinical records you have synced to Apple Health (allergies, conditions, immunizations, lab results, medications, procedures, vital signs, coverage records).",
             "Let you upload photographs or scans of health documents.",
             "Help you track your healthcare providers and insurance information.",
@@ -224,7 +224,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       body: [
         `We collect only the information needed to provide the features you use. Specifically:`,
         `Account and profile. When you create an account we collect your email address and a hashed copy of your password (or, if you sign in with Apple or Google, the subject identifier they return to us). When you complete your profile we collect your first, middle, and last name, your date of birth, mailing address, phone number, the last four digits of your Social Security Number (for record-request authorizations), and an optional avatar image.`,
-        `Apple Health (iOS only). When you connect Apple Health, the App reads — with your permission, granted in Apple's system permission sheet — the following data types: heart rate, step count, sleep analysis, blood glucose, and active energy. If you have FHIR clinical records in Apple Health, the App also reads, over a one-year lookback window: allergies, conditions, immunizations, lab results, medications, procedures, vital signs, and coverage records. We do not enable HealthKit background delivery; HealthKit data is read only while the App is open.`,
+        `Apple Health (iOS only). When you connect Apple Health, the App reads — with your permission, granted in Apple's system permission sheet — the following data types: heart rate, step count, sleep analysis, blood oxygen, and active energy. If you have FHIR clinical records in Apple Health, the App also reads, over a one-year lookback window: allergies, conditions, immunizations, lab results, medications, procedures, vital signs, and coverage records. We do not enable HealthKit background delivery; HealthKit data is read only while the App is open.`,
         `Documents you upload. If you upload photographs or scans of health documents, we store the encrypted file and metadata you provide (such as the document type and the provider it relates to).`,
         `Providers and Releases. We store the insurance and physician information you enter, the providers you choose as recipients of Releases, and the contents of any Release you create (including the signature image and authorization period).`,
         `User-Designated Agent (UDA) relationships. We store the email of anyone you invite as a UDA, your relationship to them, and the permissions you granted, so that the App can enforce your access decisions.`,

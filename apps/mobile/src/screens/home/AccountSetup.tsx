@@ -63,7 +63,7 @@ export default function AccountSetup() {
     {
       id: "healthkit",
       title: "Connect Apple Health",
-      body: "Sync your vitals, sleep, glucose, and activity data to your dashboard automatically.",
+      body: "Sync your vitals, sleep, blood oxygen, and activity data to your dashboard automatically.",
       complete: status?.healthKitConnected ?? false,
       disabled: false,
       onPress: () => nav.navigate("ProfileTab", { screen: "ConnectAppleHealth" } as never),
