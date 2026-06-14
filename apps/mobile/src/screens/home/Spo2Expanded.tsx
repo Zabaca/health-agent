@@ -2,18 +2,13 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { Badge } from "@/components/Badge";
 import { BarChart } from "@/components/BarChart";
+import { ChartLabels } from "@/components/ChartLabels";
 import { useTheme } from "@/theme/ThemeProvider";
-import { fetchGlucoseSeries, type MetricRange, type MetricSeries } from "@/lib/healthkit";
+import { fetchSpo2Series, type MetricRange, type MetricSeries } from "@/lib/healthkit";
+import { spo2Status } from "@/lib/metricStatus";
 import { ExpandedShell, TabSelector } from "./_ExpandedShell";
 
-function glucoseBadge(avg: number | null): { label: string; tone: "good" | "warn" } {
-  if (avg === null) return { label: "No data", tone: "warn" };
-  if (avg < 70) return { label: "Low", tone: "warn" };
-  if (avg > 140) return { label: "Elevated", tone: "warn" };
-  return { label: "Optimal", tone: "good" };
-}
-
-export default function GlucoseExpanded() {
+export default function Spo2Expanded() {
   const t = useTheme();
   const [range, setRange] = useState<MetricRange>("today");
   const [series, setSeries] = useState<MetricSeries | null>(null);
@@ -21,23 +16,24 @@ export default function GlucoseExpanded() {
 
   useEffect(() => {
     setLoading(true);
-    fetchGlucoseSeries(range).then((s) => {
+    fetchSpo2Series(range).then((s) => {
       setSeries(s);
       setLoading(false);
     });
   }, [range]);
 
   const avg = series?.summary.primary ?? null;
-  const badge = glucoseBadge(avg);
+  const badge = spo2Status(avg);
+  const barCaption = range === "today" ? "Average % per 2-hour block" : "Average % per day";
 
   return (
     <ExpandedShell
-      focus="glucose"
+      focus="spo2"
       expandedCard={
         <>
           <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
             <Text style={t.type.h1}>{avg !== null ? avg : "--"}</Text>
-            <Text style={t.type.caption}>mg/dL</Text>
+            <Text style={t.type.caption}>%</Text>
             <View style={{ marginLeft: 4 }}>
               <Badge label={badge.label} variant={badge.tone === "good" ? "success" : "accent"} />
             </View>
@@ -48,16 +44,20 @@ export default function GlucoseExpanded() {
               <ActivityIndicator color={t.colors.primary} />
             </View>
           ) : series && series.bars.length > 0 ? (
-            <BarChart bars={series.bars} selectedIndex={series.selectedIndex} selectedColor={t.colors.accent} />
+            <>
+              <Text style={[t.type.caption, { color: t.colors.textSecondary }]}>{barCaption}</Text>
+              <BarChart bars={series.bars} selectedIndex={series.selectedIndex} />
+              <ChartLabels labels={series.labels} selectedIndex={series.selectedIndex} />
+            </>
           ) : (
             <View style={{ height: 120, justifyContent: "center", alignItems: "center" }}>
-              <Text style={[t.type.caption, { color: t.colors.textSecondary }]}>No glucose data</Text>
+              <Text style={[t.type.caption, { color: t.colors.textSecondary }]}>No SpO2 data</Text>
             </View>
           )}
           <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: 8 }}>
             <Stat label="MIN" value={series?.summary.min !== null && series?.summary.min !== undefined ? String(series.summary.min) : "--"} tone="muted" />
             <Stat label="AVG" value={avg !== null ? String(avg) : "--"} tone="primary" />
-            <Stat label="MAX" value={series?.summary.max !== null && series?.summary.max !== undefined ? String(series.summary.max) : "--"} tone="warn" />
+            <Stat label="MAX" value={series?.summary.max !== null && series?.summary.max !== undefined ? String(series.summary.max) : "--"} tone="muted" />
           </View>
         </>
       }
@@ -65,12 +65,11 @@ export default function GlucoseExpanded() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone: "primary" | "muted" | "warn" }) {
+function Stat({ label, value, tone }: { label: string; value: string; tone: "primary" | "muted" }) {
   const t = useTheme();
-  const color = tone === "primary" ? t.colors.primary : tone === "warn" ? t.colors.accent : t.colors.textPrimary;
   return (
     <View style={{ alignItems: "center", flex: 1, gap: 2 }}>
-      <Text style={[t.type.h3, { color }]}>{value}</Text>
+      <Text style={[t.type.h3, { color: tone === "primary" ? t.colors.primary : t.colors.textPrimary }]}>{value}</Text>
       <Text style={t.type.caption}>{label}</Text>
     </View>
   );

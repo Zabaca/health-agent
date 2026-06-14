@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, FlaskConical, TriangleAlert } from "lucide-react-native";
 import { Badge } from "@/components/Badge";
+import { ReferenceRangeBar } from "@/components/ReferenceRangeBar";
 import { useTheme } from "@/theme/ThemeProvider";
 import { getMyRecord, type FhirRecord } from "@/lib/api";
 import type { RecordsParamList } from "@/navigation/types";
@@ -39,6 +40,10 @@ type ParsedRow = {
   range: string | null;
   interpretation: string | null;
   abnormal: boolean;
+  // Numeric trio for the reference-range bar (null when not chartable).
+  numValue: number | null;
+  low: number | null;
+  high: number | null;
 };
 
 function parseRow(rec: FhirRecord): ParsedRow {
@@ -57,7 +62,23 @@ function parseRow(rec: FhirRecord): ParsedRow {
     ?? (range && (range.low?.value !== undefined || range.high?.value !== undefined)
       ? `${range.low?.value ?? ""}–${range.high?.value ?? ""} ${range.low?.unit ?? range.high?.unit ?? ""}`.trim()
       : null);
-  const abnormal = !!(interp && !/normal/i.test(interp));
+  const numValue = qty?.value ?? null;
+  let low = range?.low?.value ?? null;
+  let high = range?.high?.value ?? null;
+  // Many one-sided limits arrive only as text ("<130", "> OR = 60"): pull the
+  // numeric threshold so we can still chart and flag them.
+  if (low == null && high == null && range?.text) {
+    const txt = range.text.trim();
+    const num = txt.match(/-?[\d.]+/);
+    if (num) {
+      if (/^[<≤]/.test(txt)) high = parseFloat(num[0]);
+      else if (/^[>≥]/.test(txt)) low = parseFloat(num[0]);
+    }
+  }
+  // Out of range by the numbers OR flagged abnormal by the lab's interpretation.
+  const outOfRange =
+    numValue != null && ((low != null && numValue < low) || (high != null && numValue > high));
+  const abnormal = !!(interp && !/normal/i.test(interp)) || outOfRange;
 
   return {
     id: rec.id,
@@ -67,6 +88,9 @@ function parseRow(rec: FhirRecord): ParsedRow {
     range: rangeText,
     interpretation: interp,
     abnormal,
+    numValue,
+    low,
+    high,
   };
 }
 
@@ -88,7 +112,11 @@ export default function RecordDetailLabPanel() {
           if (!r) continue;
           if ("fhirData" in r) parsed.push(parseRow(r as FhirRecord));
         }
-        parsed.sort((a, b) => a.name.localeCompare(b.name));
+        // Surface out-of-range results first, then alphabetical within each group.
+        parsed.sort((a, b) => {
+          if (a.abnormal !== b.abnormal) return a.abnormal ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
         setRows(parsed);
       })
       .catch((e: unknown) => {
@@ -179,8 +207,8 @@ export default function RecordDetailLabPanel() {
             <TriangleAlert size={18} color={t.colors.accent} />
             <Text style={[t.type.caption, { flex: 1, color: t.colors.accent }]}>
               {abnormalCount === 1
-                ? "1 value outside normal range. Discuss with your provider."
-                : `${abnormalCount} values outside normal range. Discuss with your provider.`}
+                ? "1 value outside normal range. Discuss with your doctor."
+                : `${abnormalCount} values outside normal range. Discuss with your doctor.`}
             </Text>
           </View>
         ) : null}
@@ -232,6 +260,13 @@ export default function RecordDetailLabPanel() {
                 <Text style={t.type.caption} numberOfLines={1}>
                   Reference: {row.range}
                 </Text>
+              ) : null}
+              {row.numValue != null &&
+              (row.low != null || row.high != null) &&
+              !(row.low != null && row.high != null && row.high <= row.low) ? (
+                <View style={{ paddingTop: 8 }}>
+                  <ReferenceRangeBar value={row.numValue} low={row.low} high={row.high} />
+                </View>
               ) : null}
             </Pressable>
           ))}

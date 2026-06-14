@@ -5,6 +5,7 @@ import { Badge } from "@/components/Badge";
 import { BarChart } from "@/components/BarChart";
 import { useTheme } from "@/theme/ThemeProvider";
 import { fetchStepsSeries, type MetricRange, type MetricSeries } from "@/lib/healthkit";
+import { ChartLabels } from "@/components/ChartLabels";
 import { ExpandedShell, TabSelector } from "./_ExpandedShell";
 
 const STEP_GOAL = 10000;
@@ -55,17 +56,11 @@ export default function StepsExpanded() {
             </View>
           ) : series && series.bars.length > 0 ? (
             <>
+              <Text style={[t.type.caption, { color: t.colors.textSecondary }]}>
+                {range === "today" ? "Steps per 2-hour block" : "Steps per day"}
+              </Text>
               <BarChart bars={series.bars} selectedIndex={series.selectedIndex} />
-              <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: 4 }}>
-                {series.labels.map((d, i) => (
-                  <Text
-                    key={`${d}-${i}`}
-                    style={[t.type.caption, { fontWeight: i === series.selectedIndex ? "600" : "400", flex: 1, textAlign: "center" }]}
-                  >
-                    {d}
-                  </Text>
-                ))}
-              </View>
+              <ChartLabels labels={series.labels} selectedIndex={series.selectedIndex} />
             </>
           ) : (
             <View style={{ height: 120, justifyContent: "center", alignItems: "center" }}>

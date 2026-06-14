@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Input } from "@/components/Input";
+import { AddressAutocompleteInput } from "@/components/AddressAutocompleteInput";
 import { Button } from "@/components/Button";
 import { CardImagePicker } from "@/components/CardImagePicker";
 import { useTheme } from "@/theme/ThemeProvider";
@@ -234,7 +235,7 @@ export default function AddProvider() {
                 onChangeText={setPatientId}
               />
             )}
-            <Input
+            <AddressAutocompleteInput
               label="Address (optional)"
               placeholder="123 Main St, Boston, MA 02114"
               value={address}

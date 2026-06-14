@@ -4,14 +4,9 @@ import { Badge } from "@/components/Badge";
 import { BarChart } from "@/components/BarChart";
 import { useTheme } from "@/theme/ThemeProvider";
 import { fetchHeartRateSeries, type MetricRange, type MetricSeries } from "@/lib/healthkit";
+import { ChartLabels } from "@/components/ChartLabels";
+import { heartRateStatus } from "@/lib/metricStatus";
 import { ExpandedShell, TabSelector } from "./_ExpandedShell";
-
-function hrBadge(avg: number | null): { label: string; tone: "good" | "warn" } {
-  if (avg === null) return { label: "No data", tone: "warn" };
-  if (avg < 60) return { label: "Low", tone: "warn" };
-  if (avg > 100) return { label: "Elevated", tone: "warn" };
-  return { label: "Normal", tone: "good" };
-}
 
 export default function CardExpanded() {
   const t = useTheme();
@@ -28,7 +23,9 @@ export default function CardExpanded() {
   }, [range]);
 
   const avg = series?.summary.primary ?? null;
-  const badge = hrBadge(avg);
+  const badge = heartRateStatus(avg);
+  // Each bar is an average — by 2-hour block for Today, by day for Week/Month.
+  const barCaption = range === "today" ? "Average bpm per 2-hour block" : "Average bpm per day";
 
   return (
     <ExpandedShell
@@ -48,7 +45,11 @@ export default function CardExpanded() {
               <ActivityIndicator color={t.colors.primary} />
             </View>
           ) : series && series.bars.length > 0 ? (
-            <BarChart bars={series.bars} selectedIndex={series.selectedIndex} />
+            <>
+              <Text style={[t.type.caption, { color: t.colors.textSecondary }]}>{barCaption}</Text>
+              <BarChart bars={series.bars} selectedIndex={series.selectedIndex} />
+              <ChartLabels labels={series.labels} selectedIndex={series.selectedIndex} />
+            </>
           ) : (
             <NoData label="No heart rate data" t={t} />
           )}
