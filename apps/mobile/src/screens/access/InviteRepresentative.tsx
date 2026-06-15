@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Send, ChevronDown, Check } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,8 +11,10 @@ import { PermissionPicker } from "@/components/PermissionPicker";
 import { useTheme } from "@/theme/ThemeProvider";
 import { inviteDesignatedAgent, ApiError } from "@/lib/api";
 import type { ProfileParamList } from "@/navigation/types";
+import { returnToSetup } from "@/navigation/returnTo";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
+type R = RouteProp<ProfileParamList, "InviteRepresentative">;
 type PermValue = "None" | "Viewer" | "Editor";
 
 const RELATIONSHIPS = ["Spouse", "Son", "Daughter", "Parent", "Sibling", "Caregiver", "Friend", "Other"] as const;
@@ -88,6 +90,7 @@ function RelationshipSheet({
 export default function InviteRepresentative() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
+  const { params } = useRoute<R>();
   const [email, setEmail] = useState("");
   const [relationship, setRelationship] = useState<string | null>(null);
   const [showRelPicker, setShowRelPicker] = useState(false);
@@ -111,7 +114,7 @@ export default function InviteRepresentative() {
         manageProvidersPermission: toApiPerm(providers),
         releasePermission: toApiPerm(releases),
       });
-      nav.goBack();
+      if (!returnToSetup(nav, params?.returnTo)) nav.goBack();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to send invite. Please try again.");
     } finally {

@@ -27,6 +27,11 @@ export default function AccountSetup() {
 
   const prereqsMet = !!(status?.profileComplete && status?.providerAdded);
 
+  // Every step deep-links into another tab's stack. `initial: false` keeps that
+  // tab's root screen (Profile / MyProviders / ReleasesList) beneath the target
+  // so the back button works and, more importantly, tapping the tab afterwards
+  // shows the root screen instead of the deep one. (Without it RN makes the
+  // target the stack's initial route, defeating popToTopOnBlur.)
   const steps = [
     {
       id: "profile",
@@ -34,7 +39,7 @@ export default function AccountSetup() {
       body: "Your name, date of birth, and contact details are required to create accurate medical record releases.",
       complete: status?.profileComplete ?? false,
       disabled: false,
-      onPress: () => nav.navigate("ProfileTab", { screen: "EditProfile" } as never),
+      onPress: () => nav.navigate("ProfileTab", { screen: "EditProfile", initial: false, params: { returnTo: "AccountSetup" } } as never),
     },
     {
       id: "provider",
@@ -42,7 +47,7 @@ export default function AccountSetup() {
       body: "Add the healthcare providers — clinics, hospitals, or insurance companies — you want to request records from.",
       complete: status?.providerAdded ?? false,
       disabled: false,
-      onPress: () => nav.navigate("ProvidersTab", { screen: "AddProvider" } as never),
+      onPress: () => nav.navigate("ProvidersTab", { screen: "AddProvider", initial: false, params: { returnTo: "AccountSetup" } } as never),
     },
     {
       id: "invite",
@@ -50,7 +55,7 @@ export default function AccountSetup() {
       body: "Authorize a trusted person such as a family member or caregiver to manage your health records on your behalf.",
       complete: status?.pdaAdded ?? false,
       disabled: !prereqsMet,
-      onPress: () => nav.navigate("ProfileTab", { screen: "InviteRepresentative" } as never),
+      onPress: () => nav.navigate("ProfileTab", { screen: "InviteRepresentative", initial: false, params: { returnTo: "AccountSetup" } } as never),
     },
     {
       id: "release",
@@ -58,7 +63,7 @@ export default function AccountSetup() {
       body: "Submit a HIPAA-compliant authorization to request your medical records from your providers.",
       complete: status?.releaseCreated ?? false,
       disabled: !prereqsMet,
-      onPress: () => nav.navigate("ReleasesTab", { screen: "WizardStep1" } as never),
+      onPress: () => nav.navigate("ReleasesTab", { screen: "WizardStep1", initial: false, params: { returnTo: "AccountSetup" } } as never),
     },
     {
       id: "healthkit",
@@ -66,7 +71,9 @@ export default function AccountSetup() {
       body: "Sync your vitals, sleep, blood oxygen, and activity data to your dashboard automatically.",
       complete: status?.healthKitConnected ?? false,
       disabled: false,
-      onPress: () => nav.navigate("ProfileTab", { screen: "ConnectAppleHealth" } as never),
+      // Connect Apple Health is the last step — once done we return to the Home
+      // dashboard (where the checklist hides itself when everything is complete).
+      onPress: () => nav.navigate("ProfileTab", { screen: "ConnectAppleHealth", initial: false, params: { returnTo: "Home" } } as never),
     },
   ];
 

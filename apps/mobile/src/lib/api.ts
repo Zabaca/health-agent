@@ -787,6 +787,12 @@ export type RepresentingRecord = {
   pagecount: number | null;
   originalName: string | null;
   uploadedBy: { id: string; firstName: string | null; lastName: string | null } | null;
+  // FHIR-only (source === "healthkitFHIR"); null for documents.
+  type?: string | null;
+  time?: string | null;
+  fhirDisplayName?: string | null;
+  fhirRecordType?: string | null;
+  fhirSource?: string | null;
 };
 
 export type RepresentingRecordsResponse = {
@@ -810,6 +816,19 @@ export async function listRepresentingRecordProviders(patientId: string): Promis
     { auth: true }
   )) as { providers: RecordProvider[] };
   return res.providers;
+}
+
+/** Single record (incl. full FHIR resource) for a represented patient. Mirrors
+ *  getMyRecord but scoped to the PDA's granted access. */
+export async function getRepresentingRecord(
+  patientId: string,
+  id: string,
+): Promise<IncomingFile | FhirRecord> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/records/${encodeURIComponent(id)}`,
+    {},
+    { auth: true }
+  )) as IncomingFile | FhirRecord;
 }
 
 export async function listRepresentedPatients(): Promise<RepresentedPatient[]> {

@@ -127,6 +127,8 @@ export default function Dashboard() {
 
   const steps = setupStatus ? buildSetupSteps(setupStatus) : null;
   const completed = steps ? steps.filter((s) => s.complete).length : 0;
+  // Hide the checklist once every step is done — there's nothing left to do.
+  const setupComplete = steps != null && completed === steps.length;
   const firstName = setupStatus?.firstName ?? "";
   const connected = setupStatus?.healthKitConnected ?? false;
 
@@ -149,7 +151,8 @@ export default function Dashboard() {
         <Text style={t.type.h1}>{firstName}</Text>
       </View>
 
-      {/* Account Setup */}
+      {/* Account Setup — hidden once all steps are complete */}
+      {!setupComplete && (
       <Pressable onPress={() => nav.navigate("AccountSetup")}>
         <View
           style={{
@@ -194,12 +197,19 @@ export default function Dashboard() {
           ))}
         </View>
       </Pressable>
+      )}
 
       <HealthSyncPill
         connected={connected}
         syncing={syncing}
         lastSynced={lastSynced}
-        onPressDisconnected={() => nav.navigate("ConnectAppleHealth" as never)}
+        onPressDisconnected={() =>
+          nav.getParent()?.navigate("ProfileTab", {
+            screen: "ConnectAppleHealth",
+            initial: false,
+            params: { returnTo: "Home" },
+          })
+        }
       />
 
 

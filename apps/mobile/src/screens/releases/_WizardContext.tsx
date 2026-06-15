@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from "react";
 import type { UserProvider } from "@/lib/api";
+import type { SetupReturnTo } from "@/navigation/types";
 
 export type WizardFields = {
   benefitsCoverage: boolean;
@@ -37,6 +38,8 @@ export type WizardState = {
   expiryDate: Date | null;
   durationLabel: string;
   isEditing: boolean;
+  /** Set when the wizard is launched from the Account Setup checklist. */
+  returnTo: SetupReturnTo | null;
 };
 
 const defaults: WizardState = {
@@ -48,6 +51,7 @@ const defaults: WizardState = {
   expiryDate: null,
   durationLabel: "",
   isEditing: false,
+  returnTo: null,
 };
 
 type ContextType = {

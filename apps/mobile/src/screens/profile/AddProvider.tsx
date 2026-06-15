@@ -11,6 +11,7 @@ import { CardImagePicker } from "@/components/CardImagePicker";
 import { useTheme } from "@/theme/ThemeProvider";
 import { listMyProviders, replaceMyProviders, type UserProvider, type MyProviderInput } from "@/lib/api";
 import type { ProvidersParamList } from "@/navigation/types";
+import { returnToSetup } from "@/navigation/returnTo";
 
 type R = RouteProp<ProvidersParamList, "AddProvider">;
 type Nav = NativeStackNavigationProp<ProvidersParamList>;
@@ -108,7 +109,14 @@ export default function AddProvider() {
         ? current.map((p) => (p.id === existing!.id ? input : toInput(p)))
         : [...current.map(toInput), input];
       await replaceMyProviders(updated);
-      nav.goBack();
+      if (isEdit) {
+        nav.goBack();
+      } else if (!returnToSetup(nav, params?.returnTo)) {
+        // Adding (not from setup) can still be entered cross-tab, which leaves
+        // no MyProviders beneath AddProvider to goBack to. Reset the stack so we
+        // deterministically land on the providers list with the new entry.
+        nav.reset({ index: 0, routes: [{ name: "MyProviders" }] });
+      }
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed to save provider.");
     } finally {
@@ -118,7 +126,7 @@ export default function AddProvider() {
     providerType, providerName, insurance,
     phone, fax, address, patientId, patientMemberId,
     groupId, planName, providerEmail, membershipIdFront, membershipIdBack,
-    isEdit, existing, nav,
+    isEdit, existing, nav, params,
   ]);
 
   return (

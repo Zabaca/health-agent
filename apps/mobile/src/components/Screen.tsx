@@ -28,6 +28,17 @@ export function Screen({
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const Body: any = scroll ? ScrollView : View;
+  // ScrollView-only keyboard handling: `automaticallyAdjustKeyboardInsets`
+  // (iOS) insets the content by the keyboard height and scrolls the focused
+  // input into view, so bottom fields aren't hidden behind the soft keyboard.
+  // Defaults below are overridable per-screen via `...rest`.
+  const scrollProps = scroll
+    ? {
+        automaticallyAdjustKeyboardInsets: true,
+        keyboardShouldPersistTaps: "handled" as const,
+        keyboardDismissMode: "interactive" as const,
+      }
+    : {};
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
       <Body
@@ -41,6 +52,7 @@ export function Screen({
           },
           contentContainerStyle,
         ]}
+        {...scrollProps}
         {...rest}
       >
         {children}

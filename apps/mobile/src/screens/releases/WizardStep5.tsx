@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import { WizardShell } from "./_WizardShell";
 import { useWizard } from "./_WizardContext";
+import { returnToSetup } from "@/navigation/returnTo";
 
 type Nav = NativeStackNavigationProp<ReleasesParamList>;
 
@@ -169,7 +170,7 @@ export default function WizardStep5() {
       };
 
       await createRelease(input);
-      nav.popToTop();
+      if (!returnToSetup(nav, wizard.returnTo)) nav.popToTop();
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed to create release. Please try again.");
     } finally {

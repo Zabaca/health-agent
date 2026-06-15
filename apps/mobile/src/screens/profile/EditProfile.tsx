@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Linking, Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
@@ -14,23 +14,20 @@ import { useTheme } from "@/theme/ThemeProvider";
 import { getProfile, updateProfile, uploadFile, ApiError } from "@/lib/api";
 import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import type { ProfileParamList } from "@/navigation/types";
+import { returnToSetup } from "@/navigation/returnTo";
+import { toIsoDate, parseLocalDate } from "@health-agent/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
+type R = RouteProp<ProfileParamList, "EditProfile">;
 
 const DEFAULT_DOB = new Date(2000, 0, 1);
 
-function dateToIso(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+const dateToIso = toIsoDate;
 
-function parseDob(val: string): Date | null {
-  if (!val) return null;
-  const d = new Date(val);
-  return isNaN(d.getTime()) ? null : d;
-}
+// Parse a stored `YYYY-MM-DD` at LOCAL midnight. `new Date("1973-01-01")` parses
+// as UTC midnight, which renders as the prior day in negative-offset (US)
+// timezones — the off-by-one DOB bug. parseLocalDate avoids the shift.
+const parseDob = parseLocalDate;
 
 function formatDob(date: Date | null): string {
   if (!date) return "";
@@ -40,6 +37,7 @@ function formatDob(date: Date | null): string {
 export default function EditProfile() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
+  const { params } = useRoute<R>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -169,7 +167,7 @@ export default function EditProfile() {
         avatarUrl: avatarUrl ?? undefined,
         ...(needsEmail ? { email: email.trim() } : {}),
       });
-      nav.goBack();
+      if (!returnToSetup(nav, params?.returnTo)) nav.goBack();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Something went wrong.");
     } finally {
