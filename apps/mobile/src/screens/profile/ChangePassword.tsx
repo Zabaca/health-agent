@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Eye, EyeOff, Lock } from "lucide-react-native";
 import { Header } from "@/components/Header";
@@ -8,7 +8,7 @@ import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { useTheme } from "@/theme/ThemeProvider";
-import { changePassword, ApiError } from "@/lib/api";
+import { changePassword, setPassword, ApiError } from "@/lib/api";
 import type { ProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
@@ -16,6 +16,10 @@ type Nav = NativeStackNavigationProp<ProfileParamList>;
 export default function ChangePassword() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
+  const route = useRoute<RouteProp<ProfileParamList, "ChangePassword">>();
+  // "set" = create an initial password for an OAuth-only account (no current one).
+  const isSet = route.params?.mode === "set";
+  const title = isSet ? "Create Password" : "Change Password";
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -37,7 +41,11 @@ export default function ChangePassword() {
     }
     setSaving(true);
     try {
-      await changePassword(current, next);
+      if (isSet) {
+        await setPassword(next);
+      } else {
+        await changePassword(current, next);
+      }
       nav.goBack();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Something went wrong.");
@@ -48,11 +56,11 @@ export default function ChangePassword() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
-      <Header title="Change Password" onBack={() => nav.goBack()} />
+      <Header title={title} onBack={() => nav.goBack()} />
       <Screen
         bottom={
           <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16 }}>
-            <Button label="Update Password" onPress={onSubmit} fullWidth disabled={saving} />
+            <Button label={isSet ? "Create Password" : "Update Password"} onPress={onSubmit} fullWidth disabled={saving} />
           </View>
         }
         contentContainerStyle={{ gap: 16 }}
@@ -70,22 +78,30 @@ export default function ChangePassword() {
           >
             <Lock size={32} color={t.colors.primary} />
           </View>
-          <Text style={t.type.h2}>Change Password</Text>
+          <Text style={t.type.h2}>{title}</Text>
+          {isSet ? (
+            <Text style={[t.type.caption, { textAlign: "center" }]}>
+              Add a password so you can always sign in with your email — even if your
+              Apple or Google sign-in changes.
+            </Text>
+          ) : null}
         </View>
         {error ? (
           <Text style={{ color: t.colors.destructive, textAlign: "center" }}>{error}</Text>
         ) : null}
-        <Input
-          label="Current Password"
-          secureTextEntry={!showCurrent}
-          value={current}
-          onChangeText={setCurrent}
-          rightElement={
-            <Pressable onPress={() => setShowCurrent((v) => !v)} hitSlop={8}>
-              {showCurrent ? <EyeOff size={18} color={t.colors.textSecondary} /> : <Eye size={18} color={t.colors.textSecondary} />}
-            </Pressable>
-          }
-        />
+        {isSet ? null : (
+          <Input
+            label="Current Password"
+            secureTextEntry={!showCurrent}
+            value={current}
+            onChangeText={setCurrent}
+            rightElement={
+              <Pressable onPress={() => setShowCurrent((v) => !v)} hitSlop={8}>
+                {showCurrent ? <EyeOff size={18} color={t.colors.textSecondary} /> : <Eye size={18} color={t.colors.textSecondary} />}
+              </Pressable>
+            }
+          />
+        )}
         <Input
           label="New Password"
           placeholder="At least 8 characters"

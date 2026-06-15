@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Switch, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ChevronRight, LogOut } from "lucide-react-native";
 import { Header } from "@/components/Header";
@@ -27,12 +27,27 @@ export default function AccountSettings() {
   const loadConnections = useCallback(() => {
     getConnections().then(setConn).catch(() => {});
   }, []);
-  useEffect(() => { loadConnections(); }, [loadConnections]);
+  // Reload on focus so returning from "Create Password" refreshes hasPassword
+  // (updates the row label and the unlink gating).
+  useFocusEffect(useCallback(() => { loadConnections(); }, [loadConnections]));
 
   const { onApple, onGoogle, appleAvailable, googleReady, error: linkError, busy: linking } =
     useOAuthButtons({ mode: "link", onLinked: loadConnections });
 
   const onUnlink = (provider: "apple" | "google", label: string) => {
+    // Require an email+password fallback before unlinking — otherwise removing a
+    // provider could lock the user out (the server enforces this too).
+    if (!conn?.hasPassword) {
+      Alert.alert(
+        "Create a password first",
+        `Set a password so you can sign in with your email before unlinking ${label}. It keeps a way into your account if your ${label} sign-in ever changes.`,
+        [
+          { text: "Not now", style: "cancel" },
+          { text: "Create Password", onPress: () => nav.navigate("ChangePassword", { mode: "set" }) },
+        ],
+      );
+      return;
+    }
     Alert.alert(`Unlink ${label}?`, "You can re-link it anytime.", [
       { text: "Cancel", style: "cancel" },
       {
@@ -81,8 +96,12 @@ export default function AccountSettings() {
       <Screen contentContainerStyle={{ gap: 16 }}>
         <Group>
           <Row label="Email" value={conn?.email ?? user?.email ?? ""} />
-          <Pressable onPress={() => nav.navigate("ChangePassword")}>
-            <Row label="Change Password" chevron />
+          <Pressable
+            onPress={() =>
+              nav.navigate("ChangePassword", conn && !conn.hasPassword ? { mode: "set" } : undefined)
+            }
+          >
+            <Row label={conn && !conn.hasPassword ? "Create Password" : "Change Password"} chevron />
           </Pressable>
           {bioSupported ? (
             <ToggleRow label="Face ID / Touch ID" value={bioEnabled} onChange={onBioToggle} />
@@ -98,6 +117,7 @@ export default function AccountSettings() {
             <LinkRow
               label="Apple"
               connected={conn?.apple ?? false}
+              canUnlink={conn?.hasPassword ?? false}
               busy={linking || unlinking === "apple"}
               onLink={onApple}
               onUnlink={() => onUnlink("apple", "Apple")}
@@ -106,6 +126,7 @@ export default function AccountSettings() {
           <LinkRow
             label="Google"
             connected={conn?.google ?? false}
+            canUnlink={conn?.hasPassword ?? false}
             disabled={!googleReady}
             busy={linking || unlinking === "google"}
             onLink={onGoogle}
@@ -200,6 +221,7 @@ function Row({ label, value, chevron }: { label: string; value?: string; chevron
 function LinkRow({
   label,
   connected,
+  canUnlink = true,
   busy,
   disabled,
   onLink,
@@ -207,6 +229,7 @@ function LinkRow({
 }: {
   label: string;
   connected: boolean;
+  canUnlink?: boolean;
   busy?: boolean;
   disabled?: boolean;
   onLink: () => void;
@@ -222,8 +245,10 @@ function LinkRow({
       {busy ? (
         <ActivityIndicator size="small" color={t.colors.textSecondary} />
       ) : connected ? (
+        // Muted when unlinking is blocked (no email+password fallback); tapping
+        // still explains why via onUnlink.
         <Pressable onPress={onUnlink}>
-          <Text style={{ color: t.colors.destructive, fontWeight: "600" }}>Unlink</Text>
+          <Text style={{ color: canUnlink ? t.colors.destructive : t.colors.textSecondary, fontWeight: "600" }}>Unlink</Text>
         </Pressable>
       ) : (
         <Pressable onPress={onLink} disabled={disabled}>

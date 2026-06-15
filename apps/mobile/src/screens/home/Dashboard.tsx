@@ -10,6 +10,7 @@ import { HealthSyncPill } from "@/components/HealthSyncPill";
 import { useTheme } from "@/theme/ThemeProvider";
 import { getSetupStatus, getHealthData, postHealthData, type SetupStatus, type HealthDataRow } from "@/lib/api";
 import { fetchTodayMetrics, getLastHealthSync, recordHealthSync, requestHealthKitAccess } from "@/lib/healthkit";
+import { heartRateStatus, spo2Status, sleepStatus } from "@/lib/metricStatus";
 import type { HomeParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<HomeParamList>;
@@ -17,7 +18,7 @@ type Nav = NativeStackNavigationProp<HomeParamList>;
 type DashboardMetrics = {
   heartRateAvg: number | null;
   sleepMinutes: number | null;
-  glucoseAvg: number | null;
+  spo2Avg: number | null;
   steps: number | null;
 };
 
@@ -36,7 +37,7 @@ function rowsToMetrics(rows: HealthDataRow[]): DashboardMetrics {
   return {
     heartRateAvg: find("heartRateAvg"),
     sleepMinutes: find("sleepMinutes"),
-    glucoseAvg: find("glucoseAvg"),
+    spo2Avg: find("spo2Avg"),
     steps: find("steps"),
   };
 }
@@ -129,6 +130,13 @@ export default function Dashboard() {
   const firstName = setupStatus?.firstName ?? "";
   const connected = setupStatus?.healthKitConnected ?? false;
 
+  // Status pills use the same thresholds as the expanded views (see
+  // lib/metricStatus) so the card can't say "Normal" while the expanded says
+  // "Elevated" for the same value.
+  const hrStat = heartRateStatus(metrics?.heartRateAvg);
+  const spo2Stat = spo2Status(metrics?.spo2Avg);
+  const sleepStat = sleepStatus(metrics?.sleepMinutes);
+
   return (
     <Screen
       safeTop
@@ -200,37 +208,37 @@ export default function Dashboard() {
       <View style={{ flexDirection: "row", gap: 12 }}>
         <MetricCard
           label="HEART RATE"
-          value={metrics?.heartRateAvg !== null && metrics?.heartRateAvg !== undefined ? String(metrics.heartRateAvg) : "--"}
+          value={metrics?.heartRateAvg != null ? String(metrics.heartRateAvg) : "--"}
           unit="bpm"
-          status={hasValue(metrics?.heartRateAvg) ? "Normal" : "No data"}
-          statusTone={hasValue(metrics?.heartRateAvg) ? "good" : undefined}
+          status={hrStat.label}
+          statusTone={hrStat.tone}
           onPress={() => nav.navigate("CardExpanded", { cardId: "heartRate" })}
+        />
+        <MetricCard
+          label="SpO₂"
+          value={metrics?.spo2Avg != null ? String(metrics.spo2Avg) : "--"}
+          unit="%"
+          status={spo2Stat.label}
+          statusTone={spo2Stat.tone}
+          onPress={() => nav.navigate("Spo2Expanded")}
+        />
+      </View>
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        <MetricCard
+          label="STEPS"
+          value={metrics?.steps != null ? metrics.steps.toLocaleString() : "--"}
+          unit="steps"
+          status={hasValue(metrics?.steps) ? "Active" : "No data"}
+          statusTone={hasValue(metrics?.steps) ? "good" : undefined}
+          onPress={() => nav.navigate("StepsExpanded")}
         />
         <MetricCard
           label="SLEEP"
           value={formatSleep(metrics?.sleepMinutes ?? null)}
           unit=""
-          status={hasValue(metrics?.sleepMinutes) ? "Good" : "No data"}
-          statusTone={hasValue(metrics?.sleepMinutes) ? "good" : undefined}
+          status={sleepStat.label}
+          statusTone={sleepStat.tone}
           onPress={() => nav.navigate("SleepExpanded")}
-        />
-      </View>
-      <View style={{ flexDirection: "row", gap: 12 }}>
-        <MetricCard
-          label="GLUCOSE"
-          value={metrics?.glucoseAvg !== null && metrics?.glucoseAvg !== undefined ? String(metrics.glucoseAvg) : "--"}
-          unit="mg/dL"
-          status={hasValue(metrics?.glucoseAvg) ? "Normal" : "No data"}
-          statusTone={hasValue(metrics?.glucoseAvg) ? "good" : undefined}
-          onPress={() => nav.navigate("GlucoseExpanded")}
-        />
-        <MetricCard
-          label="STEPS"
-          value={metrics?.steps !== null && metrics?.steps !== undefined ? metrics.steps.toLocaleString() : "--"}
-          unit="steps"
-          status={hasValue(metrics?.steps) ? "Active" : "No data"}
-          statusTone={hasValue(metrics?.steps) ? "good" : undefined}
-          onPress={() => nav.navigate("StepsExpanded")}
         />
       </View>
     </Screen>

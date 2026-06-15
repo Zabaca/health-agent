@@ -13,7 +13,7 @@ export type HomeParamList = {
   Dashboard: undefined;
   CardExpanded: { cardId: string };
   SleepExpanded: undefined;
-  GlucoseExpanded: undefined;
+  Spo2Expanded: undefined;
   StepsExpanded: undefined;
   Notifications: undefined;
   AccountSetup: undefined;
@@ -94,7 +94,7 @@ export type ProfileParamList = {
   ConnectAppleHealth: undefined;
   AccountSettings: undefined;
   EditProfile: undefined;
-  ChangePassword: undefined;
+  ChangePassword: { mode?: "change" | "set" } | undefined;
   DesignatedAgents: undefined;
   InviteRepresentative: undefined;
   RepresentativeDetail: { agent: import("@/lib/api").DesignatedAgent };

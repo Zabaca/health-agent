@@ -2,7 +2,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Dashboard from "@/screens/home/Dashboard";
 import CardExpanded from "@/screens/home/CardExpanded";
 import SleepExpanded from "@/screens/home/SleepExpanded";
-import GlucoseExpanded from "@/screens/home/GlucoseExpanded";
+import Spo2Expanded from "@/screens/home/Spo2Expanded";
 import StepsExpanded from "@/screens/home/StepsExpanded";
 import Notifications from "@/screens/home/Notifications";
 import AccountSetup from "@/screens/home/AccountSetup";
@@ -19,7 +19,7 @@ export function HomeStack() {
       <Stack.Screen name="Dashboard" component={Dashboard} />
       <Stack.Screen name="CardExpanded" component={CardExpanded} />
       <Stack.Screen name="SleepExpanded" component={SleepExpanded} />
-      <Stack.Screen name="GlucoseExpanded" component={GlucoseExpanded} />
+      <Stack.Screen name="Spo2Expanded" component={Spo2Expanded} />
       <Stack.Screen name="StepsExpanded" component={StepsExpanded} />
       <Stack.Screen name="Notifications" component={Notifications} />
       <Stack.Screen name="AccountSetup" component={AccountSetup} />

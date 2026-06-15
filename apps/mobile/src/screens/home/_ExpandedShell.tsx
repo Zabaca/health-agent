@@ -13,15 +13,15 @@ import type { MetricRange } from "@/lib/healthkit";
 
 type Nav = NativeStackNavigationProp<HomeParamList>;
 
-export type Metric = "heartRate" | "sleep" | "glucose" | "steps";
+export type Metric = "heartRate" | "sleep" | "spo2" | "steps";
 
 const otherMetrics = (focus: Metric): Metric[] =>
-  (["heartRate", "sleep", "glucose", "steps"] as Metric[]).filter((m) => m !== focus);
+  (["heartRate", "spo2", "steps", "sleep"] as Metric[]).filter((m) => m !== focus);
 
 const labelMap: Record<Metric, string> = {
   heartRate: "HEART RATE",
   sleep: "SLEEP",
-  glucose: "GLUCOSE",
+  spo2: "SpO₂",
   steps: "STEPS",
 };
 
@@ -39,9 +39,9 @@ function siblingValue(m: Metric, rows: HealthDataRow[]): { value: string; unit: 
     return { value: v !== null ? String(v) : "--", unit: v !== null ? "bpm" : "" };
   }
   if (m === "sleep") return { value: formatSleepMin(find("sleepMinutes")), unit: "" };
-  if (m === "glucose") {
-    const v = find("glucoseAvg");
-    return { value: v !== null ? String(v) : "--", unit: v !== null ? "mg/dL" : "" };
+  if (m === "spo2") {
+    const v = find("spo2Avg");
+    return { value: v !== null ? String(v) : "--", unit: v !== null ? "%" : "" };
   }
   const v = find("steps");
   return { value: v !== null ? v.toLocaleString() : "--", unit: v !== null ? "steps" : "" };
@@ -118,7 +118,7 @@ export function ExpandedShell({
               onPress={() => {
                 if (m === "heartRate") nav.navigate("CardExpanded", { cardId: "heartRate" });
                 else if (m === "sleep") nav.navigate("SleepExpanded");
-                else if (m === "glucose") nav.navigate("GlucoseExpanded");
+                else if (m === "spo2") nav.navigate("Spo2Expanded");
                 else nav.navigate("StepsExpanded");
               }}
             />

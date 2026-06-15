@@ -82,7 +82,7 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
   async function handleConnect() {
     setLoading(true);
     try {
-      const granted = await requestHealthKitAccess();
+      const granted = await requestHealthKitAccess({ clinical: true });
       if (!granted) {
         // Resolves false on non-iOS (Android/web) — don't flag the account connected.
         Alert.alert("Not available", "Apple Health is only available on iOS devices.");
@@ -94,8 +94,10 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
         metrics.length > 0 ? postHealthData(metrics) : Promise.resolve(),
       ]);
       await recordHealthSync();
-      // FHIR clinical records (foreground, one-time on connect). No-op until
-      // clinical access is enabled (capability + permissions); errors are non-fatal.
+      // FHIR clinical records (foreground, one-time on connect). Access was
+      // already requested in requestHealthKitAccess; if it wasn't granted (no
+      // provider account, or the user dismissed the sheet) this returns [].
+      // Errors are non-fatal.
       try {
         const clinical = await fetchClinicalRecords();
         // Server caps at 500/request; chunk so a chronic patient's full history persists.
@@ -120,7 +122,7 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
     try {
       // Force a fresh HealthKit init. If iOS dropped the grant (reinstall,
       // re-sign, user-revoked) it will prompt; otherwise it's a no-op.
-      await requestHealthKitAccess();
+      await requestHealthKitAccess({ clinical: true });
       const metrics = await fetchTodayMetrics();
       if (metrics.length > 0) await postHealthData(metrics);
       await recordHealthSync();

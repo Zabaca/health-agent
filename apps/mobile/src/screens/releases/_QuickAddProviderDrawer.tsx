@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 import { useTheme } from "@/theme/ThemeProvider";
 import { Input } from "@/components/Input";
+import { AddressAutocompleteInput } from "@/components/AddressAutocompleteInput";
 import { Button } from "@/components/Button";
 import { CardImagePicker } from "@/components/CardImagePicker";
 import { listMyProviders, replaceMyProviders, type MyProviderInput } from "@/lib/api";
@@ -283,7 +284,7 @@ export function QuickAddProviderDrawer({ visible, onClose, onSaved }: Props) {
                     onChangeText={setPatientId}
                   />
                 )}
-                <Input
+                <AddressAutocompleteInput
                   label="Address (optional)"
                   placeholder="123 Main St, Boston, MA 02114"
                   value={address}

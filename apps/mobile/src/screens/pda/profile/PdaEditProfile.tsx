@@ -8,6 +8,7 @@ import { UserRound, Calendar } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Input } from "@/components/Input";
+import { AddressAutocompleteInput } from "@/components/AddressAutocompleteInput";
 import { Button } from "@/components/Button";
 import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
@@ -325,7 +326,7 @@ export default function PdaEditProfile() {
             ) : null}
 
             <Input label="Phone Number" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
-            <Input label="Address" value={address} onChangeText={setAddress} />
+            <AddressAutocompleteInput label="Address" value={address} onChangeText={setAddress} />
             <Input
               label="Last 4 of SSN · Optional"
               value={ssn}
