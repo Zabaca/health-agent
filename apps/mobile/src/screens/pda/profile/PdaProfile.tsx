@@ -2,17 +2,18 @@ import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { ChevronRight, Bell, ShieldCheck, Repeat, Monitor, LogOut, UserRound } from "lucide-react-native";
+import { ChevronRight, FileText, ShieldCheck, Repeat, Monitor, LogOut, UserRound } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { VersionFooter } from "@/components/VersionFooter";
+import { LegalModal } from "@/screens/legal/LegalModal";
 import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
-import { getProfile, type ProfileData } from "@/lib/api";
+import { getProfile, representedPatientName, type ProfileData } from "@/lib/api";
 import type { PdaProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaProfileParamList>;
@@ -35,14 +36,13 @@ export default function PdaProfile() {
   const { currentPatient } = useRepresentedPatients();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [signOutOpen, setSignOutOpen] = useState(false);
+  const [legalOpen, setLegalOpen] = useState<"terms" | "privacy" | null>(null);
 
   useEffect(() => {
     getProfile().then(setProfile).catch(() => {});
   }, []);
 
-  const patientName = currentPatient
-    ? `${currentPatient.firstName ?? ""} ${currentPatient.lastName ?? ""}`.trim() || currentPatient.patientId
-    : "";
+  const patientName = currentPatient ? representedPatientName(currentPatient) : "";
 
   return (
     <Screen
@@ -175,19 +175,29 @@ export default function PdaProfile() {
             overflow: "hidden",
           }}
         >
-          <Row icon={<Bell size={18} color={t.colors.textSecondary} />} label="Notifications" />
-          <Row icon={<ShieldCheck size={18} color={t.colors.textSecondary} />} label="Privacy & Security" />
           <Row
             icon={<Monitor size={18} color={t.colors.textSecondary} />}
             label="Active Devices"
             onPress={() => nav.navigate("ActiveDevices")}
           />
           <Row
-            icon={<Repeat size={18} color={t.colors.primary} />}
-            label="Switch to Patient View"
-            tint="primary"
-            onPress={() => switchTo("patient")}
+            icon={<FileText size={18} color={t.colors.textSecondary} />}
+            label="Terms of Service"
+            onPress={() => setLegalOpen("terms")}
           />
+          <Row
+            icon={<ShieldCheck size={18} color={t.colors.textSecondary} />}
+            label="Privacy Policy"
+            onPress={() => setLegalOpen("privacy")}
+          />
+          {user?.isPatient ? (
+            <Row
+              icon={<Repeat size={18} color={t.colors.primary} />}
+              label="Switch to Patient View"
+              tint="primary"
+              onPress={() => switchTo("patient")}
+            />
+          ) : null}
         </View>
 
         <VersionFooter />
@@ -201,6 +211,8 @@ export default function PdaProfile() {
         onCancel={() => setSignOutOpen(false)}
         onConfirm={() => { setSignOutOpen(false); signOut(); }}
       />
+
+      <LegalModal kind={legalOpen} onClose={() => setLegalOpen(null)} />
     </Screen>
   );
 }

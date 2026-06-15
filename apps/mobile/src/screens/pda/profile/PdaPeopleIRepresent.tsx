@@ -1,15 +1,16 @@
-import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Mail, ChevronRight, UserRound } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
+import { PulsingView } from "@/components/PulsingView";
 import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
-import { listPendingRepresentingInvites, representedPatientName, type PendingRepresentingInvite } from "@/lib/api";
+import { representedPatientName } from "@/lib/api";
 import type { PdaProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaProfileParamList>;
@@ -19,13 +20,13 @@ const INVITE_ORANGE = "#F97316";
 export default function PdaPeopleIRepresent() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
+  const { user } = useAuth();
   const { switchTo } = useRole();
-  const { patients, loading, currentPatient } = useRepresentedPatients();
-  const [pendingInvites, setPendingInvites] = useState<PendingRepresentingInvite[]>([]);
+  const { patients, pendingInvites, loading, currentPatient } = useRepresentedPatients();
 
-  useFocusEffect(useCallback(() => {
-    listPendingRepresentingInvites().then(setPendingInvites).catch(() => {});
-  }, []));
+  // Only meaningful to open the role switcher when there's another role to land
+  // on: a patient account of one's own, or more than one represented patient.
+  const canSwitchRole = !!user?.isPatient || patients.length > 1;
 
   const firstInvite = pendingInvites[0];
 
@@ -37,7 +38,11 @@ export default function PdaPeopleIRepresent() {
         rightAction={
           firstInvite
             ? {
-                icon: <Mail size={22} color={INVITE_ORANGE} />,
+                icon: (
+                  <PulsingView>
+                    <Mail size={22} color={INVITE_ORANGE} />
+                  </PulsingView>
+                ),
                 onPress: () => nav.navigate("PdaInvite", { invite: firstInvite }),
               }
             : undefined
@@ -63,7 +68,7 @@ export default function PdaPeopleIRepresent() {
                     if (!isActive) {
                       switchTo("pda", p.patientId);
                       nav.popToTop();
-                    } else {
+                    } else if (canSwitchRole) {
                       nav.navigate("RoleSwitcher");
                     }
                   }}

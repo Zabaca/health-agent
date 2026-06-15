@@ -123,6 +123,8 @@ export type PdaRecordsFilters = {
 
 export type PdaHomeParamList = {
   PdaHome: undefined;
+  RoleSwitcher: undefined;
+  PdaInvite: { invite: import("@/lib/api").PendingRepresentingInvite };
 };
 
 export type PdaRecordsParamList = {
