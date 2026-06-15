@@ -9,16 +9,12 @@ import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRole } from "@/hooks/useRole";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
-import { listPendingRepresentingInvites, type RepresentedPatient, type PendingRepresentingInvite } from "@/lib/api";
+import { listPendingRepresentingInvites, representedPatientName, type PendingRepresentingInvite } from "@/lib/api";
 import type { PdaProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaProfileParamList>;
 
 const INVITE_ORANGE = "#F97316";
-
-function patientName(p: RepresentedPatient) {
-  return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || p.patientId;
-}
 
 export default function PdaPeopleIRepresent() {
   const t = useTheme();
@@ -104,7 +100,7 @@ export default function PdaPeopleIRepresent() {
                       )}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={t.type.bodyStrong}>{patientName(p)}</Text>
+                      <Text style={t.type.bodyStrong} numberOfLines={1}>{representedPatientName(p)}</Text>
                       {p.relationship ? (
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
                           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: t.colors.primary }} />

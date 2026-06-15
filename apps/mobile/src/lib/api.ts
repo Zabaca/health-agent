@@ -761,8 +761,21 @@ export type RepresentedPatient = {
   releasePermission: "viewer" | "editor" | null;
   firstName: string | null;
   lastName: string | null;
+  email: string | null;
   avatarUrl: string | null;
 };
+
+/**
+ * Display name for a represented patient: full name when set, otherwise the
+ * patient's email. Patients who haven't completed their profile have no name,
+ * and we must never surface the raw user ID to their designated agents. Email
+ * can also be absent (OAuth users pre-onboarding), so fall back to a label.
+ */
+export function representedPatientName(
+  p: Pick<RepresentedPatient, "firstName" | "lastName" | "email">,
+): string {
+  return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || p.email || "Patient";
+}
 
 export type RepresentingRecord = {
   id: string;

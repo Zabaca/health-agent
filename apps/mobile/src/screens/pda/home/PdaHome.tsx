@@ -6,6 +6,7 @@ import { Screen } from "@/components/Screen";
 import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
+import { representedPatientName } from "@/lib/api";
 import type { PdaHomeParamList, PdaProfileParamList, PdaTabsParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaHomeParamList & PdaTabsParamList & PdaProfileParamList>;
@@ -29,9 +30,13 @@ export default function PdaHome() {
     );
   }
 
-  const patientName =
-    `${currentPatient.firstName ?? ""} ${currentPatient.lastName ?? ""}`.trim() || currentPatient.patientId;
+  const patientName = representedPatientName(currentPatient);
   const patientInitials = initials(currentPatient.firstName, currentPatient.lastName);
+  // Selector pill: "First L." when a name is set, otherwise the email (never the raw user ID).
+  const hasName = !!(currentPatient.firstName || currentPatient.lastName);
+  const pillLabel = hasName
+    ? `${currentPatient.firstName ?? ""}${currentPatient.lastName ? ` ${currentPatient.lastName[0]}.` : ""}`.trim()
+    : currentPatient.email ?? "Patient";
 
   const accessRows = [
     {
@@ -78,9 +83,8 @@ export default function PdaHome() {
             backgroundColor: t.colors.primaryBg,
           }}
         >
-          <Text style={{ color: t.colors.primary, fontWeight: "600" }}>
-            {currentPatient.firstName ?? patientName.split(" ")[0]}{" "}
-            {currentPatient.lastName ? `${currentPatient.lastName[0]}.` : ""}
+          <Text style={{ color: t.colors.primary, fontWeight: "600", maxWidth: 160 }} numberOfLines={1}>
+            {pillLabel}
           </Text>
           <ChevronDown size={16} color={t.colors.primary} />
         </Pressable>
