@@ -93,6 +93,8 @@ export default function ChangePassword() {
           <Input
             label="Current Password"
             secureTextEntry={!showCurrent}
+            autoCapitalize="none"
+            autoCorrect={false}
             value={current}
             onChangeText={setCurrent}
             rightElement={
@@ -106,6 +108,8 @@ export default function ChangePassword() {
           label="New Password"
           placeholder="At least 8 characters"
           secureTextEntry={!showNext}
+          autoCapitalize="none"
+          autoCorrect={false}
           value={next}
           onChangeText={setNext}
           rightElement={
@@ -118,6 +122,8 @@ export default function ChangePassword() {
           label="Confirm New Password"
           placeholder="Repeat new password"
           secureTextEntry={!showConfirm}
+          autoCapitalize="none"
+          autoCorrect={false}
           value={confirm}
           onChangeText={setConfirm}
           error={confirm.length > 0 && confirm !== next ? "Passwords don't match" : undefined}
