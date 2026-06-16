@@ -65,6 +65,7 @@ export async function GET(
     updatedAt: r.updatedAt,
     voided: r.voided,
     authSignatureImage: r.authSignatureImage,
+    authExpirationDate: r.authExpirationDate,
     releaseCode: r.releaseCode,
     releaseAuthAgent: r.releaseAuthAgent,
     authAgentFirstName: r.authAgentFirstName,
@@ -137,6 +138,9 @@ export async function POST(
     ssn: patient.ssn ? extractLast4Ssn(patient.ssn) : "",
     releaseAuthAgent: true,
     releaseAuthZabaca: false,
+    // Full name drives the patient's release-list label (authAgentName ?? "Representative");
+    // first/last drive the detail + PDF. Keep all three in sync with the patient flow.
+    authAgentName: [pda.firstName, pda.lastName].filter(Boolean).join(' ') || null,
     authAgentFirstName: pda.firstName ?? '',
     authAgentLastName: pda.lastName ?? '',
     authAgentAddress: pda.address ?? '',

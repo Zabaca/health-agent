@@ -704,6 +704,7 @@ export type RepresentingReleaseSummary = {
   updatedAt: string;
   voided: boolean;
   authSignatureImage: string | null;
+  authExpirationDate: string | null;
   releaseCode: string | null;
   releaseAuthAgent: boolean;
   authAgentFirstName: string | null;

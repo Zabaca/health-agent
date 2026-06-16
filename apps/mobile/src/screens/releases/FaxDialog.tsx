@@ -1,20 +1,18 @@
 import { useState } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Building2, Phone, Pencil, Printer, X, AlertTriangle } from "lucide-react-native";
+import { Building2, Phone, Pencil, Printer, AlertTriangle } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { useTheme } from "@/theme/ThemeProvider";
-import type { ReleasesParamList } from "@/navigation/types";
 
-type Nav = NativeStackNavigationProp<ReleasesParamList>;
-
+// Shared by the patient and PDA release stacks; only navigates back, so it is
+// intentionally stack-agnostic.
 export default function FaxDialog() {
   const t = useTheme();
-  const nav = useNavigation<Nav>();
+  const nav = useNavigation();
   const [coverPage, setCoverPage] = useState(true);
   const [fax, setFax] = useState("(617) 726-5800");
 

@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { useNavigation, useRoute, useFocusEffect, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, Calendar, Hourglass, Ban } from "lucide-react-native";
+import { ArrowLeft, Calendar, Hourglass, Ban, Printer, FileDown } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
@@ -103,6 +103,9 @@ export default function PdaReleaseDetail() {
   const provider = release?.providers[0] ?? null;
   const isPending = release ? !release.authSignatureImage && !release.voided : false;
   const isVoided = release?.voided ?? false;
+  // Active = signed and not voided. The agent can export/fax an active release
+  // they represent, exactly like the patient (read-only, so not editor-gated).
+  const isActive = !!release && !isPending && !isVoided;
 
   const displayName = provider ? providerDisplayName(provider) : "—";
   const days = release ? daysRemaining(release.authExpirationDate) : null;
@@ -148,17 +151,37 @@ export default function PdaReleaseDetail() {
       ) : (
         <Screen
           bottom={
-            isEditor && !isVoided ? (
-              <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16 }}>
-                <Pressable
-                  onPress={() => setRevokeOpen(true)}
-                  style={{ height: 52, borderRadius: t.radius.button, backgroundColor: t.colors.destructive, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 }}
-                >
-                  <Ban size={16} color="#FFFFFF" />
-                  <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
-                    {isPending ? "Cancel Release" : "Revoke Release"}
-                  </Text>
-                </Pressable>
+            isActive || (isEditor && !isVoided) ? (
+              <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16, gap: 10 }}>
+                {isActive && (
+                  <View style={{ flexDirection: "row", gap: 10 }}>
+                    <Pressable
+                      onPress={() => nav.navigate("FaxDialog")}
+                      style={{ flex: 1, height: 48, borderRadius: t.radius.button, borderWidth: 1, borderColor: t.colors.primary, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 }}
+                    >
+                      <Printer size={16} color={t.colors.primary} />
+                      <Text style={{ color: t.colors.primary, fontWeight: "600" }}>Fax Request</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => nav.navigate("ExportPDF", { releaseId: params.releaseId, patientId: currentPatient!.patientId })}
+                      style={{ flex: 1, height: 48, borderRadius: t.radius.button, borderWidth: 1, borderColor: t.colors.primary, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 }}
+                    >
+                      <FileDown size={16} color={t.colors.primary} />
+                      <Text style={{ color: t.colors.primary, fontWeight: "600" }}>Save PDF</Text>
+                    </Pressable>
+                  </View>
+                )}
+                {isEditor && !isVoided && (
+                  <Pressable
+                    onPress={() => setRevokeOpen(true)}
+                    style={{ height: 52, borderRadius: t.radius.button, backgroundColor: t.colors.destructive, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 }}
+                  >
+                    <Ban size={16} color="#FFFFFF" />
+                    <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+                      {isPending ? "Cancel Release" : "Revoke Release"}
+                    </Text>
+                  </Pressable>
+                )}
               </View>
             ) : undefined
           }

@@ -87,7 +87,9 @@ export type ReleasesParamList = {
   PendingDetail: { releaseId: string };
   FaxDialog: undefined;
   DateFilterSheet: { current?: ReleasesFilter } | undefined;
-  ExportPDF: { releaseId: string };
+  // patientId is set only when reached from the PDA stack — it switches the PDF
+  // fetch to the PDA-scoped print endpoint.
+  ExportPDF: { releaseId: string; patientId?: string };
 };
 
 export type ProvidersParamList = {
@@ -178,6 +180,10 @@ export type PdaReleasesParamList = {
   PdaWizardStep2: { providerType: string; providerId: string };
   PdaWizardStep3: undefined;
   PdaWizardStep4: undefined;
+  // Shared with the patient releases stack; PDA passes patientId so PDF export
+  // hits the PDA-scoped print endpoint. Fax is the same shared dialog.
+  ExportPDF: { releaseId: string; patientId?: string };
+  FaxDialog: undefined;
 };
 
 export type PdaProfileParamList = {

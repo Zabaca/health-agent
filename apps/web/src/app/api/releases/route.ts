@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveUserSession } from "@/lib/session-resolver";
 import { db } from "@/lib/db";
-import { releases as releasesTable, providers as providersTable, users, userProviders } from "@/lib/db/schema";
+import { releases as releasesTable, providers as providersTable, users, userProviders, patientDesignatedAgents } from "@/lib/db/schema";
 import { desc, eq, and } from "drizzle-orm";
 import { type ProviderFormData } from "@/lib/schemas/release";
 import { contractRoute } from "@/lib/api/contract-handler";
@@ -43,14 +43,58 @@ export const GET = contractRoute(contract.releases.list, async ({ req }) => {
   return NextResponse.json(releases);
 });
 
+/**
+ * When the patient picked one of their designated agents as the representative,
+ * fill the release's authAgent* contact fields from that agent's canonical user
+ * record. The wizard only carries the agent's display name/email; the agent's
+ * phone + address and the exact account email live on the user row. Crucially,
+ * the agent's representing view matches releases by `authAgentEmail === user.email`,
+ * so populating it from the same source is what makes the release appear there.
+ * Mirrors the PDA-initiated route (POST /api/representing/[patientId]/releases).
+ * Returns {} (no override) when no/invalid agent was selected.
+ */
+async function resolveDesignatedAgentFields(
+  patientUserId: string,
+  releaseAuthAgent: boolean,
+  designatedAgentId: string | undefined,
+): Promise<Partial<typeof releasesTable.$inferInsert>> {
+  if (!releaseAuthAgent || !designatedAgentId) return {};
+  const relation = await db.query.patientDesignatedAgents.findFirst({
+    where: and(
+      eq(patientDesignatedAgents.id, designatedAgentId),
+      eq(patientDesignatedAgents.patientId, patientUserId),
+      eq(patientDesignatedAgents.status, "accepted"),
+    ),
+  });
+  if (!relation?.agentUserId) return {};
+  const agent = await db.query.users.findFirst({
+    where: eq(users.id, relation.agentUserId),
+    columns: { firstName: true, lastName: true, address: true, phoneNumber: true, email: true },
+  });
+  if (!agent) return {};
+  const fullName = [agent.firstName, agent.lastName].filter(Boolean).join(" ");
+  return {
+    authAgentFirstName: agent.firstName ?? "",
+    authAgentLastName: agent.lastName ?? "",
+    authAgentAddress: agent.address ?? "",
+    authAgentPhone: agent.phoneNumber ?? "",
+    authAgentEmail: agent.email ?? "",
+    ...(fullName ? { authAgentName: fullName } : {}),
+  };
+}
+
 export const POST = contractRoute(contract.releases.create, async ({ req, body }) => {
   const { result, error } = await resolveUserSession(req);
   if (error) return error;
 
   try {
-    const { providers, ...releaseData } = body;
+    const { providers, designatedAgentId, ...releaseData } = body;
+    const agentFields = await resolveDesignatedAgentFields(
+      result.userId, releaseData.releaseAuthAgent, designatedAgentId,
+    );
     const normalizedReleaseData = {
       ...releaseData,
+      ...agentFields,
       ssn: releaseData.ssn ? extractLast4Ssn(releaseData.ssn) : "",
       dateOfBirth: toIsoDate(releaseData.dateOfBirth),
     };

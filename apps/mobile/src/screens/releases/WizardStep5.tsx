@@ -150,6 +150,11 @@ export default function WizardStep5() {
       };
 
       const isSelf = wizard.representativeId === "self";
+      // representativeId is "pda:<patientDesignatedAgents.id>" for an agent; the
+      // server uses that id to fill the agent's contact fields authoritatively
+      // (name/phone/address/email) so the release detail + PDF are complete and
+      // it surfaces in the agent's representing view.
+      const designatedAgentId = isSelf ? undefined : wizard.representativeId.replace(/^pda:/, "");
       const input: CreateReleaseInput = {
         firstName: profile.firstName,
         middleName: profile.middleName || undefined,
@@ -163,6 +168,7 @@ export default function WizardStep5() {
         releaseAuthAgent: !isSelf,
         releaseAuthZabaca: false,
         authAgentName: isSelf ? undefined : wizard.representativeLabel,
+        designatedAgentId,
         authExpirationDate: expiryDateStr,
         authPrintedName: sig.printedName || `${profile.firstName} ${profile.lastName}`.trim(),
         authSignatureImage: sig.image,
