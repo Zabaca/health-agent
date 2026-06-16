@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation, useFocusEffect, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Check, Plus, Stethoscope } from "lucide-react-native";
 import { useTheme } from "@/theme/ThemeProvider";
@@ -11,6 +11,7 @@ import { useWizard } from "./_WizardContext";
 import { QuickAddProviderDrawer } from "./_QuickAddProviderDrawer";
 
 type Nav = NativeStackNavigationProp<ReleasesParamList>;
+type R = RouteProp<ReleasesParamList, "WizardStep1">;
 
 function displayName(p: UserProvider): string {
   return p.providerType === "Insurance" ? (p.insurance || p.providerName) : p.providerName;
@@ -26,7 +27,15 @@ function subtitle(p: UserProvider): string {
 export default function WizardStep1() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
+  const { params } = useRoute<R>();
   const { wizard, setWizard } = useWizard();
+
+  // Record where this wizard run should return on completion. Step 1 is the
+  // entry point, so capturing it here makes it available to Step 5. Defaulting
+  // to null also clears a stale value from a prior setup-launched run.
+  useEffect(() => {
+    setWizard(prev => ({ ...prev, returnTo: params?.returnTo ?? null }));
+  }, [params?.returnTo, setWizard]);
   const [providers, setProviders] = useState<UserProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);

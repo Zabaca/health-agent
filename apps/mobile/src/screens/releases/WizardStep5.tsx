@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { SignaturePad, type SignaturePadRef } from "@/components/SignaturePad";
 import { WizardShell } from "./_WizardShell";
 import { useWizard } from "./_WizardContext";
+import { returnToSetup } from "@/navigation/returnTo";
 
 type Nav = NativeStackNavigationProp<ReleasesParamList>;
 
@@ -149,6 +150,11 @@ export default function WizardStep5() {
       };
 
       const isSelf = wizard.representativeId === "self";
+      // representativeId is "pda:<patientDesignatedAgents.id>" for an agent; the
+      // server uses that id to fill the agent's contact fields authoritatively
+      // (name/phone/address/email) so the release detail + PDF are complete and
+      // it surfaces in the agent's representing view.
+      const designatedAgentId = isSelf ? undefined : wizard.representativeId.replace(/^pda:/, "");
       const input: CreateReleaseInput = {
         firstName: profile.firstName,
         middleName: profile.middleName || undefined,
@@ -162,6 +168,7 @@ export default function WizardStep5() {
         releaseAuthAgent: !isSelf,
         releaseAuthZabaca: false,
         authAgentName: isSelf ? undefined : wizard.representativeLabel,
+        designatedAgentId,
         authExpirationDate: expiryDateStr,
         authPrintedName: sig.printedName || `${profile.firstName} ${profile.lastName}`.trim(),
         authSignatureImage: sig.image,
@@ -169,7 +176,7 @@ export default function WizardStep5() {
       };
 
       await createRelease(input);
-      nav.popToTop();
+      if (!returnToSetup(nav, wizard.returnTo)) nav.popToTop();
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "Failed to create release. Please try again.");
     } finally {

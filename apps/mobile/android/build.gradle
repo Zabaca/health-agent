@@ -6,7 +6,11 @@ buildscript {
         minSdkVersion = Integer.parseInt(findProperty('android.minSdkVersion') ?: '24')
         compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '35')
         targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '34')
-        kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.25'
+        // Must match the Kotlin version RN 0.76.5 pins in its gradle-plugin
+        // version catalog (1.9.24). expo-modules-core maps this to a Compose
+        // compiler version; 1.9.25 here selects Compose 1.5.15, which then
+        // fails against the actual 1.9.24 compiler. Keep at 1.9.24 → Compose 1.5.14.
+        kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.24'
 
         ndkVersion = "26.1.10909125"
     }

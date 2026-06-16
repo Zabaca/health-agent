@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Eye,
   FileText,
+  FlaskConical,
   FolderHeart,
   Image as ImageIcon,
   Search,
@@ -40,12 +41,38 @@ type Nav = NativeStackNavigationProp<PdaRecordsParamList>;
 type R = RouteProp<PdaRecordsParamList, "PdaRecords">;
 
 const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "gif", "webp", "tiff", "tif", "heic", "heif"]);
+const FHIR_SOURCE = "healthkitFHIR";
 
 function isImage(fileType: string): boolean {
   return IMAGE_EXTS.has(fileType.toLowerCase().replace(/^\./, ""));
 }
 
+function isFhir(r: RepresentingRecord): boolean {
+  return r.source === FHIR_SOURCE;
+}
+
+// HealthKit recordType → friendly label. Mirrors the patient RecordsList map so
+// both surfaces stay in sync.
+const FHIR_LABEL: Record<string, string> = {
+  AllergyRecord: "Allergy",
+  ConditionRecord: "Condition",
+  ImmunizationRecord: "Immunization",
+  LabResultRecord: "Lab Result",
+  MedicationRecord: "Medication",
+  ProcedureRecord: "Procedure",
+  VitalSignRecord: "Vital Sign",
+  CoverageRecord: "Coverage",
+};
+
+function fhirSubLabel(r: RepresentingRecord): string {
+  if (r.fhirRecordType && FHIR_LABEL[r.fhirRecordType]) return FHIR_LABEL[r.fhirRecordType];
+  return r.type ?? "Record";
+}
+
 function displayName(r: RepresentingRecord): string {
+  if (isFhir(r)) {
+    return r.fhirDisplayName ?? FHIR_LABEL[r.fhirRecordType ?? ""] ?? r.type ?? "Health Record";
+  }
   return r.originalName ?? "—";
 }
 
@@ -54,6 +81,54 @@ function viewerTitle(r: RepresentingRecord): string {
   const ext = r.fileType?.toUpperCase() ?? "FILE";
   if (r.source === "fax") return `Fax · ${ext}`;
   return ext;
+}
+
+// ─── Lab panel grouping ─────────────────────────────────────────────────────
+// Apple Health delivers each lab observation as its own FHIR row, so a chem
+// panel arrives as many sibling records. Collapse them into one panel row keyed
+// by (effective date, source) when not actively filtering — search/filter
+// rebroaden to per-row so single-test lookups still work. Mirrors RecordsList.
+
+type PdaRecordRow =
+  | { kind: "item"; key: string; item: RepresentingRecord }
+  | { kind: "panel"; key: string; date: string; source: string | null; records: RepresentingRecord[] };
+
+function dayKey(iso: string | null | undefined): string {
+  return iso ? iso.slice(0, 10) : "";
+}
+
+function groupLabPanels(records: RepresentingRecord[]): PdaRecordRow[] {
+  const labs: RepresentingRecord[] = [];
+  const others: RepresentingRecord[] = [];
+  for (const r of records) {
+    if (r.source === FHIR_SOURCE && r.fhirRecordType === "LabResultRecord") labs.push(r);
+    else others.push(r);
+  }
+  const panels = new Map<string, { date: string; source: string | null; records: RepresentingRecord[] }>();
+  for (const lab of labs) {
+    const date = dayKey(lab.time ?? lab.createdAt);
+    const sourceKey = lab.fhirSource ?? "__apple__";
+    const key = `${date}|${sourceKey}`;
+    const slot = panels.get(key);
+    if (slot) slot.records.push(lab);
+    else panels.set(key, { date, source: lab.fhirSource ?? null, records: [lab] });
+  }
+  const rows: PdaRecordRow[] = [];
+  for (const [key, panel] of panels) {
+    if (panel.records.length === 1) {
+      const item = panel.records[0]!;
+      rows.push({ kind: "item", key: item.id, item });
+    } else {
+      rows.push({ kind: "panel", key, date: panel.date, source: panel.source, records: panel.records });
+    }
+  }
+  for (const item of others) rows.push({ kind: "item", key: item.id, item });
+  rows.sort((a, b) => {
+    const aDate = a.kind === "panel" ? a.date : dayKey(a.item.time ?? a.item.createdAt);
+    const bDate = b.kind === "panel" ? b.date : dayKey(b.item.time ?? b.item.createdAt);
+    return bDate.localeCompare(aDate);
+  });
+  return rows;
 }
 
 function formatDate(iso: string): string {
@@ -154,7 +229,18 @@ export default function PdaRecords() {
       : null;
 
     return files.filter((r) => {
-      if (q && !viewerTitle(r).toLowerCase().includes(q)) return false;
+      if (q) {
+        const haystack = [
+          viewerTitle(r),
+          isFhir(r) ? displayName(r) : null,
+          isFhir(r) ? fhirSubLabel(r) : null,
+          isFhir(r) ? r.fhirSource : null,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       const createdMs = new Date(r.createdAt).getTime();
       if (fromMs !== null && createdMs < fromMs) return false;
       if (toMs !== null && createdMs > toMs) return false;
@@ -164,6 +250,15 @@ export default function PdaRecords() {
     });
   }, [files, query, filters, selectedProviderIds]);
 
+  // Collapse lab observations into panels when nothing is narrowing the list;
+  // bypass grouping while searching/filtering so single-test lookups surface the
+  // individual row. Mirrors the patient RecordsList behavior.
+  const displayRows = useMemo<PdaRecordRow[]>(() => {
+    const filtering = query.trim().length > 0 || isFilterActive(filters);
+    if (filtering) return filteredFiles.map((r) => ({ kind: "item", key: r.id, item: r }));
+    return groupLabPanels(filteredFiles);
+  }, [filteredFiles, query, filters]);
+
   const setStripProvider = (name: string | null) => {
     nav.setParams({
       filters: { ...filters, providers: name === null ? [] : [name] },
@@ -171,6 +266,12 @@ export default function PdaRecords() {
   };
 
   const goToDetail = (r: RepresentingRecord) => {
+    // Clinical (FHIR) rows have no file to view — route to the shared FHIR detail
+    // screen, scoped to this patient. Documents go to the file viewer.
+    if (isFhir(r)) {
+      nav.navigate("RecordDetailFHIR", { recordId: r.id, patientId: currentPatient!.patientId });
+      return;
+    }
     nav.navigate("PdaRecordDetail", {
       fileId: r.id,
       fileURL: r.fileURL,
@@ -182,6 +283,15 @@ export default function PdaRecords() {
       userProviderId: r.userProviderId,
       patientId: currentPatient!.patientId,
       permission: perm!,
+    });
+  };
+
+  const goToPanel = (row: Extract<PdaRecordRow, { kind: "panel" }>) => {
+    nav.navigate("RecordDetailLabPanel", {
+      recordIds: row.records.map((r) => r.id),
+      date: row.date,
+      source: row.source,
+      patientId: currentPatient!.patientId,
     });
   };
 
@@ -354,50 +464,82 @@ export default function PdaRecords() {
     </View>
   );
 
-  const renderItem = ({ item }: { item: RepresentingRecord }) => {
-    const image = isImage(item.fileType);
-    const Icon = image ? ImageIcon : FileText;
-    const tile = image ? t.colors.primaryBg : t.colors.surfaceSubtle;
-    const tone = image ? t.colors.primary : t.colors.textSecondary;
+  const RowShell = ({ onPress, children }: { onPress: () => void; children: React.ReactNode }) => (
+    <Pressable onPress={onPress} style={{ paddingHorizontal: t.spacing.gutter }}>
+      <View
+        style={{
+          backgroundColor: t.colors.surface,
+          borderRadius: t.radius.card,
+          borderWidth: 1,
+          borderColor: t.colors.border,
+          padding: 14,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        {children}
+      </View>
+    </Pressable>
+  );
+
+  const Tile = ({ Icon, tile, tone }: { Icon: typeof FileText; tile: string; tone: string }) => (
+    <View
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        backgroundColor: tile,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Icon size={20} color={tone} />
+    </View>
+  );
+
+  const renderItemRow = (item: RepresentingRecord) => {
+    const fhir = isFhir(item);
+    const image = !fhir && isImage(item.fileType);
+    const Icon = fhir ? FlaskConical : image ? ImageIcon : FileText;
+    const tile = fhir || image ? t.colors.primaryBg : t.colors.surfaceSubtle;
+    const tone = fhir || image ? t.colors.primary : t.colors.textSecondary;
+    const subLabel = fhir ? fhirSubLabel(item) : image ? "Image" : "Document";
+    const dateLabel = formatDate(fhir && item.time ? item.time : item.createdAt);
+    const sourceLabel = fhir ? item.fhirSource : null;
     return (
-      <Pressable onPress={() => goToDetail(item)} style={{ paddingHorizontal: t.spacing.gutter }}>
-        <View
-          style={{
-            backgroundColor: t.colors.surface,
-            borderRadius: t.radius.card,
-            borderWidth: 1,
-            borderColor: t.colors.border,
-            padding: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              backgroundColor: tile,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Icon size={20} color={tone} />
-          </View>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={t.type.bodyStrong} numberOfLines={1}>
-              {displayName(item)}
-            </Text>
-            <Text style={t.type.caption}>
-              {(image ? "Image" : "Document")} · {formatDate(item.createdAt)}
-            </Text>
-          </View>
-          <ChevronRight size={18} color={t.colors.textSecondary} />
+      <RowShell onPress={() => goToDetail(item)}>
+        <Tile Icon={Icon} tile={tile} tone={tone} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={t.type.bodyStrong} numberOfLines={1}>
+            {displayName(item)}
+          </Text>
+          <Text style={t.type.caption} numberOfLines={1}>
+            {subLabel} · {dateLabel}{sourceLabel ? ` · ${sourceLabel}` : ""}
+          </Text>
         </View>
-      </Pressable>
+        <ChevronRight size={18} color={t.colors.textSecondary} />
+      </RowShell>
     );
   };
+
+  const renderPanelRow = (row: Extract<PdaRecordRow, { kind: "panel" }>) => (
+    <RowShell onPress={() => goToPanel(row)}>
+      <Tile Icon={FlaskConical} tile={t.colors.primaryBg} tone={t.colors.primary} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={t.type.bodyStrong} numberOfLines={1}>
+          Lab Panel
+        </Text>
+        <Text style={t.type.caption} numberOfLines={1}>
+          {row.records.length} results · {formatDate(row.date)}{row.source ? ` · ${row.source}` : ""}
+        </Text>
+      </View>
+      <ChevronRight size={18} color={t.colors.textSecondary} />
+    </RowShell>
+  );
+
+  const renderRow = ({ item }: { item: PdaRecordRow }) =>
+    item.kind === "panel" ? renderPanelRow(item) : renderItemRow(item.item);
 
   if (patientsLoading || loading) {
     return (
@@ -442,10 +584,10 @@ export default function PdaRecords() {
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
       {DragHandle}
-      <FlatList
-        data={filteredFiles}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
+      <FlatList<PdaRecordRow>
+        data={displayRows}
+        keyExtractor={(row) => row.key}
+        renderItem={renderRow}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         ListHeaderComponent={Header}
         ListEmptyComponent={

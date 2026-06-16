@@ -198,6 +198,13 @@ const releaseBaseObject = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter a valid date (YYYY-MM-DD)")
     .refine((val) => !isNaN(new Date(val).getTime()), "Please enter a valid date"),
   authAgentName: z.string().optional(),
+  // When the representative is one of the patient's designated agents, the client
+  // sends the patientDesignatedAgents row id and the server fills the authAgent*
+  // contact fields authoritatively from that agent's account — the wizard only
+  // knows the agent's name/email, while the agent's phone + address and the
+  // canonical account email (used to surface the release in their representing
+  // view) live on the user record. See POST /api/releases.
+  designatedAgentId: z.string().optional(),
 });
 
 type ReleaseBaseData = z.infer<typeof releaseBaseObject>;

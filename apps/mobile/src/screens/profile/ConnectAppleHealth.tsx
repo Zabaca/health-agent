@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation, useFocusEffect, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Activity, Moon, FlaskConical, Footprints, Heart } from "lucide-react-native";
 import { Header } from "@/components/Header";
@@ -9,8 +9,10 @@ import { useTheme } from "@/theme/ThemeProvider";
 import { requestHealthKitAccess, fetchTodayMetrics, fetchClinicalRecords, recordHealthSync, getLastHealthSync, clearHealthSync } from "@/lib/healthkit";
 import { patchProfile, postHealthData, postClinicalRecords, getSetupStatus, getHealthData, getClinicalRecordSummary, type HealthDataRow, type ClinicalRecordSummary } from "@/lib/api";
 import type { ProfileParamList } from "@/navigation/types";
+import { returnToSetup } from "@/navigation/returnTo";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
+type R = RouteProp<ProfileParamList, "ConnectAppleHealth">;
 
 // Each card row maps a user-facing category to (a) the HealthData `type`s it
 // covers (from `/api/health-data`) and (b) HealthKit clinical recordTypes from
@@ -53,6 +55,7 @@ type Props = { onConnected?: () => void };
 export default function ConnectAppleHealth({ onConnected }: Props) {
   const t = useTheme();
   const nav = useNavigation<Nav>();
+  const { params } = useRoute<R>();
   const [loading, setLoading] = useState(false);
   // null = still checking connection status
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -108,7 +111,7 @@ export default function ConnectAppleHealth({ onConnected }: Props) {
         // ignore — clinical access may not be granted/enabled
       }
       onConnected?.();
-      nav.goBack();
+      if (!returnToSetup(nav, params?.returnTo)) nav.goBack();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unable to connect to Apple Health.";
       Alert.alert("Connection failed", msg);

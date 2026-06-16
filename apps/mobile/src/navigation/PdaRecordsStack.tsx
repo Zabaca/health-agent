@@ -5,6 +5,10 @@ import PdaFilterSheet from "@/screens/pda/records/PdaFilterSheet";
 import PdaUploadSheet from "@/screens/pda/records/PdaUploadSheet";
 import PdaCameraCapture from "@/screens/pda/records/PdaCameraCapture";
 import PdaUploadPreview from "@/screens/pda/records/PdaUploadPreview";
+// Clinical (FHIR) detail screens are shared with the patient stack; they switch
+// to the PDA-scoped data fetch when a patientId param is present.
+import RecordDetailFHIR from "@/screens/records/RecordDetailFHIR";
+import RecordDetailLabPanel from "@/screens/records/RecordDetailLabPanel";
 import type { PdaRecordsParamList } from "./types";
 
 const Stack = createNativeStackNavigator<PdaRecordsParamList>();
@@ -17,6 +21,8 @@ export function PdaRecordsStack() {
     >
       <Stack.Screen name="PdaRecords" component={PdaRecords} />
       <Stack.Screen name="PdaRecordDetail" component={PdaRecordDetail} options={{ presentation: "fullScreenModal" }} />
+      <Stack.Screen name="RecordDetailFHIR" component={RecordDetailFHIR} />
+      <Stack.Screen name="RecordDetailLabPanel" component={RecordDetailLabPanel} />
       <Stack.Screen name="PdaFilterSheet" component={PdaFilterSheet} options={{ presentation: "modal" }} />
       <Stack.Screen name="PdaUploadSheet" component={PdaUploadSheet} options={{ presentation: "modal" }} />
       <Stack.Screen name="PdaCameraCapture" component={PdaCameraCapture} options={{ presentation: "fullScreenModal" }} />

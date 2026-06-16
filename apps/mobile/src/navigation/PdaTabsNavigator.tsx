@@ -3,6 +3,7 @@ import { AppState } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Home as HomeIcon, FileText, Stethoscope, Send, User } from "lucide-react-native";
 import { ThemeProvider, useTheme } from "@/theme/ThemeProvider";
+import { CenteredTabBar } from "@/components/CenteredTabBar";
 import { useRole } from "@/hooks/useRole";
 import { listRepresentedPatients } from "@/lib/api";
 import { RepresentedPatientsProvider } from "@/contexts/RepresentedPatientsContext";
@@ -45,10 +46,14 @@ function PdaTabsInner() {
   usePdaAccessGuard();
   return (
     <Tabs.Navigator
+      tabBar={(props) => <CenteredTabBar {...props} />}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: t.colors.primary,
         tabBarInactiveTintColor: t.colors.textSecondary,
+        // Keep the stacked icon-over-label layout on tablets too; the default
+        // switches to a horizontal beside-icon layout on wide screens.
+        tabBarLabelPosition: "below-icon",
         tabBarLabelStyle: { fontSize: 11, fontWeight: "500" },
         tabBarStyle: {
           backgroundColor: t.colors.surface,

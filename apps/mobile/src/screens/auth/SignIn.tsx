@@ -82,7 +82,7 @@ export default function SignIn() {
 
       <Input placeholder="Email address" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
       <View style={{ position: "relative" }}>
-        <Input placeholder="Password" secureTextEntry={!showPw} value={password} onChangeText={setPassword} />
+        <Input placeholder="Password" secureTextEntry={!showPw} autoCapitalize="none" autoCorrect={false} value={password} onChangeText={setPassword} />
         <Pressable
           onPress={() => setShowPw((v) => !v)}
           style={{ position: "absolute", right: 14, top: 14 }}

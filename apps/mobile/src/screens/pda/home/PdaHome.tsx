@@ -1,11 +1,14 @@
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { ChevronDown, ChevronRight, FileText, Stethoscope, Send, UserRound } from "lucide-react-native";
+import { ChevronDown, ChevronRight, FileText, Stethoscope, Send, UserRound, Mail } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
+import { PulsingView } from "@/components/PulsingView";
 import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
+import { representedPatientName } from "@/lib/api";
 import type { PdaHomeParamList, PdaProfileParamList, PdaTabsParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaHomeParamList & PdaTabsParamList & PdaProfileParamList>;
@@ -19,7 +22,11 @@ function initials(first: string | null, last: string | null) {
 export default function PdaHome() {
   const t = useTheme();
   const nav = useNavigation<Nav>();
-  const { currentPatient, loading } = useRepresentedPatients();
+  const { user } = useAuth();
+  const { patients, pendingInvites, currentPatient, loading } = useRepresentedPatients();
+  // Only a meaningful switch when there's another target: an own patient
+  // account, or more than one represented patient.
+  const canSwitchRole = !!user?.isPatient || patients.length > 1;
 
   if (loading || !currentPatient) {
     return (
@@ -29,9 +36,18 @@ export default function PdaHome() {
     );
   }
 
-  const patientName =
-    `${currentPatient.firstName ?? ""} ${currentPatient.lastName ?? ""}`.trim() || currentPatient.patientId;
+  const patientName = representedPatientName(currentPatient);
   const patientInitials = initials(currentPatient.firstName, currentPatient.lastName);
+  // Selector pill: "First L." when a name is set, otherwise the email (never the raw user ID).
+  const hasName = !!(currentPatient.firstName || currentPatient.lastName);
+  const pillLabel = hasName
+    ? `${currentPatient.firstName ?? ""}${currentPatient.lastName ? ` ${currentPatient.lastName[0]}.` : ""}`.trim()
+    : currentPatient.email ?? "Patient";
+
+  const firstInvite = pendingInvites[0];
+  const inviteName = firstInvite
+    ? `${firstInvite.patientFirstName ?? ""} ${firstInvite.patientLastName ?? ""}`.trim() || firstInvite.patientEmail
+    : "";
 
   const accessRows = [
     {
@@ -64,10 +80,8 @@ export default function PdaHome() {
           Overview
         </Text>
         <Pressable
-          onPress={() => {
-            const parent = nav.getParent() as { navigate: (name: string, params?: object) => void } | undefined;
-            parent?.navigate("PdaProfileTab", { screen: "PdaPeopleIRepresent" });
-          }}
+          disabled={!canSwitchRole}
+          onPress={() => nav.navigate("RoleSwitcher")}
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -78,13 +92,41 @@ export default function PdaHome() {
             backgroundColor: t.colors.primaryBg,
           }}
         >
-          <Text style={{ color: t.colors.primary, fontWeight: "600" }}>
-            {currentPatient.firstName ?? patientName.split(" ")[0]}{" "}
-            {currentPatient.lastName ? `${currentPatient.lastName[0]}.` : ""}
+          <Text style={{ color: t.colors.primary, fontWeight: "600", maxWidth: 160 }} numberOfLines={1}>
+            {pillLabel}
           </Text>
-          <ChevronDown size={16} color={t.colors.primary} />
+          {canSwitchRole ? <ChevronDown size={16} color={t.colors.primary} /> : null}
         </Pressable>
       </View>
+
+      {firstInvite ? (
+        <Pressable
+          onPress={() => nav.navigate("PdaInvite", { invite: firstInvite })}
+          style={{
+            backgroundColor: "#FFF7ED",
+            borderRadius: t.radius.card,
+            borderWidth: 1,
+            borderColor: "#FED7AA",
+            padding: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <PulsingView>
+            <Mail size={22} color="#F97316" />
+          </PulsingView>
+          <View style={{ flex: 1 }}>
+            <Text style={[t.type.bodyStrong, { color: "#9A3412" }]}>
+              {pendingInvites.length > 1 ? `${pendingInvites.length} pending invitations` : "Pending invitation"}
+            </Text>
+            <Text style={[t.type.caption, { color: "#C2410C" }]} numberOfLines={1}>
+              {inviteName} invited you to represent them
+            </Text>
+          </View>
+          <ChevronRight size={18} color="#F97316" />
+        </Pressable>
+      ) : null}
 
       <View
         style={{

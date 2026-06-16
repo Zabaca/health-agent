@@ -6,6 +6,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { contractRoute } from "@/lib/api/contract-handler";
 import { contract } from "@/lib/api/contract";
 import { encryptPii, decryptPii } from "@/lib/crypto";
+import { getReleaseFaxLog } from "@/lib/fax/release-request-log";
 
 async function getReleaseForUser(id: string, userId: string) {
   return db.query.releases.findFirst({
@@ -24,7 +25,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(decryptPii(release));
+  const requestLog = await getReleaseFaxLog(release.id);
+  return NextResponse.json({ ...decryptPii(release), requestLog });
 }
 
 export const PUT = contractRoute(contract.releases.update, async ({ params, body, req }) => {

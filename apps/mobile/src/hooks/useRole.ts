@@ -12,15 +12,31 @@ type RoleState = {
 const RoleContext = createContext<RoleState | null>(null);
 
 export function RoleProvider({ children }: PropsWithChildren) {
-  const { signedIn } = useAuth();
+  const { signedIn, user } = useAuth();
   const [role, setRole] = useState<Role>("patient");
   const [representing, setRepresenting] = useState<string | null>(null);
+  // Which signed-in user we've already picked a landing role for, so a later
+  // manual switchTo() isn't clobbered on re-render.
+  const [defaultedFor, setDefaultedFor] = useState<string | null>(null);
 
-  // When the user signs out, reset role so the next sign-in starts as patient.
+  // Pick the landing role once per sign-in. A PDA-only account — someone who
+  // accepted a PDA invite but isn't a patient themselves — lands in PDA view so
+  // they're never funneled into the patient onboarding/profile flow. Everyone
+  // else (patients, and patient+PDA users) starts as a patient and can switch.
+  // Done during render (`signedIn` implies a loaded `user`) so there's no flash
+  // of the wrong navigator.
+  if (signedIn && user && defaultedFor !== user.id) {
+    setDefaultedFor(user.id);
+    setRole(user.isPda && !user.isPatient ? "pda" : "patient");
+    setRepresenting(null);
+  }
+
+  // When the user signs out, reset so the next sign-in re-defaults.
   useEffect(() => {
     if (!signedIn) {
       setRole("patient");
       setRepresenting(null);
+      setDefaultedFor(null);
     }
   }, [signedIn]);
 

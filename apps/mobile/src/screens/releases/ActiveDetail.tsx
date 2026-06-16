@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Calendar, Copy, Printer, FileDown, Ban, ArrowLeft } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
+import { FaxHistory } from "@/components/FaxHistory";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { useTheme } from "@/theme/ThemeProvider";
 import { getRelease, voidRelease, type ReleaseDetail, type ReleaseProvider } from "@/lib/api";
@@ -144,7 +145,7 @@ export default function ActiveDetail() {
             <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16, gap: 10 }}>
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <Pressable
-                  onPress={() => nav.navigate("FaxDialog")}
+                  onPress={() => nav.navigate("FaxDialog", { releaseId: params.releaseId, recipientName: displayName, defaultFax: provider.fax ?? undefined })}
                   style={{ flex: 1, height: 48, borderRadius: t.radius.button, borderWidth: 1, borderColor: t.colors.primary, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 }}
                 >
                   <Printer size={16} color={t.colors.primary} />
@@ -214,6 +215,8 @@ export default function ActiveDetail() {
               </Pressable>
             ))}
           </View>
+
+          <FaxHistory logs={release.requestLog} />
         </Screen>
       )}
 

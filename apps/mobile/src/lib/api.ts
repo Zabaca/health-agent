@@ -171,6 +171,25 @@ export async function recordConsent(
   )) as { user: SessionUser; sessionToken: string };
 }
 
+/**
+ * Completes PDA onboarding: saves the agent's contact phone + mailing address
+ * and flips `onboarded`. The server re-mints the session JWT (so the returned
+ * `user.onboarded` is true); the caller persists it to clear the onboarding gate.
+ */
+export async function completePdaOnboarding(
+  phoneNumber: string,
+  address: string,
+): Promise<{ user: SessionUser; sessionToken: string }> {
+  return (await apiFetch(
+    "/api/onboarding/mobile",
+    {
+      method: "POST",
+      body: JSON.stringify({ phoneNumber, address }),
+    },
+    { auth: true },
+  )) as { user: SessionUser; sessionToken: string };
+}
+
 export async function requestPasswordReset(email: string): Promise<void> {
   await apiFetch("/api/password/forgot", {
     method: "POST",
@@ -599,6 +618,17 @@ export type ReleaseProvider = {
   purposeOther: string | null;
 };
 
+/** Client-safe fax-request history entry (raw Faxage internals are stripped server-side). */
+export type ReleaseFaxLog = {
+  id: string;
+  type: "fax";
+  status: "success" | "failed" | "awaiting_confirmation";
+  faxNumber: string | null;
+  recipientName: string | null;
+  error: boolean;
+  createdAt: string;
+};
+
 export type ReleaseDetail = {
   id: string;
   userId: string;
@@ -629,6 +659,8 @@ export type ReleaseDetail = {
   voided: boolean;
   releaseCode: string | null;
   providers: ReleaseProvider[];
+  /** Fax-send history, newest first. Absent on older server builds. */
+  requestLog?: ReleaseFaxLog[];
 };
 
 // Derived from @health-agent/types so mobile and web share the same schema source.
@@ -667,6 +699,36 @@ export async function voidRelease(id: string): Promise<{ success: boolean }> {
   )) as { success: boolean };
 }
 
+export type FaxReleaseInput = {
+  faxNumber: string;
+  /** Base64-encoded PDF (rendered from the release print-html, same as Save PDF). */
+  fileData: string;
+  fileName: string;
+  recipientName?: string;
+};
+
+/** Fax one of the patient's own releases. Server verifies ownership. */
+export async function faxRelease(releaseId: string, input: FaxReleaseInput): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/releases/${encodeURIComponent(releaseId)}/fax`,
+    { method: "POST", body: JSON.stringify(input) },
+    { auth: true }
+  )) as { success: boolean };
+}
+
+/** Fax a release a PDA is the authorized agent on. Server verifies the relation. */
+export async function faxRepresentingRelease(
+  patientId: string,
+  releaseId: string,
+  input: FaxReleaseInput,
+): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/releases/${encodeURIComponent(releaseId)}/fax`,
+    { method: "POST", body: JSON.stringify(input) },
+    { auth: true }
+  )) as { success: boolean };
+}
+
 export async function signRelease(id: string, input: SignReleaseInput): Promise<{ success: boolean }> {
   return (await apiFetch(
     `/api/releases/${encodeURIComponent(id)}/sign`,
@@ -685,6 +747,7 @@ export type RepresentingReleaseSummary = {
   updatedAt: string;
   voided: boolean;
   authSignatureImage: string | null;
+  authExpirationDate: string | null;
   releaseCode: string | null;
   releaseAuthAgent: boolean;
   authAgentFirstName: string | null;
@@ -761,8 +824,21 @@ export type RepresentedPatient = {
   releasePermission: "viewer" | "editor" | null;
   firstName: string | null;
   lastName: string | null;
+  email: string | null;
   avatarUrl: string | null;
 };
+
+/**
+ * Display name for a represented patient: full name when set, otherwise the
+ * patient's email. Patients who haven't completed their profile have no name,
+ * and we must never surface the raw user ID to their designated agents. Email
+ * can also be absent (OAuth users pre-onboarding), so fall back to a label.
+ */
+export function representedPatientName(
+  p: Pick<RepresentedPatient, "firstName" | "lastName" | "email">,
+): string {
+  return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || p.email || "Patient";
+}
 
 export type RepresentingRecord = {
   id: string;
@@ -774,6 +850,12 @@ export type RepresentingRecord = {
   pagecount: number | null;
   originalName: string | null;
   uploadedBy: { id: string; firstName: string | null; lastName: string | null } | null;
+  // FHIR-only (source === "healthkitFHIR"); null for documents.
+  type?: string | null;
+  time?: string | null;
+  fhirDisplayName?: string | null;
+  fhirRecordType?: string | null;
+  fhirSource?: string | null;
 };
 
 export type RepresentingRecordsResponse = {
@@ -797,6 +879,19 @@ export async function listRepresentingRecordProviders(patientId: string): Promis
     { auth: true }
   )) as { providers: RecordProvider[] };
   return res.providers;
+}
+
+/** Single record (incl. full FHIR resource) for a represented patient. Mirrors
+ *  getMyRecord but scoped to the PDA's granted access. */
+export async function getRepresentingRecord(
+  patientId: string,
+  id: string,
+): Promise<IncomingFile | FhirRecord> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/records/${encodeURIComponent(id)}`,
+    {},
+    { auth: true }
+  )) as IncomingFile | FhirRecord;
 }
 
 export async function listRepresentedPatients(): Promise<RepresentedPatient[]> {

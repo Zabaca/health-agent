@@ -12,6 +12,13 @@ type Props = TextInputProps & {
 
 export function Input({ label, helpText, error, multiline, required, rightElement, style, ...rest }: Props) {
   const t = useTheme();
+  // Secure fields (passwords, SSN) must never auto-capitalize or autocorrect.
+  // Default both off whenever secureTextEntry is set; callers can still override
+  // (e.g. reveal-password fields pass autoCapitalize explicitly so it holds even
+  // while the text is temporarily visible).
+  const secureDefaults = rest.secureTextEntry
+    ? { autoCapitalize: "none" as const, autoCorrect: false }
+    : null;
   return (
     <View style={{ gap: 6 }}>
       {label ? (
@@ -34,6 +41,7 @@ export function Input({ label, helpText, error, multiline, required, rightElemen
         <TextInput
           placeholderTextColor={t.colors.textPlaceholder}
           multiline={multiline}
+          {...secureDefaults}
           style={[
             {
               flex: 1,

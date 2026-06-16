@@ -1,82 +1,60 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { getConfiguration } from "@/lib/config";
-import { releaseRequestLog } from "@/lib/db/schema";
+import { releases, patientDesignatedAgents } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
+import { sendReleaseFax } from "@/lib/fax/send-release-fax";
 
-const FAXAGE_URL = "https://api.faxage.com/httpsfax.php";
-
+// Web fax endpoint (NextAuth cookie). Used by the in-app FaxButton across the
+// patient, representing (PDA), admin, and agent views. The pages that render the
+// button are role-gated, but that does NOT protect this API — any authenticated
+// session can POST it directly — so we re-authorize the caller against the target
+// release here. This matters doubly because `releaseId` is written to the
+// releaseRequestLog, which is now surfaced on the release detail page: without
+// this check a user could spoof fax-history onto someone else's release (and use
+// the endpoint as an open fax gateway). Mobile callers use the scoped routes
+// /api/releases/[id]/fax and /api/representing/[patientId]/releases/[id]/fax.
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { faxNumber, fileData, fileName, releaseId, recipientName } = await req.json();
-  const { FAXAGE_USERNAME, FAXAGE_COMPANY, FAXAGE_PASSWORD, FAXAGE_NOTIFY_URL } = getConfiguration();
-
-  const params = new URLSearchParams({
-    username:          FAXAGE_USERNAME!,
-    company:           FAXAGE_COMPANY!,
-    password:          FAXAGE_PASSWORD!,
-    operation:         "sendfax",
-    faxno:             faxNumber,
-    recipname:         recipientName ?? "Medical Records",
-    "faxfilenames[0]": fileName,
-    "faxfiledata[0]":  fileData,
-    tagname:           " ",
-    tagnumber:         " ",
-    callerid:          " ",
-    url_notify:        FAXAGE_NOTIFY_URL!,
-  });
-
-  let status: "success" | "failed" | "awaiting_confirmation" = "failed";
-  let apiResponse: string | null = null;
-  let httpResponse: string | null = null;
-  let isError = false;
-
-  try {
-    const res = await fetch(FAXAGE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
-    });
-    apiResponse = await res.text();
-    httpResponse = JSON.stringify({
-      status:     res.status,
-      statusText: res.statusText,
-      headers:    Object.fromEntries(res.headers.entries()),
-      body:       apiResponse,
-    });
-    // Faxage always returns HTTP 200; detect errors by body prefix (ERRxx:)
-    if (!res.ok || /^ERR\d+:/.test(apiResponse.trim())) {
-      isError = true;
-    } else if (apiResponse.trim().startsWith("JOBID:")) {
-      status = "awaiting_confirmation";
-    } else {
-      // Unexpected body format — treat as error
-      isError = true;
-    }
-  } catch (err) {
-    isError = true;
-    apiResponse = err instanceof Error ? err.message : String(err);
+  if (typeof releaseId !== "string" || !releaseId) {
+    return NextResponse.json({ error: "releaseId is required" }, { status: 400 });
   }
 
-  // Always log the attempt with the raw apiResponse and full HTTP response object
-  await db.insert(releaseRequestLog).values({
-    id:            crypto.randomUUID(),
-    releaseId,
-    type:          "fax",
-    service:       "faxage",
-    status,
-    faxNumber,
-    recipientName: recipientName ?? null,
-    apiResponse,
-    httpResponse,
-    error:         isError,
-    createdAt:     new Date().toISOString(),
+  const release = await db.query.releases.findFirst({
+    where: eq(releases.id, releaseId),
+    columns: { id: true, userId: true, authAgentEmail: true },
   });
+  if (!release) return NextResponse.json({ error: "Release not found" }, { status: 404 });
 
-  if (status === "failed") {
-    return NextResponse.json({ error: apiResponse }, { status: 400 });
+  // Who may fax a release: staff (admin/agent) — any release; the patient — their
+  // own; a PDA — a release they are the accepted authorized agent on. Mirrors the
+  // guards on the scoped mobile fax routes.
+  const u = session.user;
+  const isStaff = u.type === "admin" || u.isAgent;
+  const isOwner = release.userId === u.id;
+  let isAgentOnRelease = false;
+  if (!isStaff && !isOwner && u.email && release.authAgentEmail === u.email) {
+    const relation = await db.query.patientDesignatedAgents.findFirst({
+      where: and(
+        eq(patientDesignatedAgents.agentUserId, u.id),
+        eq(patientDesignatedAgents.patientId, release.userId),
+        eq(patientDesignatedAgents.status, "accepted"),
+      ),
+      columns: { releasePermission: true },
+    });
+    isAgentOnRelease = !!relation?.releasePermission;
+  }
+  if (!isStaff && !isOwner && !isAgentOnRelease) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const result = await sendReleaseFax({ faxNumber, fileData, fileName, releaseId, recipientName });
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.rateLimited ? 429 : 400 });
   }
   return NextResponse.json({ success: true });
 }

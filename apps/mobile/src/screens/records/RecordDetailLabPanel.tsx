@@ -7,7 +7,7 @@ import { ChevronLeft, FlaskConical, TriangleAlert } from "lucide-react-native";
 import { Badge } from "@/components/Badge";
 import { ReferenceRangeBar } from "@/components/ReferenceRangeBar";
 import { useTheme } from "@/theme/ThemeProvider";
-import { getMyRecord, type FhirRecord } from "@/lib/api";
+import { getMyRecord, getRepresentingRecord, type FhirRecord } from "@/lib/api";
 import type { RecordsParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<RecordsParamList>;
@@ -104,7 +104,11 @@ export default function RecordDetailLabPanel() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all(params.recordIds.map((id) => getMyRecord(id).catch(() => null)))
+    // PDA flow passes patientId → fetch each observation via the PDA-scoped
+    // endpoint; patient flow fetches their own.
+    const fetchOne = (id: string) =>
+      (params.patientId ? getRepresentingRecord(params.patientId, id) : getMyRecord(id)).catch(() => null);
+    Promise.all(params.recordIds.map((id) => fetchOne(id)))
       .then((results) => {
         if (cancelled) return;
         const parsed: ParsedRow[] = [];
@@ -125,13 +129,14 @@ export default function RecordDetailLabPanel() {
     return () => {
       cancelled = true;
     };
-  }, [params.recordIds]);
+  }, [params.recordIds, params.patientId]);
 
+  const backLabel = params.patientId ? "Health Records" : "My Records";
   const Header = (
     <View style={{ paddingHorizontal: t.spacing.gutter, paddingTop: insets.top + 12, paddingBottom: 8 }}>
       <Pressable onPress={() => nav.goBack()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
         <ChevronLeft size={18} color={t.colors.primary} />
-        <Text style={{ color: t.colors.primary, fontWeight: "600" }}>My Records</Text>
+        <Text style={{ color: t.colors.primary, fontWeight: "600" }}>{backLabel}</Text>
       </Pressable>
     </View>
   );
@@ -225,7 +230,7 @@ export default function RecordDetailLabPanel() {
           {rows.map((row, i) => (
             <Pressable
               key={row.id}
-              onPress={() => nav.navigate("RecordDetailFHIR", { recordId: row.id })}
+              onPress={() => nav.navigate("RecordDetailFHIR", { recordId: row.id, patientId: params.patientId })}
               style={{
                 paddingVertical: 14,
                 paddingHorizontal: 14,

@@ -1,24 +1,24 @@
 import { useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Download } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { Screen } from "@/components/Screen";
 import { useTheme } from "@/theme/ThemeProvider";
-import type { ReleasesParamList } from "@/navigation/types";
 import { API_URL, getSessionToken } from "@/lib/api";
 
-type Nav = NativeStackNavigationProp<ReleasesParamList>;
-type Route = RouteProp<ReleasesParamList, "ExportPDF">;
+// Stack-agnostic: used by both the patient and PDA release stacks. When
+// `patientId` is present (PDA flow), the PDF is fetched from the PDA-scoped
+// print endpoint; otherwise from the patient's own.
+type Route = RouteProp<{ ExportPDF: { releaseId: string; patientId?: string } }, "ExportPDF">;
 
 export default function ExportPDF() {
   const t = useTheme();
-  const nav = useNavigation<Nav>();
+  const nav = useNavigation();
   const route = useRoute<Route>();
-  const { releaseId } = route.params;
+  const { releaseId, patientId } = route.params;
 
   const [generating, setGenerating] = useState(false);
 
@@ -26,7 +26,10 @@ export default function ExportPDF() {
     setGenerating(true);
     try {
       const token = await getSessionToken();
-      const res = await fetch(`${API_URL}/api/releases/${releaseId}/print-html`, {
+      const path = patientId
+        ? `/api/representing/${patientId}/releases/${releaseId}/print-html`
+        : `/api/releases/${releaseId}/print-html`;
+      const res = await fetch(`${API_URL}${path}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "text/html",

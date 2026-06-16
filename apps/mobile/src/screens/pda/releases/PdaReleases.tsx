@@ -14,9 +14,18 @@ import type { PdaReleasesParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<PdaReleasesParamList>;
 
-function releaseStatus(r: RepresentingReleaseSummary): "active" | "pending" | "voided" {
-  if (r.voided) return "voided";
-  return r.authSignatureImage ? "active" : "pending";
+type ReleaseStatus = "active" | "pending" | "expired";
+
+// Mirrors the patient ReleasesList: a voided or past-expiration release is
+// "expired", an unsigned one is "pending", otherwise "active".
+function computeStatus(r: RepresentingReleaseSummary): ReleaseStatus {
+  if (r.voided) return "expired";
+  if (!r.authSignatureImage) return "pending";
+  // Valid THROUGH the expiration day; compare against end of the local day so a
+  // bare YYYY-MM-DD (parsed as UTC midnight) doesn't expire a day early in US
+  // timezones. Kept in sync with the patient ReleasesList.
+  if (r.authExpirationDate && new Date(`${r.authExpirationDate}T23:59:59`) < new Date()) return "expired";
+  return "active";
 }
 
 function releaseProviderLabel(r: RepresentingReleaseSummary) {
@@ -25,9 +34,15 @@ function releaseProviderLabel(r: RepresentingReleaseSummary) {
   return names.length === 1 ? names[0] : `${names[0]} +${names.length - 1} more`;
 }
 
-function releaseDate(r: RepresentingReleaseSummary) {
-  return new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
+
+const TABS: { id: ReleaseStatus; label: string }[] = [
+  { id: "active", label: "Active" },
+  { id: "pending", label: "Pending" },
+  { id: "expired", label: "Expired" },
+];
 
 export default function PdaReleases() {
   const t = useTheme();
@@ -41,6 +56,7 @@ export default function PdaReleases() {
     : "";
 
   const [releases, setReleases] = useState<RepresentingReleaseSummary[]>([]);
+  const [tab, setTab] = useState<ReleaseStatus>("active");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -168,37 +184,100 @@ export default function PdaReleases() {
         </Text>
       </View>
 
-      {releases.map((r) => {
-        const status = releaseStatus(r);
-        return (
-          <Pressable key={r.id} onPress={() => nav.navigate("PdaReleaseDetail", { releaseId: r.id })}>
-            <View
-              style={{
-                backgroundColor: t.colors.surface,
-                borderRadius: t.radius.card,
-                borderWidth: 1,
-                borderColor: t.colors.border,
-                padding: 14,
-                gap: 6,
-              }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={[t.type.bodyStrong, { flex: 1, marginRight: 8 }]} numberOfLines={1}>
-                  {releaseProviderLabel(r)}
-                </Text>
-                <Badge
-                  label={status === "active" ? "Active" : status === "voided" ? "Voided" : "Pending Signature"}
-                  variant={status === "active" ? "success" : "accent"}
-                />
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        {TABS.map((s) => {
+          const on = s.id === tab;
+          const count = releases.filter((r) => computeStatus(r) === s.id).length;
+          return (
+            <Pressable key={s.id} onPress={() => setTab(s.id)}>
+              <View
+                style={{
+                  paddingVertical: 8,
+                  paddingHorizontal: 18,
+                  borderRadius: t.radius.pill,
+                  backgroundColor: on ? t.colors.primary : "transparent",
+                  borderWidth: 1,
+                  borderColor: on ? t.colors.primary : t.colors.border,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 5,
+                }}
+              >
+                <Text style={{ color: on ? "#FFFFFF" : t.colors.textPrimary, fontSize: 13, fontWeight: "600" }}>{s.label}</Text>
+                {count > 0 && (
+                  <View style={{
+                    backgroundColor: on ? "rgba(255,255,255,0.3)" : t.colors.borderMuted,
+                    borderRadius: 10, minWidth: 18, height: 18,
+                    alignItems: "center", justifyContent: "center", paddingHorizontal: 4,
+                  }}>
+                    <Text style={{ color: on ? "#FFFFFF" : t.colors.textSecondary, fontSize: 11, fontWeight: "600" }}>{count}</Text>
+                  </View>
+                )}
               </View>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text style={t.type.caption}>{releaseDate(r)}</Text>
-                <ChevronRight size={16} color={t.colors.textSecondary} />
-              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {(() => {
+        const filtered = releases.filter((r) => computeStatus(r) === tab);
+        if (filtered.length === 0) {
+          return (
+            <View style={{ paddingVertical: 40, alignItems: "center" }}>
+              <Text style={[t.type.body, { color: t.colors.textSecondary }]}>No {tab} releases</Text>
             </View>
-          </Pressable>
+          );
+        }
+        return (
+          <View style={{ gap: 10 }}>
+            {filtered.map((r) => {
+              const status = computeStatus(r);
+              const variant = status === "active" ? "success" : status === "pending" ? "accent" : "muted";
+              return (
+                <Pressable key={r.id} onPress={() => nav.navigate("PdaReleaseDetail", { releaseId: r.id })}>
+                  <View
+                    style={{
+                      backgroundColor: t.colors.surface,
+                      borderRadius: t.radius.card,
+                      borderWidth: 1,
+                      borderColor: t.colors.border,
+                      padding: 14,
+                      gap: 6,
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                      <Text style={[t.type.bodyStrong, { flex: 1, marginRight: 8 }]} numberOfLines={1}>
+                        {releaseProviderLabel(r)}
+                      </Text>
+                      <Badge
+                        label={status === "active" ? "Active" : status === "pending" ? "Pending" : "Expired"}
+                        variant={variant}
+                      />
+                    </View>
+                    {r.releaseCode ? (
+                      <Text style={[t.type.caption, { fontFamily: "Courier" }]}>{r.releaseCode}</Text>
+                    ) : null}
+                    {status === "pending" ? (
+                      <Text style={{ color: t.colors.accent, fontSize: 13, fontWeight: "500" }}>Awaiting signature</Text>
+                    ) : status === "expired" ? (
+                      <Text style={t.type.caption}>
+                        {r.voided ? "Voided" : r.authExpirationDate ? `Expired ${formatDate(r.authExpirationDate)}` : "Expired"}
+                      </Text>
+                    ) : (
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                        <Text style={t.type.caption}>
+                          Valid until {r.authExpirationDate ? formatDate(r.authExpirationDate) : "—"}
+                        </Text>
+                        <ChevronRight size={16} color={t.colors.textSecondary} />
+                      </View>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         );
-      })}
+      })()}
     </Screen>
   );
 }

@@ -67,7 +67,7 @@ export default function PdaInvite() {
         bottom={
           <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16, gap: 10 }}>
             <Button
-              label={acting ? "Please wait…" : "Accept & Create Account"}
+              label={acting ? "Please wait…" : "Accept Invitation"}
               onPress={() => respond("accept")}
               fullWidth
               disabled={acting}

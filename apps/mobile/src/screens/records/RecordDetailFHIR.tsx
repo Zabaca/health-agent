@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, FlaskConical, TriangleAlert } from "lucide-react-native";
 import { Badge } from "@/components/Badge";
 import { useTheme } from "@/theme/ThemeProvider";
-import { getMyRecord, type FhirRecord, type IncomingFile } from "@/lib/api";
+import { getMyRecord, getRepresentingRecord, type FhirRecord, type IncomingFile } from "@/lib/api";
 import type { RecordsParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<RecordsParamList>;
@@ -270,7 +270,12 @@ export default function RecordDetailFHIR() {
 
   useEffect(() => {
     let cancelled = false;
-    getMyRecord(params.recordId)
+    // When opened from the PDA "representing" flow, params.patientId is set and
+    // we fetch through the PDA-scoped endpoint; otherwise it's the patient's own.
+    const fetcher = params.patientId
+      ? getRepresentingRecord(params.patientId, params.recordId)
+      : getMyRecord(params.recordId);
+    fetcher
       .then((r) => {
         if (!cancelled) setRecord(r);
       })
@@ -280,13 +285,14 @@ export default function RecordDetailFHIR() {
     return () => {
       cancelled = true;
     };
-  }, [params.recordId]);
+  }, [params.recordId, params.patientId]);
 
+  const backLabel = params.patientId ? "Health Records" : "My Records";
   const Header = (
     <View style={{ paddingHorizontal: t.spacing.gutter, paddingTop: insets.top + 12, paddingBottom: 8 }}>
       <Pressable onPress={() => nav.goBack()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
         <ChevronLeft size={18} color={t.colors.primary} />
-        <Text style={{ color: t.colors.primary, fontWeight: "600" }}>My Records</Text>
+        <Text style={{ color: t.colors.primary, fontWeight: "600" }}>{backLabel}</Text>
       </Pressable>
     </View>
   );

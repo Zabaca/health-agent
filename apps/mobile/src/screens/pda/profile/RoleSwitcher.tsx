@@ -5,18 +5,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X } from "lucide-react-native";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/theme/ThemeProvider";
+import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
 import { useRepresentedPatients } from "@/contexts/RepresentedPatientsContext";
-import type { RepresentedPatient } from "@/lib/api";
-
-function patientName(p: RepresentedPatient) {
-  return `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || p.patientId;
-}
+import { representedPatientName } from "@/lib/api";
 
 export default function RoleSwitcher() {
   const t = useTheme();
   const nav = useNavigation();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { representing, switchTo } = useRole();
   const { patients, loading } = useRepresentedPatients();
   const [selected, setSelected] = useState<string | "patient">(representing ?? patients[0]?.patientId ?? "patient");
@@ -87,7 +85,7 @@ export default function RoleSwitcher() {
                   <Radio on={on} />
                   <View style={{ flex: 1 }}>
                     <Text style={[t.type.bodyStrong, { color: on ? t.colors.primary : t.colors.textPrimary }]}>
-                      Representing {patientName(p)}
+                      Representing {representedPatientName(p)}
                     </Text>
                     {p.relationship ? (
                       <Text style={[t.type.caption, { color: on ? t.colors.primary : t.colors.textSecondary }]}>
@@ -98,25 +96,27 @@ export default function RoleSwitcher() {
                 </Pressable>
               );
             })}
-            <Pressable
-              onPress={() => setSelected("patient")}
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 14,
-                borderTopWidth: 1,
-                borderTopColor: t.colors.divider,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-                backgroundColor: selected === "patient" ? t.colors.primaryBg : "transparent",
-              }}
-            >
-              <Radio on={selected === "patient"} />
-              <View style={{ flex: 1 }}>
-                <Text style={t.type.bodyStrong}>My Profile</Text>
-                <Text style={t.type.caption}>Patient</Text>
-              </View>
-            </Pressable>
+            {user?.isPatient ? (
+              <Pressable
+                onPress={() => setSelected("patient")}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  borderTopWidth: 1,
+                  borderTopColor: t.colors.divider,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  backgroundColor: selected === "patient" ? t.colors.primaryBg : "transparent",
+                }}
+              >
+                <Radio on={selected === "patient"} />
+                <View style={{ flex: 1 }}>
+                  <Text style={t.type.bodyStrong}>My Profile</Text>
+                  <Text style={t.type.caption}>Patient</Text>
+                </View>
+              </Pressable>
+            ) : null}
           </View>
         )}
 

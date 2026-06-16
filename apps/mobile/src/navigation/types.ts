@@ -9,6 +9,11 @@ export type AuthParamList = {
   ResetPassword: undefined;
 };
 
+// When a screen is launched from the Account Setup checklist, it carries a
+// `returnTo` param so its completion handler knows to navigate back to the
+// checklist (or Home) instead of doing its normal in-tab goBack().
+export type SetupReturnTo = "AccountSetup" | "Home";
+
 export type HomeParamList = {
   Dashboard: undefined;
   CardExpanded: { cardId: string };
@@ -35,8 +40,10 @@ export type RecordsParamList = {
   RecordDetailLabs: { recordId: string };
   RecordDetailImaging: { recordId: string };
   RecordDetailNotes: { recordId: string };
-  RecordDetailFHIR: { recordId: string };
-  RecordDetailLabPanel: { recordIds: string[]; date: string; source: string | null };
+  // patientId is set only when these screens are reached from the PDA
+  // "representing" stack — it switches the data fetch to the PDA-scoped endpoint.
+  RecordDetailFHIR: { recordId: string; patientId?: string };
+  RecordDetailLabPanel: { recordIds: string[]; date: string; source: string | null; patientId?: string };
   UploadSheet: undefined;
   FilterSheet:
     | {
@@ -71,32 +78,35 @@ export type ReleasesFilter = {
 
 export type ReleasesParamList = {
   ReleasesList: { filters?: ReleasesFilter } | undefined;
-  WizardStep1: undefined;
+  WizardStep1: { returnTo?: SetupReturnTo } | undefined;
   WizardStep2: { providerType: string; providerId: string };
   WizardStep3: undefined;
   WizardStep4: undefined;
   WizardStep5: undefined;
   ActiveDetail: { releaseId: string };
   PendingDetail: { releaseId: string };
-  FaxDialog: undefined;
+  // patientId is set only from the PDA stack (scopes the print-html fetch).
+  FaxDialog: { releaseId: string; patientId?: string; recipientName?: string; defaultFax?: string };
   DateFilterSheet: { current?: ReleasesFilter } | undefined;
-  ExportPDF: { releaseId: string };
+  // patientId is set only when reached from the PDA stack — it switches the PDF
+  // fetch to the PDA-scoped print endpoint.
+  ExportPDF: { releaseId: string; patientId?: string };
 };
 
 export type ProvidersParamList = {
   MyProviders: undefined;
-  AddProvider: { provider?: import("@/lib/api").UserProvider } | undefined;
+  AddProvider: { provider?: import("@/lib/api").UserProvider; returnTo?: SetupReturnTo } | undefined;
   ProviderDetail: { provider: import("@/lib/api").UserProvider };
 };
 
 export type ProfileParamList = {
   Profile: undefined;
-  ConnectAppleHealth: undefined;
+  ConnectAppleHealth: { returnTo?: SetupReturnTo } | undefined;
   AccountSettings: undefined;
-  EditProfile: undefined;
+  EditProfile: { returnTo?: SetupReturnTo } | undefined;
   ChangePassword: { mode?: "change" | "set" } | undefined;
   DesignatedAgents: undefined;
-  InviteRepresentative: undefined;
+  InviteRepresentative: { returnTo?: SetupReturnTo } | undefined;
   RepresentativeDetail: { agent: import("@/lib/api").DesignatedAgent };
   ActiveDevices: undefined;
   RoleSwitcher: undefined;
@@ -123,6 +133,8 @@ export type PdaRecordsFilters = {
 
 export type PdaHomeParamList = {
   PdaHome: undefined;
+  RoleSwitcher: undefined;
+  PdaInvite: { invite: import("@/lib/api").PendingRepresentingInvite };
 };
 
 export type PdaRecordsParamList = {
@@ -139,6 +151,10 @@ export type PdaRecordsParamList = {
     patientId: string;
     permission: "viewer" | "editor";
   };
+  // Clinical (healthkitFHIR) records reuse the patient detail screens, scoped to
+  // the represented patient via patientId.
+  RecordDetailFHIR: { recordId: string; patientId?: string };
+  RecordDetailLabPanel: { recordIds: string[]; date: string; source: string | null; patientId?: string };
   PdaFilterSheet: { current?: PdaRecordsFilters; availableProviders?: AvailableProvider[] } | undefined;
   PdaUploadSheet: { patientId: string };
   PdaCameraCapture: { patientId: string };
@@ -165,6 +181,10 @@ export type PdaReleasesParamList = {
   PdaWizardStep2: { providerType: string; providerId: string };
   PdaWizardStep3: undefined;
   PdaWizardStep4: undefined;
+  // Shared with the patient releases stack; PDA passes patientId so PDF export
+  // hits the PDA-scoped print endpoint. Fax is the same shared dialog.
+  ExportPDF: { releaseId: string; patientId?: string };
+  FaxDialog: { releaseId: string; patientId?: string; recipientName?: string; defaultFax?: string };
 };
 
 export type PdaProfileParamList = {

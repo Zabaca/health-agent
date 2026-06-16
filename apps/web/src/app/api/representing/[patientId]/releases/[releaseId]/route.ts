@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { patientDesignatedAgents, releases, users } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { decryptPii } from "@/lib/crypto";
+import { getReleaseFaxLog } from "@/lib/fax/release-request-log";
 
 type Ctx = { params: Promise<{ patientId: string; releaseId: string }> };
 
@@ -53,7 +54,8 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  return NextResponse.json(decryptPii(release));
+  const requestLog = await getReleaseFaxLog(release.id);
+  return NextResponse.json({ ...decryptPii(release), requestLog });
 }
 
 // DELETE /api/representing/[patientId]/releases/[releaseId] — void (editor only)
