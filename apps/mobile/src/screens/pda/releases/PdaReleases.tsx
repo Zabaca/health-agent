@@ -21,7 +21,10 @@ type ReleaseStatus = "active" | "pending" | "expired";
 function computeStatus(r: RepresentingReleaseSummary): ReleaseStatus {
   if (r.voided) return "expired";
   if (!r.authSignatureImage) return "pending";
-  if (r.authExpirationDate && new Date(r.authExpirationDate) < new Date()) return "expired";
+  // Valid THROUGH the expiration day; compare against end of the local day so a
+  // bare YYYY-MM-DD (parsed as UTC midnight) doesn't expire a day early in US
+  // timezones. Kept in sync with the patient ReleasesList.
+  if (r.authExpirationDate && new Date(`${r.authExpirationDate}T23:59:59`) < new Date()) return "expired";
   return "active";
 }
 

@@ -1,8 +1,15 @@
 import { db } from "@/lib/db";
 import { getConfiguration } from "@/lib/config";
 import { releaseRequestLog } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 
 const FAXAGE_URL = "https://api.faxage.com/httpsfax.php";
+
+// Per-release rate limit: at most one successful/queued fax per release per
+// window, regardless of destination number. Enforced via releaseRequestLog so it
+// holds across serverless instances. Failed attempts are NOT counted, so a user
+// can retry immediately after a bad number rather than being locked out.
+const FAX_RATE_LIMIT_MS = 60 * 60 * 1000; // 1 hour
 
 export type SendReleaseFaxInput = {
   faxNumber: string;
@@ -13,15 +20,40 @@ export type SendReleaseFaxInput = {
   recipientName?: string | null;
 };
 
-export type SendReleaseFaxResult = { ok: true } | { ok: false; error: string };
+export type SendReleaseFaxResult =
+  | { ok: true }
+  | { ok: false; error: string; rateLimited?: boolean };
 
 /**
  * Sends a release PDF via Faxage and records the attempt in releaseRequestLog.
  * Shared by the web fax route and the mobile-scoped (patient + PDA) fax routes;
  * callers are responsible for authorizing access to `releaseId` first.
+ *
+ * Rate-limited to one successful send per release per {@link FAX_RATE_LIMIT_MS}
+ * (returns `rateLimited: true` so routes can answer 429).
  */
 export async function sendReleaseFax(input: SendReleaseFaxInput): Promise<SendReleaseFaxResult> {
   const { faxNumber, fileData, fileName, releaseId, recipientName } = input;
+
+  // Rate-limit gate: bail before contacting Faxage if this release was faxed
+  // (successfully or queued) within the window. Only non-error rows count.
+  const lastOk = await db.query.releaseRequestLog.findFirst({
+    where: and(eq(releaseRequestLog.releaseId, releaseId), eq(releaseRequestLog.error, false)),
+    orderBy: (l, { desc }) => [desc(l.createdAt)],
+    columns: { createdAt: true },
+  });
+  if (lastOk) {
+    const elapsed = Date.now() - new Date(lastOk.createdAt).getTime();
+    if (elapsed < FAX_RATE_LIMIT_MS) {
+      const mins = Math.max(1, Math.ceil((FAX_RATE_LIMIT_MS - elapsed) / 60000));
+      return {
+        ok: false,
+        rateLimited: true,
+        error: `This release was faxed recently. Please wait about ${mins} minute${mins === 1 ? "" : "s"} before sending it again.`,
+      };
+    }
+  }
+
   const { FAXAGE_USERNAME, FAXAGE_COMPANY, FAXAGE_PASSWORD, FAXAGE_NOTIFY_URL } = getConfiguration();
 
   const params = new URLSearchParams({

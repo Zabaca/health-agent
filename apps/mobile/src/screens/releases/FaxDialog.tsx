@@ -13,7 +13,8 @@ import { API_URL, getSessionToken, faxRelease, faxRepresentingRelease, ApiError 
 
 // Shared by the patient and PDA release stacks. Faxes the SAME PDF that Save PDF
 // produces: it renders the release print-html (patient- or PDA-scoped) to a PDF
-// via expo-print, then sends it through /api/fax. Stack-agnostic navigation.
+// via expo-print, then posts it through the scoped fax route — faxRelease for an
+// owned release, faxRepresentingRelease for a PDA-agent one. Stack-agnostic nav.
 type Route = RouteProp<
   { FaxDialog: { releaseId: string; patientId?: string; recipientName?: string; defaultFax?: string } },
   "FaxDialog"
@@ -50,9 +51,16 @@ export default function FaxDialog() {
       const html = await res.text();
 
       const { uri } = await Print.printToFileAsync({ html });
-      const fileData = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      let fileData: string;
+      try {
+        fileData = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      } finally {
+        // expo-print writes the PDF to the cache dir; it's only needed long enough
+        // to base64-encode (the send uses fileData, not the file), so drop it.
+        FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {});
+      }
 
       const faxInput = { faxNumber, fileData, fileName: `release-${releaseId}.pdf`, recipientName: recipient };
       if (patientId) {
@@ -67,7 +75,11 @@ export default function FaxDialog() {
         [{ text: "OK", onPress: () => nav.goBack() }],
       );
     } catch (e) {
-      Alert.alert("Fax failed", e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Please try again.");
+      const rateLimited = e instanceof ApiError && e.status === 429;
+      Alert.alert(
+        rateLimited ? "Recently faxed" : "Fax failed",
+        e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Please try again.",
+      );
     } finally {
       setSending(false);
     }

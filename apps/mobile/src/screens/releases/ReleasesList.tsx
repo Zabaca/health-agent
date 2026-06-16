@@ -21,7 +21,11 @@ type ReleaseStatus = "active" | "pending" | "expired";
 function computeStatus(r: ReleaseSummary): ReleaseStatus {
   if (r.voided) return "expired";
   if (!r.authSignatureImage) return "pending";
-  if (r.authExpirationDate && new Date(r.authExpirationDate) < new Date()) return "expired";
+  // A release is valid THROUGH its expiration day. authExpirationDate is a bare
+  // YYYY-MM-DD, which `new Date()` parses as UTC midnight — that flips a release
+  // to "expired" up to a day early in US timezones. Compare against the end of
+  // that local day so it expires only after the date has fully passed.
+  if (r.authExpirationDate && new Date(`${r.authExpirationDate}T23:59:59`) < new Date()) return "expired";
   return "active";
 }
 

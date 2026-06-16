@@ -46,6 +46,6 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const { faxNumber, fileData, fileName, recipientName } = await req.json();
   const sent = await sendReleaseFax({ faxNumber, fileData, fileName, releaseId, recipientName });
 
-  if (!sent.ok) return NextResponse.json({ error: sent.error }, { status: 400 });
+  if (!sent.ok) return NextResponse.json({ error: sent.error }, { status: sent.rateLimited ? 429 : 400 });
   return NextResponse.json({ success: true });
 }
