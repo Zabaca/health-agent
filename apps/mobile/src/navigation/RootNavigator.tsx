@@ -7,6 +7,7 @@ import { PdaTabsNavigator } from "./PdaTabsNavigator";
 import BiometricUnlock from "@/screens/auth/BiometricUnlock";
 import BiometricLock from "@/screens/auth/BiometricLock";
 import ConsentScreen from "@/screens/auth/ConsentScreen";
+import PdaOnboarding from "@/screens/pda/onboarding/PdaOnboarding";
 
 export function RootNavigator() {
   const { signedIn, loading, needsBioSetup, locked, user } = useAuth();
@@ -19,6 +20,10 @@ export function RootNavigator() {
   if (locked) return <BiometricLock />;
   // Consent gate: blocks until legal acceptance is recorded. PDAs are exempt.
   if (user && !user.isPda && user.consentedAt == null) return <ConsentScreen />;
+  // PDA onboarding gate: a designated agent must provide contact phone + address
+  // before reaching the representing workspace. Mirrors the web PdaOnboardingModal,
+  // which is shown in the (patient-designated-agent) layout whenever !onboarded.
+  if (role === "pda" && user && !user.onboarded) return <PdaOnboarding />;
   if (role === "pda") return <PdaTabsNavigator />;
   return <TabsNavigator />;
 }

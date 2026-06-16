@@ -171,6 +171,25 @@ export async function recordConsent(
   )) as { user: SessionUser; sessionToken: string };
 }
 
+/**
+ * Completes PDA onboarding: saves the agent's contact phone + mailing address
+ * and flips `onboarded`. The server re-mints the session JWT (so the returned
+ * `user.onboarded` is true); the caller persists it to clear the onboarding gate.
+ */
+export async function completePdaOnboarding(
+  phoneNumber: string,
+  address: string,
+): Promise<{ user: SessionUser; sessionToken: string }> {
+  return (await apiFetch(
+    "/api/onboarding/mobile",
+    {
+      method: "POST",
+      body: JSON.stringify({ phoneNumber, address }),
+    },
+    { auth: true },
+  )) as { user: SessionUser; sessionToken: string };
+}
+
 export async function requestPasswordReset(email: string): Promise<void> {
   await apiFetch("/api/password/forgot", {
     method: "POST",

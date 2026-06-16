@@ -23,6 +23,7 @@ import {
   loginGoogle,
   registerEmail,
   recordConsent as apiRecordConsent,
+  completePdaOnboarding as apiCompletePdaOnboarding,
   requestPasswordReset as apiRequestPasswordReset,
   revokeCurrentSession,
   setUnauthorizedHandler,
@@ -56,6 +57,8 @@ type AuthState = {
   register: (email: string, password: string, dateOfBirth: string) => Promise<Result>;
   /** Record onboarding consent. `dateOfBirth` is required only when none is on file (OAuth). */
   recordConsent: (dateOfBirth?: string) => Promise<{ ok: true } | { ok: false; underage?: boolean; error?: string }>;
+  /** Complete PDA onboarding (contact phone + mailing address). Re-mints the session so `onboarded` flips. */
+  completeOnboarding: (phoneNumber: string, address: string) => Promise<Result>;
   requestPasswordReset: (email: string) => Promise<Result>;
   signOut: () => Promise<void>;
   enableBiometric: () => Promise<Result>;
@@ -291,6 +294,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }, [persistSession]);
 
+  const completeOnboarding = useCallback<AuthState["completeOnboarding"]>(async (phoneNumber, address) => {
+    try {
+      const { user: nextUser, sessionToken } = await apiCompletePdaOnboarding(phoneNumber, address);
+      // Persist the re-minted token so the JWT reflects onboarded=true —
+      // otherwise a relaunch decodes the stale token and loops back to the gate.
+      await persistSession(sessionToken, nextUser);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof ApiError ? e.message : "Network error. Please try again." };
+    }
+  }, [persistSession]);
+
   const requestPasswordReset = useCallback<AuthState["requestPasswordReset"]>(async (email) => {
     try {
       await apiRequestPasswordReset(email);
@@ -363,6 +378,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       linkGoogle,
       register,
       recordConsent,
+      completeOnboarding,
       requestPasswordReset,
       signOut,
       enableBiometric,
@@ -385,6 +401,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       linkGoogle,
       register,
       recordConsent,
+      completeOnboarding,
       requestPasswordReset,
       signOut,
       enableBiometric,
