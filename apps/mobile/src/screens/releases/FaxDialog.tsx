@@ -62,8 +62,8 @@ export default function FaxDialog() {
       }
 
       Alert.alert(
-        "Fax sent",
-        "Your request was submitted. You won't receive a read confirmation — contact the provider to confirm receipt.",
+        "Fax queued",
+        "Your fax has been queued. Check back on the release detail page in a few minutes to see its status.",
         [{ text: "OK", onPress: () => nav.goBack() }],
       );
     } catch (e) {

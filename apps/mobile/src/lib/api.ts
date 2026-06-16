@@ -618,6 +618,17 @@ export type ReleaseProvider = {
   purposeOther: string | null;
 };
 
+/** Client-safe fax-request history entry (raw Faxage internals are stripped server-side). */
+export type ReleaseFaxLog = {
+  id: string;
+  type: "fax";
+  status: "success" | "failed" | "awaiting_confirmation";
+  faxNumber: string | null;
+  recipientName: string | null;
+  error: boolean;
+  createdAt: string;
+};
+
 export type ReleaseDetail = {
   id: string;
   userId: string;
@@ -648,6 +659,8 @@ export type ReleaseDetail = {
   voided: boolean;
   releaseCode: string | null;
   providers: ReleaseProvider[];
+  /** Fax-send history, newest first. Absent on older server builds. */
+  requestLog?: ReleaseFaxLog[];
 };
 
 // Derived from @health-agent/types so mobile and web share the same schema source.

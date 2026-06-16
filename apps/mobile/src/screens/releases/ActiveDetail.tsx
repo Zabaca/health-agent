@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Calendar, Copy, Printer, FileDown, Ban, ArrowLeft } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
+import { FaxHistory } from "@/components/FaxHistory";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { useTheme } from "@/theme/ThemeProvider";
 import { getRelease, voidRelease, type ReleaseDetail, type ReleaseProvider } from "@/lib/api";
@@ -214,6 +215,8 @@ export default function ActiveDetail() {
               </Pressable>
             ))}
           </View>
+
+          <FaxHistory logs={release.requestLog} />
         </Screen>
       )}
 
