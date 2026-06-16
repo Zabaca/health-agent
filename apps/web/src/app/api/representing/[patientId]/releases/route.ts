@@ -8,7 +8,7 @@ import { nanoid } from "nanoid";
 import { providerSchema } from "@/lib/schemas/release";
 import { generateReleaseCode } from "@/lib/utils/releaseCode";
 import { sendReleaseSignatureRequiredEmail, getSiteBaseUrl } from "@/lib/email";
-import { encryptPii, extractLast4Ssn } from "@/lib/crypto";
+import { decrypt, encryptPii, extractLast4Ssn } from "@/lib/crypto";
 import { toIsoDate } from "@/lib/dates";
 
 // Simplified schema for PDA release creation — patient personal info is fetched from DB.
@@ -131,11 +131,14 @@ export async function POST(
     firstName: patient.firstName ?? '',
     middleName: null,
     lastName: patient.lastName ?? '',
-    dateOfBirth: patient.dateOfBirth ?? '',
+    // dateOfBirth + ssn are stored ENCRYPTED on the user row; decrypt to plaintext
+    // before encryptPii re-encrypts (passing the ciphertext straight through would
+    // double-encrypt it, surfacing "enc:…" on the release detail + PDF).
+    dateOfBirth: patient.dateOfBirth ? toIsoDate(decrypt(patient.dateOfBirth)) : '',
     mailingAddress: patient.address ?? '',
     phoneNumber: patient.phoneNumber ?? '',
     email: patient.email ?? '',
-    ssn: patient.ssn ? extractLast4Ssn(patient.ssn) : "",
+    ssn: patient.ssn ? extractLast4Ssn(decrypt(patient.ssn)) : "",
     releaseAuthAgent: true,
     releaseAuthZabaca: false,
     // Full name drives the patient's release-list label (authAgentName ?? "Representative");

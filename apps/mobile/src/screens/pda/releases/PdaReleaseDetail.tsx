@@ -156,7 +156,7 @@ export default function PdaReleaseDetail() {
                 {isActive && (
                   <View style={{ flexDirection: "row", gap: 10 }}>
                     <Pressable
-                      onPress={() => nav.navigate("FaxDialog")}
+                      onPress={() => nav.navigate("FaxDialog", { releaseId: params.releaseId, patientId: currentPatient!.patientId, recipientName: displayName, defaultFax: provider.fax ?? undefined })}
                       style={{ flex: 1, height: 48, borderRadius: t.radius.button, borderWidth: 1, borderColor: t.colors.primary, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 }}
                     >
                       <Printer size={16} color={t.colors.primary} />

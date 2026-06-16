@@ -201,6 +201,11 @@ export function buildReleaseHtml(release: ReleaseHtmlInput): string {
 
   .page { padding: 0.3in 0.35in 0.4in; }
   .page + .page { page-break-before: always; }
+  /* Only the final (provider) page fills the sheet so its footer drops toward the
+     bottom — the first page already fills naturally, so leave its footer right
+     after the content. min-height is kept well under the printable height
+     (≈9.85in on letter, less in practice) so it never spills a blank page. */
+  .page-fill { display: flex; flex-direction: column; min-height: 8.8in; }
 
   .page-header { padding-bottom: 12px; }
 
@@ -275,6 +280,9 @@ export function buildReleaseHtml(release: ReleaseHtmlInput): string {
   .pending-sig { color: #8a9ab5; font-style: italic; }
 
   .footer { text-align: right; color: #8a9ab5; font-size: 10px; margin-top: 16px; border-top: 1px solid #c4d9ee; padding-top: 6px; }
+  /* On the fill page only, the auto margin absorbs leftover space so the footer
+     drops to the bottom of the sheet. */
+  .page-fill .footer { margin-top: auto; }
 </style>
 </head>
 <body>
@@ -323,7 +331,7 @@ export function buildReleaseHtml(release: ReleaseHtmlInput): string {
   </div>
 
   <!-- Page 2: Healthcare Provider -->
-  <div class="page">
+  <div class="page page-fill">
     <div class="page-header">
       <div class="doc-title">Authorization for the Release of Protected Health Information</div>
     </div>

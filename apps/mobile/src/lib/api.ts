@@ -686,6 +686,36 @@ export async function voidRelease(id: string): Promise<{ success: boolean }> {
   )) as { success: boolean };
 }
 
+export type FaxReleaseInput = {
+  faxNumber: string;
+  /** Base64-encoded PDF (rendered from the release print-html, same as Save PDF). */
+  fileData: string;
+  fileName: string;
+  recipientName?: string;
+};
+
+/** Fax one of the patient's own releases. Server verifies ownership. */
+export async function faxRelease(releaseId: string, input: FaxReleaseInput): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/releases/${encodeURIComponent(releaseId)}/fax`,
+    { method: "POST", body: JSON.stringify(input) },
+    { auth: true }
+  )) as { success: boolean };
+}
+
+/** Fax a release a PDA is the authorized agent on. Server verifies the relation. */
+export async function faxRepresentingRelease(
+  patientId: string,
+  releaseId: string,
+  input: FaxReleaseInput,
+): Promise<{ success: boolean }> {
+  return (await apiFetch(
+    `/api/representing/${encodeURIComponent(patientId)}/releases/${encodeURIComponent(releaseId)}/fax`,
+    { method: "POST", body: JSON.stringify(input) },
+    { auth: true }
+  )) as { success: boolean };
+}
+
 export async function signRelease(id: string, input: SignReleaseInput): Promise<{ success: boolean }> {
   return (await apiFetch(
     `/api/releases/${encodeURIComponent(id)}/sign`,
