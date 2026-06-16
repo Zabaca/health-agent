@@ -86,6 +86,7 @@ export default function PdaReleases() {
       </Text>
       {isEditor ? (
         <Pressable
+          testID="pda-releases-add"
           onPress={() => nav.navigate("PdaWizardStep1")}
           style={{
             flexDirection: "row",

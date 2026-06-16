@@ -1,0 +1,57 @@
+# Journey 7 — the patient signs the PDA-created release.
+#
+# Fresh sign-in as the PATIENT (after the PDA session). Opens the pending
+# release, signs, and activates. The SignaturePad defaults to "Type" mode with
+# the patient's name pre-filled (from their profile), so no drawing is needed —
+# the patient just taps "Sign & Activate". Afterward the orchestrator asserts
+# the release now carries a signature (active, no longer pending).
+#
+# Creds come via -e MAESTRO_EMAIL / MAESTRO_PASSWORD (the patient account).
+appId: com.zabaca.veladon
+name: Patient — sign the PDA-created release
+tags:
+  - journey
+  - patient
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- runFlow: ../subflows/login-as.yaml
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-screen"
+    timeout: 30000
+- tapOn: "Releases, tab.*"
+
+# Default tab is Active; the new release is unsigned → switch to Pending.
+- extendedWaitUntil:
+    visible:
+      id: "releases-tab-pending"
+    timeout: 15000
+- tapOn:
+    id: "releases-tab-pending"
+
+# Open the only pending release. Target the row by testID, not the visible
+# "Awaiting signature" text — on iOS 26 Maestro intermittently can't read a
+# styled <Text> node from the hierarchy even when it's clearly rendered.
+- extendedWaitUntil:
+    visible:
+      id: "release-row-pending"
+    timeout: 15000
+- tapOn:
+    id: "release-row-pending"
+
+# --- PendingDetail: signature pre-filled (Type mode) → Sign & Activate ---
+- extendedWaitUntil:
+    visible:
+      id: "release-sign"
+    timeout: 15000
+- tapOn:
+    id: "release-sign"
+    retryTapIfNoChange: true
+
+# Back on the releases list (popToTop after activation).
+- extendedWaitUntil:
+    visible: "My Releases"
+    timeout: 20000

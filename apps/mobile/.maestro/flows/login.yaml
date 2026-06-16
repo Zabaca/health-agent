@@ -1,0 +1,25 @@
+# Login E2E — email/password sign-in lands the user on the Dashboard.
+#
+# REQUIRES:
+#   - A reachable backend (EXPO_PUBLIC_API_URL the app was built with).
+#   - A seeded test account, supplied via env vars MAESTRO_EMAIL / MAESTRO_PASSWORD.
+#
+# Run it with the e2e script (which loads .maestro/.env) or directly:
+#   maestro test .maestro/flows/login.yaml \
+#     -e MAESTRO_EMAIL=you@example.com -e MAESTRO_PASSWORD=secret
+appId: com.zabaca.veladon
+name: Login — email/password to Dashboard
+tags:
+  - auth
+---
+# clearKeychain wipes the persisted session (it lives in the iOS keychain,
+# which survives clearState) so we always start from a signed-out Sign In.
+- clearKeychain
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/login-as.yaml
+# Network round-trip + post-login gates, so wait generously for the Dashboard.
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-screen"
+    timeout: 30000

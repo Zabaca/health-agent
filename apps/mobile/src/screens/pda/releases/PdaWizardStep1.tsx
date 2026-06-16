@@ -83,6 +83,7 @@ export default function PdaWizardStep1() {
         subtitle="Select Provider"
         primaryLabel="Next →"
         primaryDisabled={!selected}
+        primaryTestID="pda-wizard-step1-next"
         onPrimary={handleNext}
       >
         <View

@@ -321,6 +321,7 @@ export default function PdaRecords() {
         </Text>
         {perm === "editor" && currentPatient ? (
           <Pressable
+            testID="pda-records-upload"
             onPress={() => nav.navigate("PdaUploadSheet", { patientId: currentPatient.patientId })}
             style={{
               flexDirection: "row",

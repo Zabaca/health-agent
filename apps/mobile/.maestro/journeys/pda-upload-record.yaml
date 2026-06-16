@@ -1,0 +1,59 @@
+# Journey 7 — the PDA uploads a record (image) on the patient's behalf.
+#
+# Continues the signed-in PDA session (on PdaReleases after journey 6). Requires
+# healthRecordsPermission=editor (granted at invite, never restricted). Drives
+# the REAL photo picker against a sample image the harness seeded into the sim's
+# photo library (Photos access is pre-granted, so no permission dialog). The
+# upload XHR hits the test web server for real; only the R2 PutObject is skipped
+# server-side (E2E_NO_R2). Afterward the orchestrator asserts an IncomingFile
+# row (source='upload') for the patient, uploaded by the PDA.
+appId: com.zabaca.veladon
+name: PDA — upload a record for the patient
+tags:
+  - journey
+  - pda
+---
+- launchApp
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible:
+      id: "pda-home-screen"
+    timeout: 30000
+- tapOn: "Records, tab.*"
+- extendedWaitUntil:
+    visible:
+      id: "pda-records-upload"
+    timeout: 15000
+- tapOn:
+    id: "pda-records-upload"
+
+# Upload sheet → Photo Library (opens the system PHPicker; access pre-granted).
+- extendedWaitUntil:
+    visible:
+      id: "upload-source-library"
+    timeout: 15000
+- tapOn:
+    id: "upload-source-library"
+
+# --- System photo picker (PHPicker) ---
+# The picker is system UI with no testIDs. The seeded image is the only/first
+# cell; tap it (single-select dismisses immediately). Coordinate is in the
+# system picker (safe — not the app's own bottom area). Likely tweak point.
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- tapOn:
+    point: "16%,28%"
+
+# --- PdaUploadPreview → confirm upload ---
+- extendedWaitUntil:
+    visible:
+      id: "pda-upload-confirm"
+    timeout: 20000
+- tapOn:
+    id: "pda-upload-confirm"
+    retryTapIfNoChange: true
+
+# Back on PdaRecords (popToTop after upload).
+- extendedWaitUntil:
+    visible:
+      id: "pda-records-upload"
+    timeout: 30000

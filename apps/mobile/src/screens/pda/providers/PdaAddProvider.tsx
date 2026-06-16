@@ -127,6 +127,7 @@ export default function PdaAddProvider() {
         bottom={
           <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16 }}>
             <Button
+              testID="pda-provider-save"
               label={saving ? "Saving…" : isEdit ? "Save Changes" : "Add Provider"}
               onPress={save}
               fullWidth
@@ -173,6 +174,7 @@ export default function PdaAddProvider() {
         {/* Provider Name */}
         {providerType !== "Insurance" && (
           <Input
+            testID="pda-provider-name"
             label="Individual / Organization Name"
             placeholder="e.g. Mass General Hospital"
             value={providerName}

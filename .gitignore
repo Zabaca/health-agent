@@ -21,6 +21,12 @@ dist/
 .env.production
 .env.production.local
 
+# Maestro E2E
+# .maestro/.env is covered by the .env rule above; this documents intent and
+# catches any local report output. Flows + .env.example stay committed.
+apps/mobile/.maestro/.env
+apps/mobile/.maestro/**/report.*
+
 # Private keys / certificates
 *.pem
 *.key

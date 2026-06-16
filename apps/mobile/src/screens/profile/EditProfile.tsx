@@ -245,9 +245,9 @@ export default function EditProfile() {
               <Text style={{ color: t.colors.destructive, textAlign: "center" }}>{error}</Text>
             ) : null}
 
-            <Input label="First Name" value={firstName} onChangeText={setFirstName} />
+            <Input testID="profile-first" label="First Name" value={firstName} onChangeText={setFirstName} />
             <Input label="Middle Name" placeholder="Optional" value={middleName} onChangeText={setMiddleName} />
-            <Input label="Last Name" value={lastName} onChangeText={setLastName} />
+            <Input testID="profile-last" label="Last Name" value={lastName} onChangeText={setLastName} />
             {needsEmail ? (
               <Input
                 label="Email"
@@ -327,8 +327,8 @@ export default function EditProfile() {
                 </Pressable>
               </Modal>
             ) : null}
-            <Input label="Phone Number" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
-            <AddressAutocompleteInput label="Address" value={address} onChangeText={setAddress} />
+            <Input testID="profile-phone" label="Phone Number" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
+            <AddressAutocompleteInput testID="profile-address" label="Address" value={address} onChangeText={setAddress} />
             <Input
               label="Last 4 of SSN · Optional"
               value={ssn}

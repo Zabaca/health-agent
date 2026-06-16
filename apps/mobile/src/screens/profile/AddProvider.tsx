@@ -229,6 +229,7 @@ export default function AddProvider() {
         ) : (
           <>
             <Input
+              testID="provider-name"
               label="Individual / Organization Name"
               placeholder="e.g. Mass General Hospital"
               value={providerName}

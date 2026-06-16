@@ -1,0 +1,73 @@
+# Journey 6 — the PDA creates a HIPAA release for the represented patient.
+#
+# Continues the signed-in PDA session (on PdaHome after journey 5). Requires
+# releasePermission=editor (granted at invite). Walks the 4-step wizard:
+#   1 Select Provider  → first provider auto-selected
+#   2 What to Release   → enable "Medical Records" (Hospital provider)
+#   3 Release Duration  → default 90 days
+#   4 Review & Submit   → "Send for Signature"
+# The release is created unsigned ("pending") because a PDA cannot self-sign.
+# Afterward the orchestrator asserts a Release row for the patient with
+# releaseAuthAgent=1 and no signature yet; journey 7 has the patient sign it.
+appId: com.zabaca.veladon
+name: PDA — create a HIPAA release for the patient
+tags:
+  - journey
+  - pda
+---
+- launchApp
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible:
+      id: "pda-home-screen"
+    timeout: 30000
+- tapOn: "Releases, tab.*"
+- extendedWaitUntil:
+    visible:
+      id: "pda-releases-add"
+    timeout: 15000
+- tapOn:
+    id: "pda-releases-add"
+
+# --- Step 1: Select Provider (first provider auto-selects once loaded) ---
+# Wait for a provider row to load so the Next button is enabled before tapping.
+- extendedWaitUntil:
+    visible: ".*Hospital.*"
+    timeout: 15000
+- tapOn:
+    id: "pda-wizard-step1-next"
+    retryTapIfNoChange: true
+
+# --- Step 2: What to Release — toggle Medical Records on, then Next ---
+- extendedWaitUntil:
+    visible:
+      id: "pda-rec-medical"
+    timeout: 15000
+- tapOn:
+    id: "pda-rec-medical"
+- tapOn:
+    id: "pda-wizard-step2-next"
+    retryTapIfNoChange: true
+
+# --- Step 3: Release Duration — default 90 days, go to review ---
+- extendedWaitUntil:
+    visible:
+      id: "pda-wizard-step3-next"
+    timeout: 15000
+- tapOn:
+    id: "pda-wizard-step3-next"
+    retryTapIfNoChange: true
+
+# --- Step 4: Review & Submit — send for the patient's signature ---
+# "Patient Signature Required" is a static review-screen label (not PHI).
+- extendedWaitUntil:
+    visible: "Patient Signature Required"
+    timeout: 15000
+- tapOn:
+    id: "pda-wizard-submit"
+    retryTapIfNoChange: true
+
+# Back on the PDA releases list (popToTop after create).
+- extendedWaitUntil:
+    visible: "HIPAA Releases"
+    timeout: 20000

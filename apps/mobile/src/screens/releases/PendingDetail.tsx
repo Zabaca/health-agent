@@ -189,6 +189,7 @@ export default function PendingDetail() {
         bottom={
           <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16, gap: 10 }}>
             <Button
+              testID="release-sign"
               label={signing ? "Activating…" : "Sign & Activate"}
               onPress={handleSign}
               disabled={signing}

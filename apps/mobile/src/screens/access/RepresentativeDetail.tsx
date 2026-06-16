@@ -90,8 +90,8 @@ export default function RepresentativeDetail() {
         title="Representative Detail"
         onBack={() => nav.goBack()}
         rightAction={saving
-          ? { icon: <ActivityIndicator size="small" color={t.colors.primary} />, onPress: onSave }
-          : { label: "Save", onPress: onSave }
+          ? { icon: <ActivityIndicator size="small" color={t.colors.primary} />, onPress: onSave, testID: "representative-save" }
+          : { label: "Save", onPress: onSave, testID: "representative-save" }
         }
       />
       <Screen
@@ -120,6 +120,7 @@ export default function RepresentativeDetail() {
             </Pressable>
           </View>
         }
+        testID="representative-detail-screen"
         contentContainerStyle={{ gap: 16 }}
       >
         <View
@@ -171,9 +172,9 @@ export default function RepresentativeDetail() {
             overflow: "hidden",
           }}
         >
-          <PermissionPicker label="Health Records" value={records} onChange={setRecords} isFirst />
-          <PermissionPicker label="Manage Providers" value={providers} onChange={setProviders} />
-          <PermissionPicker label="HIPAA Release Request" value={releases} onChange={setReleases} />
+          <PermissionPicker testID="perm-records" label="Health Records" value={records} onChange={setRecords} isFirst />
+          <PermissionPicker testID="perm-providers" label="Manage Providers" value={providers} onChange={setProviders} />
+          <PermissionPicker testID="perm-releases" label="HIPAA Release Request" value={releases} onChange={setReleases} />
         </View>
       </Screen>
 

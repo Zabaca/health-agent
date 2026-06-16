@@ -1,0 +1,34 @@
+# Journey 5 — the PDA adds a provider on behalf of the represented patient.
+#
+# Continues the signed-in PDA session (on PdaHome). Requires the PDA to have
+# manageProviders=editor (granted at invite time). Afterward the orchestrator
+# asserts a UserProvider row for the PATIENT named "Boston Children's Hospital".
+appId: com.zabaca.veladon
+name: PDA — add a provider for the patient
+tags:
+  - journey
+  - pda
+---
+- launchApp
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible:
+      id: "pda-home-screen"
+    timeout: 30000
+- tapOn: "Providers, tab.*"
+- tapOn:
+    id: "pda-providers-add"
+- extendedWaitUntil:
+    visible:
+      id: "pda-provider-name"
+    timeout: 15000
+- tapOn:
+    id: "pda-provider-name"
+- inputText: "Boston Children's Hospital"
+- tapOn: "PROVIDER TYPE"
+- tapOn:
+    id: "pda-provider-save"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible: ".*Boston Children.*"
+    timeout: 15000

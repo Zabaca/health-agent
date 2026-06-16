@@ -19,6 +19,14 @@ export function Input({ label, helpText, error, multiline, required, rightElemen
   const secureDefaults = rest.secureTextEntry
     ? { autoCapitalize: "none" as const, autoCorrect: false }
     : null;
+  // E2E only: iOS pops a "Use Strong Password?" AutoFill sheet on secure fields
+  // that steals focus and swallows Maestro's typed input. Under the E2E flag
+  // (set by the test harness's Metro), suppress AutoFill so flows can type.
+  // Production keeps the password-manager UX untouched.
+  const e2eSecureOff =
+    rest.secureTextEntry && process.env.EXPO_PUBLIC_E2E === "1"
+      ? { textContentType: "oneTimeCode" as const, autoComplete: "off" as const }
+      : null;
   return (
     <View style={{ gap: 6 }}>
       {label ? (
@@ -42,6 +50,7 @@ export function Input({ label, helpText, error, multiline, required, rightElemen
           placeholderTextColor={t.colors.textPlaceholder}
           multiline={multiline}
           {...secureDefaults}
+          {...e2eSecureOff}
           style={[
             {
               flex: 1,

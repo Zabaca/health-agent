@@ -38,7 +38,7 @@ export default function SignIn() {
   };
 
   return (
-    <Screen safeTop contentContainerStyle={{ paddingTop: 60, gap: 16, alignItems: "stretch" }}>
+    <Screen testID="signin-screen" safeTop contentContainerStyle={{ paddingTop: 60, gap: 16, alignItems: "stretch" }}>
       <View style={{ alignItems: "center", gap: 12, marginBottom: 8 }}>
         <View style={[styles.logoTile, { backgroundColor: t.colors.primary }]}>
           <Sprout size={28} color="#FFFFFF" />
@@ -80,9 +80,9 @@ export default function SignIn() {
         <View style={[styles.dividerLine, { backgroundColor: t.colors.border }]} />
       </View>
 
-      <Input placeholder="Email address" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
+      <Input testID="signin-email" placeholder="Email address" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
       <View style={{ position: "relative" }}>
-        <Input placeholder="Password" secureTextEntry={!showPw} autoCapitalize="none" autoCorrect={false} value={password} onChangeText={setPassword} />
+        <Input testID="signin-password" placeholder="Password" secureTextEntry={!showPw} autoCapitalize="none" autoCorrect={false} value={password} onChangeText={setPassword} />
         <Pressable
           onPress={() => setShowPw((v) => !v)}
           style={{ position: "absolute", right: 14, top: 14 }}
@@ -95,7 +95,7 @@ export default function SignIn() {
         <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error || oauthError}</Text>
       ) : null}
 
-      <Button label={submitting ? "Signing in…" : "Sign In"} onPress={onSubmit} disabled={submitting} fullWidth />
+      <Button testID="signin-submit" label={submitting ? "Signing in…" : "Sign In"} onPress={onSubmit} disabled={submitting} fullWidth />
 
       <View style={{ alignItems: "center", gap: 12, paddingTop: 4 }}>
         <Pressable onPress={() => nav.navigate("ForgotPassword")}>
@@ -103,7 +103,7 @@ export default function SignIn() {
         </Pressable>
         <View style={{ flexDirection: "row" }}>
           <Text style={t.type.caption}>Don't have an account? </Text>
-          <Pressable onPress={() => nav.navigate("CreateAccount")}>
+          <Pressable testID="signin-create-account" onPress={() => nav.navigate("CreateAccount")}>
             <Text style={{ color: t.colors.primary, fontWeight: "600" }}>Create Account</Text>
           </Pressable>
         </View>

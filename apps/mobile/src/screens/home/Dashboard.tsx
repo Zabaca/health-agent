@@ -141,6 +141,7 @@ export default function Dashboard() {
 
   return (
     <Screen
+      testID="dashboard-screen"
       safeTop
       contentContainerStyle={{ gap: 16 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

@@ -1,0 +1,57 @@
+# Journey 6 — the patient restricts the PDA's provider access (editor → viewer).
+#
+# After the PDA session (journeys 4–5), this signs back in as the PATIENT
+# (fresh start), opens the designated-agent detail, and downgrades "Manage
+# Providers" from Editor to Viewer, then saves. Afterward the orchestrator
+# asserts manageProvidersPermission flipped to "viewer" in the temp DB, and
+# journey 7 confirms the PDA's "Add" affordance is now gone.
+#
+# Creds come via -e MAESTRO_EMAIL / MAESTRO_PASSWORD (the patient account).
+appId: com.zabaca.veladon
+name: Patient — restrict PDA provider access
+tags:
+  - journey
+  - patient
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- runFlow: ../subflows/login-as.yaml
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-screen"
+    timeout: 30000
+
+# Profile → My Designated Agents → open the agent. Tap the whole card (not the
+# nested "Edit Permissions" button): the card is one accessibility element that
+# groups its children, so the inner button isn't queryable — and tapping the
+# card navigates to the same Representative Detail screen.
+- tapOn: "Profile, tab.*"
+- tapOn:
+    id: "profile-agents"
+- extendedWaitUntil:
+    visible:
+      id: "agent-card-active"
+    timeout: 15000
+- tapOn:
+    id: "agent-card-active"
+
+# --- Representative detail: downgrade Manage Providers Editor → Viewer ---
+- extendedWaitUntil:
+    visible:
+      id: "representative-detail-screen"
+    timeout: 15000
+- tapOn:
+    id: "perm-providers-viewer"
+# Save is a Header (top-right) action; id-tap fires here (it's a plain Pressable,
+# not a bottom-pinned Button). retryTapIfNoChange waits for the nav-back.
+- tapOn:
+    id: "representative-save"
+    retryTapIfNoChange: true
+
+# Back on the agents list — the providers pill now reads "providers: viewer"
+# (a permission label, not PHI). Maestro full-matches, so anchor with .*…*.
+- extendedWaitUntil:
+    visible: ".*providers: viewer.*"
+    timeout: 15000

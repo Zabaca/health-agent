@@ -71,12 +71,14 @@ function ToggleRow({
   value,
   onChange,
   last = false,
+  testID,
 }: {
   icon: LucideIcon;
   label: string;
   value: boolean;
   onChange: (v: boolean) => void;
   last?: boolean;
+  testID?: string;
 }) {
   const t = useTheme();
   return (
@@ -94,6 +96,7 @@ function ToggleRow({
       <Icon size={20} color={t.colors.primary} />
       <Text style={[t.type.body, { flex: 1 }]}>{label}</Text>
       <Switch
+        testID={testID}
         value={value}
         onValueChange={onChange}
         trackColor={{ false: t.colors.borderMuted, true: t.colors.primary }}
@@ -155,7 +158,7 @@ export default function PdaWizardStep2() {
   };
 
   return (
-    <PdaWizardShell step={2} subtitle="What to Release" primaryLabel="Next →" primaryDisabled={!hasRecord} onPrimary={handleNext}>
+    <PdaWizardShell step={2} subtitle="What to Release" primaryLabel="Next →" primaryDisabled={!hasRecord} primaryTestID="pda-wizard-step2-next" onPrimary={handleNext}>
       <Text style={t.type.bodyStrong}>
         Records to Release <Text style={{ color: "#EF4444" }}>*</Text>
       </Text>
@@ -172,7 +175,7 @@ export default function PdaWizardStep2() {
       {isHospitalOrFacility && (
         <>
           <ToggleCard green>
-            <ToggleRow icon={Stethoscope} label="Medical Records" value={fields.medicalRecords} onChange={set("medicalRecords") as (v: boolean) => void} />
+            <ToggleRow testID="pda-rec-medical" icon={Stethoscope} label="Medical Records" value={fields.medicalRecords} onChange={set("medicalRecords") as (v: boolean) => void} />
             <ToggleRow icon={Smile} label="Dental Records" value={fields.dentalRecords} onChange={set("dentalRecords") as (v: boolean) => void} />
             <ToggleRow icon={FileQuestion} label="Other Non-Specific" value={fields.otherNonSpecific} onChange={set("otherNonSpecific") as (v: boolean) => void} last />
           </ToggleCard>

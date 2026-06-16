@@ -9,9 +9,11 @@ type Props = {
   value: typeof opts[number];
   onChange: (v: typeof opts[number]) => void;
   isFirst?: boolean;
+  /** Base testID; each option becomes `${testID}-none|-viewer|-editor`. */
+  testID?: string;
 };
 
-export function PermissionPicker({ label, value, onChange, isFirst }: Props) {
+export function PermissionPicker({ label, value, onChange, isFirst, testID }: Props) {
   const t = useTheme();
   return (
     <View
@@ -31,7 +33,7 @@ export function PermissionPicker({ label, value, onChange, isFirst }: Props) {
         {opts.map((o) => {
           const on = o === value;
           return (
-            <Pressable key={o} onPress={() => onChange(o)} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Pressable key={o} testID={testID ? `${testID}-${o.toLowerCase()}` : undefined} onPress={() => onChange(o)} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <View
                 style={{
                   width: 18,

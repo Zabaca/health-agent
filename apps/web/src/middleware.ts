@@ -104,5 +104,5 @@ export const config = {
   // `\.well-known` excludes the whole subtree (Apple rejects redirects on the
   // apple-app-site-association fetch). Note: this exempts ANY future
   // /.well-known/* route from auth — keep only public files there.
-  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|api/me|relay-Ke8z|\\.well-known|_next/static|_next/image|uploads|.*\\.png|.*\\.ico|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.webp|.*\\.gif|.*\\.woff2?).*)"],
+  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|api/me|api/e2e-log|relay-Ke8z|\\.well-known|_next/static|_next/image|uploads|.*\\.png|.*\\.ico|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.webp|.*\\.gif|.*\\.woff2?).*)"],
 };

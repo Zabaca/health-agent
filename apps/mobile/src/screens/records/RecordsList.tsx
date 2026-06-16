@@ -372,6 +372,7 @@ export default function RecordsList() {
           My Records
         </Text>
         <Pressable
+          testID="records-upload"
           onPress={() => nav.navigate("UploadSheet")}
           style={{
             flexDirection: "row",

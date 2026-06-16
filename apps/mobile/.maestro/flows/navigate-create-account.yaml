@@ -1,0 +1,19 @@
+# Navigation smoke — from Sign In, the "Create Account" link opens the
+# Create Account screen. No backend or account required.
+appId: com.zabaca.veladon
+name: Nav — Sign In to Create Account
+tags:
+  - smoke
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "signin-screen"
+    timeout: 30000
+- tapOn:
+    id: "signin-create-account"
+# The Create Account screen has no testID anchor yet; assert on its visible
+# heading. Swap this for an `id:` once a `create-account-screen` testID exists.
+- assertVisible: "Create Account"

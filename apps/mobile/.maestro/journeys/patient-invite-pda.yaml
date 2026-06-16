@@ -1,0 +1,45 @@
+# Journey 3 — patient invites a PDA (designated agent) with edit access to
+# records, providers, and releases (broad grant; a later journey restricts it).
+#
+# Continues the signed-in patient session. Afterward the orchestrator reads the
+# invite token from PatientDesignatedAgent and accepts it via the API (the PDA
+# can't accept in-app until isPda is true — see project memory), then the PDA
+# logs into the app in a later journey.
+appId: com.zabaca.veladon
+name: Patient — invite a designated agent
+tags:
+  - journey
+  - patient
+---
+- launchApp
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-screen"
+    timeout: 30000
+- tapOn: "Profile, tab.*"
+- tapOn:
+    id: "profile-agents"
+- tapOn: "Invite"
+
+# --- Invite form ---
+- extendedWaitUntil:
+    visible:
+      id: "invite-email"
+    timeout: 15000
+- tapOn:
+    id: "invite-email"
+- inputText: ${PDA_EMAIL}
+# Dismiss the keyboard (tap a static label) so the permission rows are tappable.
+- tapOn: "PERMISSIONS"
+# Records defaults to Editor; grant providers + releases Editor too.
+- tapOn:
+    id: "perm-providers-editor"
+- tapOn:
+    id: "perm-releases-editor"
+- tapOn: "Send Invite"
+
+# Back on the agents list — the pending invite shows the invitee email.
+- extendedWaitUntil:
+    visible: ".*${PDA_EMAIL}.*"
+    timeout: 15000

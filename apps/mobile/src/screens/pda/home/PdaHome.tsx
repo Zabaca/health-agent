@@ -74,7 +74,7 @@ export default function PdaHome() {
   ];
 
   return (
-    <Screen safeTop contentContainerStyle={{ gap: 16 }}>
+    <Screen testID="pda-home-screen" safeTop contentContainerStyle={{ gap: 16 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <Text style={[t.type.h1, { flex: 1 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
           Overview
