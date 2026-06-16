@@ -213,10 +213,10 @@ export type InviteByToken = {
   relationship: string | null;
 };
 
-// Validates a PDA invite token from a Universal Link
-// (https://app.veladon.com/invite/:token). Public, no auth — throws ApiError
-// 404 (invalid) or 410 (expired). Returns inviteId, which the existing
-// respondToRepresentingInvite(inviteId, action) endpoint accepts.
+// Validates a PDA invite token (from an in-app `invite/:token` deep link via the
+// zabaca:// scheme — NOT a web Universal Link; /invite/* is off the AASA allowlist).
+// Public, no auth — throws ApiError 404 (invalid) or 410 (expired). Returns
+// inviteId, which the existing respondToRepresentingInvite(inviteId, action) accepts.
 export async function getInviteByToken(token: string): Promise<InviteByToken> {
   return (await apiFetch(
     `/api/invites/${encodeURIComponent(token)}`,

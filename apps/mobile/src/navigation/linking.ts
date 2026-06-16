@@ -9,8 +9,13 @@ import {
  *
  * Universal Links: notification emails point at https://app.veladon.com/<path>.
  * Apple's apple-app-site-association (served by apps/web) is the gatekeeper — only
- * /reset-password, /my-records, /releases, and /invite/* are handed to the app; all
- * other URLs stay on the web. Each of those maps to a screen below.
+ * /reset-password, /my-records, and /releases are handed to the app; all other URLs
+ * (including /invite/*) stay on the web. Each handed-off path maps to a screen below.
+ *
+ * `invite/:token` is mapped too, but is NOT a Universal Link target (it's off the
+ * AASA allowlist on purpose — see that file). It exists for the zabaca:// scheme
+ * (e.g. a push-notification deep link), which can route to PdaInvite when the PDA
+ * tree is mounted.
  *
  * RootNavigator mounts AuthStack, TabsNavigator, or PdaTabsNavigator directly
  * (no wrapping route), so paths target screen names in whichever tree is mounted.

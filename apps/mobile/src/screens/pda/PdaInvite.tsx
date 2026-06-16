@@ -53,18 +53,21 @@ export default function PdaInvite() {
     let active = true;
     (async () => {
       try {
-        const meta = await getInviteByToken(token);
-        // The token validates against the invitee's email; match it to the
+        // The token validates against the invitee's email; we match it to the
         // signed-in user's pending invites to keep the permission detail and
-        // reuse the existing accept/decline endpoint (keyed by invite id).
-        const pending = await listPendingRepresentingInvites();
+        // reuse the existing accept/decline endpoint (keyed by invite id). The
+        // two calls are independent, so fetch them in parallel.
+        const [meta, pending] = await Promise.all([
+          getInviteByToken(token),
+          listPendingRepresentingInvites(),
+        ]);
         const full = pending.find((i) => i.id === meta.inviteId);
         if (!active) return;
         if (full) {
           setInvite(full);
         } else {
           setLoadError(
-            `This invitation was sent to ${meta.inviteeEmail}. Sign in with that email to accept it.`,
+            `${meta.patientName}'s invitation was sent to ${meta.inviteeEmail}. Sign in with that email to accept it.`,
           );
         }
       } catch (e) {

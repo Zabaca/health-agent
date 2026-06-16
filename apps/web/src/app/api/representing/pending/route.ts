@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { patientDesignatedAgents, users } from "@/lib/db/schema";
 import { resolveUserSession } from "@/lib/session-resolver";
@@ -32,7 +32,10 @@ export async function GET(req: Request) {
     .innerJoin(users, eq(users.id, patientDesignatedAgents.patientId))
     .where(
       and(
-        eq(patientDesignatedAgents.inviteeEmail, me.email),
+        // Case-insensitive: legacy invites may store a mixed-case inviteeEmail
+        // (the accept route normalizes defensively for the same reason), while
+        // account emails are stored lowercased — an exact match would miss them.
+        sql`lower(${patientDesignatedAgents.inviteeEmail}) = lower(${me.email})`,
         eq(patientDesignatedAgents.status, "pending"),
       ),
     );
