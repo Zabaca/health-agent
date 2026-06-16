@@ -106,3 +106,6 @@ apps/mobile/secrets/
 
 # SOPS decrypted
 .decrypted~*
+
+# graphify knowledge graph (locally rebuilt by the post-commit hook)
+graphify-out/
