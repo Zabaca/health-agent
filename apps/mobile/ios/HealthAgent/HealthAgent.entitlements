@@ -13,5 +13,11 @@
     <array>
       <string>health-records</string>
     </array>
+    <!-- Universal Links: app.veladon.com email links open the app. Requires the
+         Associated Domains capability on App ID com.zabaca.veladon. -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+      <string>applinks:app.veladon.com</string>
+    </array>
   </dict>
 </plist>

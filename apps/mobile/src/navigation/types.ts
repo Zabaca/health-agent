@@ -6,7 +6,8 @@ export type AuthParamList = {
   SignIn: undefined;
   CreateAccount: undefined;
   ForgotPassword: undefined;
-  ResetPassword: undefined;
+  // `token` is set when reached via a reset-password Universal Link.
+  ResetPassword: { token?: string } | undefined;
 };
 
 // When a screen is launched from the Account Setup checklist, it carries a
@@ -134,7 +135,11 @@ export type PdaRecordsFilters = {
 export type PdaHomeParamList = {
   PdaHome: undefined;
   RoleSwitcher: undefined;
-  PdaInvite: { invite: import("@/lib/api").PendingRepresentingInvite };
+  // `invite` when opened in-app from the pending list; `token` when reached via
+  // an /invite/:token Universal Link (the screen loads the invite by token).
+  PdaInvite:
+    | { invite: import("@/lib/api").PendingRepresentingInvite; token?: undefined }
+    | { token: string; invite?: undefined };
 };
 
 export type PdaRecordsParamList = {
@@ -193,7 +198,11 @@ export type PdaProfileParamList = {
   PdaPeopleIRepresent: undefined;
   RoleSwitcher: undefined;
   ActiveDevices: undefined;
-  PdaInvite: { invite: import("@/lib/api").PendingRepresentingInvite };
+  // `invite` when opened in-app from the pending list; `token` when reached via
+  // an /invite/:token Universal Link (the screen loads the invite by token).
+  PdaInvite:
+    | { invite: import("@/lib/api").PendingRepresentingInvite; token?: undefined }
+    | { token: string; invite?: undefined };
 };
 
 export type PdaTabsParamList = {
