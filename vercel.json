@@ -2,7 +2,7 @@
   "buildCommand": "cd apps/web && bun run build",
   "outputDirectory": "apps/web/.next",
   "installCommand": "bun install",
-  "ignoreCommand": "if [ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ]; then exit 1; fi; git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD -- ':(top)apps/web' ':(top)packages/types' ':(top)bun.lock' ':(top)vercel.json'",
+  "ignoreCommand": "if [ -z \"$VERCEL_GIT_PREVIOUS_SHA\" ]; then exit 1; fi; git cat-file -e \"$VERCEL_GIT_PREVIOUS_SHA^{commit}\" 2>/dev/null || exit 1; git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD -- ':(top)apps/web' ':(top)packages/types' ':(top)bun.lock' ':(top)vercel.json'",
   "crons": [
     { "path": "/api/cron/purge-accounts", "schedule": "0 3 * * *" }
   ]
