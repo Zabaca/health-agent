@@ -7,7 +7,7 @@ import { Screen } from "@/components/Screen";
 import { Badge } from "@/components/Badge";
 import { ConfirmDrawer } from "@/components/ConfirmDrawer";
 import { VersionFooter } from "@/components/VersionFooter";
-import { LegalModal } from "@/screens/legal/LegalModal";
+import { openLegalDoc } from "@/lib/legal";
 import { AuthenticatedImage } from "@/components/AuthenticatedImage";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,7 +36,6 @@ export default function PdaProfile() {
   const { currentPatient } = useRepresentedPatients();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [signOutOpen, setSignOutOpen] = useState(false);
-  const [legalOpen, setLegalOpen] = useState<"terms" | "privacy" | null>(null);
 
   useEffect(() => {
     getProfile().then(setProfile).catch(() => {});
@@ -183,12 +182,12 @@ export default function PdaProfile() {
           <Row
             icon={<FileText size={18} color={t.colors.textSecondary} />}
             label="Terms of Service"
-            onPress={() => setLegalOpen("terms")}
+            onPress={() => openLegalDoc("terms")}
           />
           <Row
             icon={<ShieldCheck size={18} color={t.colors.textSecondary} />}
             label="Privacy Policy"
-            onPress={() => setLegalOpen("privacy")}
+            onPress={() => openLegalDoc("privacy")}
           />
           {user?.isPatient ? (
             <Row
@@ -211,8 +210,6 @@ export default function PdaProfile() {
         onCancel={() => setSignOutOpen(false)}
         onConfirm={() => { setSignOutOpen(false); signOut(); }}
       />
-
-      <LegalModal kind={legalOpen} onClose={() => setLegalOpen(null)} />
     </Screen>
   );
 }
