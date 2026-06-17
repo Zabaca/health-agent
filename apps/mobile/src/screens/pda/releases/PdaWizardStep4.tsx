@@ -125,6 +125,7 @@ export default function PdaWizardStep4() {
       step={4}
       subtitle="Review & Submit"
       primaryLabel={creating ? "Submitting…" : "Send for Signature"}
+      primaryTestID="pda-wizard-submit"
       onPrimary={handleCreate}
       primaryDisabled={creating}
     >

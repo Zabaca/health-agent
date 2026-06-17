@@ -1,0 +1,57 @@
+# Journey 9 — the patient uploads a record (image) themselves.
+#
+# Continues the signed-in patient session (on ReleasesList after journey 8).
+# Drives the REAL photo picker against the sample image the harness seeded into
+# the sim's photo library (Photos access pre-granted → no permission dialog).
+# The upload XHR runs for real against the test web server; only the R2 write is
+# skipped (E2E_NO_R2). Afterward the orchestrator asserts an IncomingFile row
+# (source='upload') for the patient, uploaded by the patient themselves.
+appId: com.zabaca.veladon
+name: Patient — upload a record
+tags:
+  - journey
+  - patient
+---
+- launchApp
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-screen"
+    timeout: 30000
+- tapOn: "Records, tab.*"
+- extendedWaitUntil:
+    visible:
+      id: "records-upload"
+    timeout: 15000
+- tapOn:
+    id: "records-upload"
+
+# Upload sheet → Photo Library (opens the system PHPicker; access pre-granted).
+- extendedWaitUntil:
+    visible:
+      id: "upload-source-library"
+    timeout: 15000
+- tapOn:
+    id: "upload-source-library"
+
+# --- System photo picker (PHPicker) ---
+# System UI, no testIDs. Tap the first/only (seeded) cell; single-select
+# dismisses immediately. Likely tweak point if the iOS picker layout differs.
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- tapOn:
+    point: "16%,28%"
+
+# --- UploadPreview → confirm upload ---
+- extendedWaitUntil:
+    visible:
+      id: "upload-confirm"
+    timeout: 20000
+- tapOn:
+    id: "upload-confirm"
+    retryTapIfNoChange: true
+
+# Back on RecordsList (popToTop after upload).
+- extendedWaitUntil:
+    visible:
+      id: "records-upload"
+    timeout: 30000

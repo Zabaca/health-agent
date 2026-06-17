@@ -1,0 +1,46 @@
+# Journey 4 — the PDA signs into the mobile app and completes PDA onboarding.
+#
+# Runs after the orchestrator has accepted the invite via API (so the PDA
+# account exists with isPda=true). Fresh start: clearKeychain signs the patient
+# out. The PDA account isn't a patient, so it skips the consent gate and lands
+# on the PdaOnboarding screen (phone + mailing address), then PdaHome.
+#
+# Creds come via -e MAESTRO_EMAIL / MAESTRO_PASSWORD (the PDA account).
+appId: com.zabaca.veladon
+name: PDA — sign in and onboard
+tags:
+  - journey
+  - pda
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- runFlow: ../subflows/login-as.yaml
+
+# --- PDA onboarding gate (phone + mailing address) ---
+- extendedWaitUntil:
+    visible:
+      id: "pda-onboard-phone"
+    timeout: 30000
+- tapOn:
+    id: "pda-onboard-phone"
+- inputText: "5555550123"
+- tapOn: "Phone Number"
+- tapOn:
+    id: "pda-onboard-address"
+- inputText: "100 Agent Ave, Boston, MA 02114"
+- tapOn: "Mailing Address"
+- waitForAnimationToEnd:
+    timeout: 1500
+# Bottom-pinned Button: id-tap with retryTapIfNoChange reliably fires onPress
+# (a plain tap can silently no-op on these flex-end buttons).
+- tapOn:
+    id: "pda-onboard-submit"
+    retryTapIfNoChange: true
+
+# --- Landed in the PDA workspace ---
+- extendedWaitUntil:
+    visible:
+      id: "pda-home-screen"
+    timeout: 30000

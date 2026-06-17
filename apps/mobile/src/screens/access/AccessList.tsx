@@ -90,11 +90,12 @@ function PermPill({ label, color, bg }: { label: string; color: string; bg: stri
   );
 }
 
-function ActionBtn({ label, tone, onPress }: { label: string; tone?: "destructive"; onPress: () => void }) {
+function ActionBtn({ label, tone, onPress, testID }: { label: string; tone?: "destructive"; onPress: () => void; testID?: string }) {
   const t = useTheme();
   const isDestructive = tone === "destructive";
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       style={{
         height: 34,
@@ -186,6 +187,7 @@ export default function AccessList() {
             return (
               <Pressable
                 key={a.id}
+                testID={`agent-card-${isActive ? "active" : "pending"}`}
                 onPress={() => nav.navigate("RepresentativeDetail", { agent: a })}
               >
                 <View
@@ -233,12 +235,12 @@ export default function AccessList() {
                     {isActive ? (
                       <>
                         <ActionBtn label="Revoke" tone="destructive" onPress={() => setConfirmAgent(a)} />
-                        <ActionBtn label="Edit Permissions" onPress={() => nav.navigate("RepresentativeDetail", { agent: a })} />
+                        <ActionBtn testID="access-edit-permissions" label="Edit Permissions" onPress={() => nav.navigate("RepresentativeDetail", { agent: a })} />
                       </>
                     ) : (
                       <>
                         {expired && <ActionBtn label="Resend Invite" onPress={() => {}} />}
-                        <ActionBtn label="Edit Permissions" onPress={() => nav.navigate("RepresentativeDetail", { agent: a })} />
+                        <ActionBtn testID="access-edit-permissions" label="Edit Permissions" onPress={() => nav.navigate("RepresentativeDetail", { agent: a })} />
                         <ActionBtn label="Revoke" tone="destructive" onPress={() => setConfirmAgent(a)} />
                       </>
                     )}

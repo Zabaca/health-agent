@@ -4,7 +4,7 @@ import { ShieldCheck, Square, CheckSquare } from "lucide-react-native";
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { DobField } from "@/components/DobField";
-import { LegalModal } from "@/screens/legal/LegalModal";
+import { openLegalDoc } from "@/lib/legal";
 import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { getProfile } from "@/lib/api";
@@ -20,7 +20,6 @@ export default function ConsentScreen() {
   const [privacy, setPrivacy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [legalOpen, setLegalOpen] = useState<"terms" | "privacy" | null>(null);
 
   useEffect(() => {
     getProfile()
@@ -75,7 +74,7 @@ export default function ConsentScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.colors.bg }}>
-      <Screen contentContainerStyle={{ flexGrow: 1, gap: 20, paddingTop: 64 }}>
+      <Screen testID="consent-screen" contentContainerStyle={{ flexGrow: 1, gap: 20, paddingTop: 64 }}>
         <View style={{ alignItems: "center", gap: 12 }}>
           <ShieldCheck size={64} color={t.colors.primary} strokeWidth={2} />
           <Text style={t.type.h2}>Before you continue</Text>
@@ -88,18 +87,18 @@ export default function ConsentScreen() {
         {!hasDob ? <DobField value={dob} onChange={setDob} /> : null}
 
         <View style={{ gap: 16 }}>
-          <CheckboxRow checked={tos} onToggle={() => setTos((v) => !v)}>
+          <CheckboxRow testID="consent-tos" checked={tos} onToggle={() => setTos((v) => !v)}>
             <Text style={{ fontSize: 15, color: t.colors.textPrimary }}>
               I agree to the{" "}
-              <Text style={{ color: t.colors.primary, fontWeight: "600" }} onPress={() => setLegalOpen("terms")}>
+              <Text style={{ color: t.colors.primary, fontWeight: "600" }} onPress={() => openLegalDoc("terms")}>
                 Terms of Service
               </Text>
             </Text>
           </CheckboxRow>
-          <CheckboxRow checked={privacy} onToggle={() => setPrivacy((v) => !v)}>
+          <CheckboxRow testID="consent-privacy" checked={privacy} onToggle={() => setPrivacy((v) => !v)}>
             <Text style={{ fontSize: 15, color: t.colors.textPrimary }}>
               I agree to the{" "}
-              <Text style={{ color: t.colors.primary, fontWeight: "600" }} onPress={() => setLegalOpen("privacy")}>
+              <Text style={{ color: t.colors.primary, fontWeight: "600" }} onPress={() => openLegalDoc("privacy")}>
                 Privacy Policy
               </Text>
             </Text>
@@ -110,6 +109,7 @@ export default function ConsentScreen() {
 
         <View style={{ flex: 1, justifyContent: "flex-end", paddingBottom: 16 }}>
           <Button
+            testID="consent-continue"
             label={submitting ? "Saving…" : "Continue"}
             onPress={onAccept}
             disabled={!canSubmit || submitting}
@@ -117,7 +117,6 @@ export default function ConsentScreen() {
           />
         </View>
       </Screen>
-      <LegalModal kind={legalOpen} onClose={() => setLegalOpen(null)} />
     </View>
   );
 }
@@ -126,19 +125,26 @@ function CheckboxRow({
   checked,
   onToggle,
   children,
+  testID,
 }: {
   checked: boolean;
   onToggle: () => void;
   children: React.ReactNode;
+  testID?: string;
 }) {
   const t = useTheme();
   return (
     <Pressable onPress={onToggle} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-      {checked ? (
-        <CheckSquare size={24} color={t.colors.primary} />
-      ) : (
-        <Square size={24} color={t.colors.textSecondary} />
-      )}
+      {/* testID is on the checkbox itself (not the row) so taps land on the box,
+          never on the embedded "Terms of Service"/"Privacy Policy" links that
+          sit inside `children` and open the hosted legal docs in a browser sheet. */}
+      <Pressable testID={testID} onPress={onToggle} hitSlop={10}>
+        {checked ? (
+          <CheckSquare size={24} color={t.colors.primary} />
+        ) : (
+          <Square size={24} color={t.colors.textSecondary} />
+        )}
+      </Pressable>
       <View style={{ flex: 1 }}>{children}</View>
     </Pressable>
   );

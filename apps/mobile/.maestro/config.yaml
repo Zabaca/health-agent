@@ -1,0 +1,9 @@
+# Maestro workspace configuration for the Veladon mobile app.
+# Docs: https://maestro.mobile.dev/cli/test-suites-and-reports
+#
+# `maestro test .maestro` runs every flow matched below. Standalone flows live
+# in flows/; reusable building blocks live in subflows/ and are pulled in via
+# `runFlow:` — they are intentionally NOT matched here so they don't run on
+# their own.
+flows:
+  - "flows/*.yaml"

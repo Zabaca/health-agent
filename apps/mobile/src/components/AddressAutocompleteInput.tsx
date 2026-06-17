@@ -16,6 +16,7 @@ type Props = {
   placeholder?: string;
   required?: boolean;
   error?: string;
+  testID?: string;
 };
 
 const DEBOUNCE_MS = 250;
@@ -27,7 +28,7 @@ const MAX_SUGGESTIONS = 5;
  * native module (Android/web) it degrades to a plain field that still benefits
  * from OS autofill via the textContentType / autoComplete props.
  */
-export function AddressAutocompleteInput({ label, value, onChangeText, placeholder, required, error }: Props) {
+export function AddressAutocompleteInput({ label, value, onChangeText, placeholder, required, error, testID }: Props) {
   const t = useTheme();
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,6 +69,7 @@ export function AddressAutocompleteInput({ label, value, onChangeText, placehold
   return (
     <View style={{ gap: 6 }}>
       <Input
+        testID={testID}
         label={label}
         value={value}
         onChangeText={handleChange}

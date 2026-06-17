@@ -8,7 +8,10 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "prebuild": "expo prebuild",
-    "prebuild:clean": "expo prebuild --clean"
+    "prebuild:clean": "expo prebuild --clean",
+    "e2e": "./scripts/e2e.sh",
+    "e2e:smoke": "./scripts/e2e.sh --include-tags smoke",
+    "e2e:full": "bun run e2e/run.ts"
   },
   "dependencies": {
     "@health-agent/types": "workspace:*",

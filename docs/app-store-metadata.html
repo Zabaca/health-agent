@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App Store Metadata — Veladon</title>
+<style>
+  :root {
+    --bg: #fbfbfa;
+    --card: #ffffff;
+    --ink: #1c2024;
+    --muted: #6b7280;
+    --line: #e6e7ea;
+    --accent: #2f6f4f;
+    --accent-soft: #eaf4ee;
+    --warn: #9a6700;
+    --warn-soft: #fff8e6;
+    --warn-line: #f0d99b;
+    --code-bg: #0f1720;
+    --code-ink: #e6edf3;
+    --chip: #eef1f4;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 48px 24px 96px; }
+  header.page {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+  header.page h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  header.page p { margin: 0; color: var(--muted); font-size: 15px; }
+  header.page .brandbar {
+    display: inline-block; width: 44px; height: 6px; border-radius: 3px;
+    background: var(--accent); margin-bottom: 18px;
+  }
+  h2 {
+    font-size: 21px; letter-spacing: -0.01em; margin: 48px 0 14px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  }
+  h3 { font-size: 16px; margin: 28px 0 8px; }
+  h3 .lim { font-weight: 400; color: var(--muted); font-size: 13px; }
+  p { margin: 10px 0; }
+  a { color: var(--accent); }
+  .note { color: var(--muted); font-size: 13.5px; font-style: italic; margin: 6px 0 0; }
+
+  .callout {
+    background: var(--warn-soft);
+    border: 1px solid var(--warn-line);
+    border-left: 4px solid var(--warn);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin: 8px 0 24px;
+    font-size: 14.5px;
+  }
+  .callout strong.lead { color: var(--warn); }
+  .callout ol { margin: 10px 0 0; padding-left: 20px; }
+  .callout li { margin: 8px 0; }
+  .callout .reject {
+    display: block; margin-top: 14px; padding-top: 12px;
+    border-top: 1px dashed var(--warn-line);
+  }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 8px; font-size: 14.5px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden;
+  }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f3f5f7; font-weight: 600; font-size: 13px; letter-spacing: .02em; text-transform: uppercase; color: #4b5563; }
+  tr:last-child td { border-bottom: none; }
+  td code, .inline-code {
+    background: var(--chip); padding: 1px 6px; border-radius: 5px;
+    font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .ok { color: var(--accent); font-weight: 600; }
+
+  .field { margin: 0 0 4px; }
+  pre {
+    position: relative;
+    background: var(--code-bg); color: var(--code-ink);
+    border-radius: 10px; padding: 16px 18px; margin: 8px 0;
+    overflow-x: auto;
+    font: 13.5px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .chip {
+    display: inline-block; background: var(--accent-soft); color: var(--accent);
+    border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600;
+    margin-left: 6px; vertical-align: middle;
+  }
+
+  ul.checklist { list-style: none; padding: 0; margin: 12px 0; }
+  ul.checklist li {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 14px; margin: 6px 0; font-size: 14.5px; position: relative; padding-left: 38px;
+  }
+  ul.checklist li::before {
+    content: "☐"; position: absolute; left: 14px; top: 9px; color: var(--muted); font-size: 16px;
+  }
+
+  .shots { display: flex; flex-direction: column; gap: 22px; margin: 18px 0 8px; }
+  .shot {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px 20px;
+  }
+  .shot .frameno {
+    font-size: 11.5px; color: var(--accent); font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .shot .cap-line { margin: 5px 0 15px; line-height: 1.4; }
+  .shot .headline { font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+  .shot .subline { font-size: 14px; color: #4b5563; }
+  .pair { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+  .pair figure { margin: 0; }
+  .pair img {
+    height: 384px; width: auto; border-radius: 16px; border: 1px solid var(--line);
+    box-shadow: 0 8px 24px rgba(15,23,32,.13); background: #f3f5f7; display: block;
+  }
+  .pair figcaption { margin-top: 8px; font-size: 12px; color: var(--muted); text-align: center; }
+  @media (max-width: 560px) { .pair img { height: 300px; } }
+  .future { opacity: .92; }
+  .future h2 .chip { background: #eef1f4; color: var(--muted); }
+
+  footer.page { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+  @media print {
+    body { background: #fff; }
+    pre { background: #f4f6f8; color: #111; border: 1px solid var(--line); }
+    .wrap { padding: 0; max-width: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <span class="brandbar"></span>
+    <h1>App Store Metadata — Veladon</h1>
+    <p>Text submission assets for the App Store listing — this covers the <strong>copy</strong>;
+       screenshots/imagery are produced separately. Voice and claims are drawn from the marketing
+       site (<code class="inline-code">apps/www</code>) and the mobile launch plan.</p>
+  </header>
+
+  <section class="callout">
+    <strong class="lead">Source of truth for claims.</strong> Mirror the landing page wording.
+    Two rules that must survive any edit:
+    <ol>
+      <li><strong>The mechanic:</strong> Veladon does <em>not</em> fetch your records and never
+        contacts a provider on its own. <em>You</em> generate a HIPAA-compliant
+        <strong>authorization</strong> and choose how the signed release reaches the provider
+        (<strong>fax it from the app, save a PDF to print and mail or email, or hand it over in
+        person — by you or your designated agent</strong>); the <strong>provider sends the records
+        to you</strong>, and <em>you</em> upload them into Veladon. Nothing is automated. Never write
+        “Veladon gets/retrieves your records” or imply the app sends the release for you.</li>
+      <li><strong>HIPAA:</strong> the <strong>authorization form</strong> is “HIPAA-compliant” (true);
+        the <strong>security</strong> is “HIPAA-equivalent.” Never flatly call the app itself
+        “HIPAA-compliant” — Zabaca is a PHR vendor, likely not a HIPAA Covered Entity.</li>
+    </ol>
+    <span class="reject"><strong>Do not mention Android, web, or “other platforms”</strong> anywhere
+      in App Store copy — it is a concrete Apple rejection trigger. (The source FAQ talks about
+      Android; do not carry it over.)</span>
+  </section>
+
+  <h2>Reference / canonical values</h2>
+  <table>
+    <tr><th>Field</th><th>Value</th></tr>
+    <tr><td>App name (brand)</td><td>Veladon</td></tr>
+    <tr><td>Developer / seller</td><td>Zabaca, LLC</td></tr>
+    <tr><td>Bundle ID</td><td><code>com.zabaca.veladon</code></td></tr>
+    <tr><td>Apple App ID</td><td><code>6773436877</code></td></tr>
+    <tr><td>App Store URL</td><td><a href="https://apps.apple.com/us/app/veladon/id6773436877">apps.apple.com/us/app/veladon/id6773436877</a></td></tr>
+    <tr><td>Support URL</td><td><a href="https://www.veladon.com/support">www.veladon.com/support</a></td></tr>
+    <tr><td>Marketing URL</td><td><a href="https://www.veladon.com">www.veladon.com</a></td></tr>
+    <tr><td>Privacy Policy URL</td><td><a href="https://www.veladon.com/privacy">www.veladon.com/privacy</a></td></tr>
+    <tr><td>Terms URL</td><td><a href="https://www.veladon.com/terms">www.veladon.com/terms</a></td></tr>
+    <tr><td>Support email</td><td>info@veladon.com</td></tr>
+    <tr><td>Copyright</td><td>© 2026 Zabaca, LLC</td></tr>
+  </table>
+
+  <h2>App Store Connect — text fields <span class="chip">iOS · live submission</span></h2>
+
+  <h3>App Name <span class="lim">— max 30 chars</span></h3>
+  <pre>Veladon: Health Records</pre>
+  <p class="note">23 chars. Brand-only “Veladon” wastes the single most-weighted ASO field, so the name also carries “Health Records.”</p>
+
+  <h3>Subtitle <span class="lim">— max 30 chars</span></h3>
+  <pre>Your medical record. Yours.</pre>
+  <p class="note">27 chars. Adds “medical” to the indexed terms.</p>
+
+  <h3>Promotional Text <span class="lim">— max 170 chars; editable any time without review</span></h3>
+  <pre>Request your medical records from any provider, organize them in one place, and share them on your terms — your whole health history, somewhere you actually control.</pre>
+
+  <h3>Keywords <span class="lim">— max 100 chars; comma-separated, no spaces, singular, no words already in name/subtitle</span></h3>
+  <pre>PHR,lab,result,immunization,medication,allergy,caregiver,release,HIPAA,provider,history,doctor,scan</pre>
+  <p class="note">Excluded on purpose (already indexed via name/subtitle, so repeating wastes space):
+    health, records, medical, record, yours. Apple auto-combines individual words into phrases and
+    partial-matches plurals, so “result” covers “results.”</p>
+
+  <h3>Description <span class="lim">— max 4000 chars; first ~170 chars show above the “…more” fold, so they are front-loaded</span></h3>
+  <pre>Your medical record. Yours.
+
+Veladon is your personal health record storage. Request your records from any provider, organize them in one app, and share them on your terms.
+
+Your health history lives in eight different places — every clinic, lab, and hospital behind its own portal, its own login, its own release form. Veladon brings it together. You generate the authorization; the provider sends the records to you; you keep them somewhere you actually look.
+
+HOW IT WORKS
+1. Add a provider — add the clinic, hospital, lab, or specialist you've visited (you already know who holds your records). Enter their name and contact details, then pick what you want: everything on file, or a specific date range and record type.
+2. Sign the release — Veladon generates a HIPAA-compliant authorization, pre-filled with your information. Sign it on the glass and set an expiration date. Void it any time before it's acted on.
+3. Send it your way, then store — a signed release is yours to deliver: fax it from the app, save a PDF to print and mail or email, or hand it to your provider in person at your next visit — by you or your designated agent. Nothing is sent automatically. The provider returns the records wherever you directed; upload them to Veladon and keep your whole history in one place.
+
+WHAT VELADON DOES
+• Releases — generate a HIPAA-compliant authorization and sign it on the glass, then send it your way: fax it from the app, save a PDF to print and mail or email, or hand it over in person (you or your designated agent). You direct where your records go and how the release is delivered — nothing is automated. Revoke any release before it's acted on.
+• Apple Health — connect Apple Health to bring in the vitals and clinical data already on your iPhone: heart rate, sleep, activity, lab results, immunizations, medications, and more — alongside the records you request from providers.
+• Your record, organized — everything sorted by provider and date, with allergies, conditions, immunizations, lab results, medications, procedures, vital signs, and coverage rendered in plain English.
+• Documents — upload photos or scans of the paper records you already have. Tag them by type and provider. Encrypted at rest, retrievable in a tap.
+• Providers &amp; insurance — every clinician you've seen and every plan that covers you, member IDs included, in one place instead of a stack of cards.
+• Designated Agents — delegate access to a family member or caregiver, per category and per permission. View only, or view and edit. Revoke instantly.
+
+BUILT TO A HIPAA-EQUIVALENT STANDARD
+Sensitive identifiers and health data are encrypted at rest with AES-256-GCM. Every connection to our servers uses TLS. Sessions are per-device, locked with Face ID / Touch ID, and revocable from any other device in seconds.
+
+We do not sell your health information. We do not serve targeted ads against it. We do not use your protected health information to train AI models — ours or anyone else's.
+
+WHO IT'S FOR
+• Anyone whose care lives across multiple providers — primary care here, specialists there, labs and imaging somewhere else again.
+• Caregivers helping a parent, partner, or child navigate the system — without a password handoff.
+• Anyone tired of printing a release form and spending two weeks on hold to confirm it landed.
+
+NOT A SUBSTITUTE FOR CARE
+Veladon does not diagnose, treat, cure, or prevent any condition. It collects the records your providers already hold and puts them in front of you so you can show up informed. Decisions about your care belong with you and your clinician. If you think you may be having a medical emergency, call your local emergency number.
+
+Built by Zabaca, LLC. Questions: info@veladon.com
+Privacy Policy: https://www.veladon.com/privacy
+Terms of Use: https://www.veladon.com/terms</pre>
+
+  <h3>What's New (release notes) <span class="lim">— max 4000 chars; v1.0.0</span></h3>
+  <pre>Welcome to Veladon — your medical record, finally yours.
+
+This first release lets you:
+• Request records from any provider with a pre-filled, HIPAA-compliant authorization you sign on the glass
+• Connect Apple Health to bring your vitals and clinical data into one place
+• See your history organized by provider and date, in plain English
+• Upload and tag photos or scans of paper records
+• Delegate access to a trusted family member or caregiver — and revoke it instantly
+
+We're a small team and we read every message. Tell us what you think: info@veladon.com</pre>
+
+  <h3>Category</h3>
+  <table>
+    <tr><th>Slot</th><th>Value</th></tr>
+    <tr><td>Primary</td><td>Health &amp; Fitness</td></tr>
+    <tr><td>Secondary</td><td>Productivity</td></tr>
+  </table>
+  <p class="note">Deliberately <strong>not</strong> “Medical.” Veladon stores, organizes, and shares
+     the user's own records — it does not diagnose, treat, or act as a medical device. The Medical
+     category invites extra App Review scrutiny and a clinical-claims framing we don't want (see the
+     “not a substitute for care” disclaimer). Health &amp; Fitness is the honest primary; Productivity
+     (document organization + sharing) is the secondary. Utilities or Reference are acceptable
+     alternates if a different secondary is ever needed.</p>
+
+  <h3>Age rating</h3>
+  <p>Expect <strong>12+</strong>. In Apple's questionnaire, the app displays the user's own
+     <strong>Medical/Treatment Information</strong>, which typically lands at 12+. Answer honestly;
+     do not under-rate.</p>
+
+  <h2>Screenshot caption copy <span class="chip">overlay text</span></h2>
+  <p>The completed marketing frames — the headline + subline burned onto each screenshot as a
+     bottom overlay (color-matched to the screenshot, accent rule above). Two new images per frame
+     (<code class="inline-code">&lt;name&gt;_overlay.png</code> and
+     <code class="inline-code">&lt;name&gt;_ipad_overlay.png</code>); the original screenshots are
+     untouched. Shown below in listing order, iPhone 6.9" beside iPad 13":</p>
+  <div class="shots">
+
+    <div class="shot">
+      <div class="frameno">Frame 1 · dashboard</div>
+      <div class="cap-line"><span class="headline">Your day at a glance</span> — <span class="subline">Heart rate, SpO₂, steps, and sleep — Apple Health, in one place.</span></div>
+      <div class="pair">
+        <figure><img src="screenshots/dashboard_overlay.png" alt="iPhone — Your day at a glance"><figcaption>iPhone 6.9" · 1320×2868</figcaption></figure>
+        <figure><img src="screenshots/dashboard_ipad_overlay.png" alt="iPad — Your day at a glance"><figcaption>iPad 13" · 2064×2752</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="shot">
+      <div class="frameno">Frame 2 · records</div>
+      <div class="cap-line"><span class="headline">Your whole history, one place</span> — <span class="subline">Records, labs, imaging, and uploads — sorted by provider and date.</span></div>
+      <div class="pair">
+        <figure><img src="screenshots/records_overlay.png" alt="iPhone — Your whole history, one place"><figcaption>iPhone 6.9" · 1320×2868</figcaption></figure>
+        <figure><img src="screenshots/records_ipad_overlay.png" alt="iPad — Your whole history, one place"><figcaption>iPad 13" · 2064×2752</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="shot">
+      <div class="frameno">Frame 3 · releases</div>
+      <div class="cap-line"><span class="headline">Share on your terms</span> — <span class="subline">Generate a HIPAA release, set an expiration, revoke any time.</span></div>
+      <div class="pair">
+        <figure><img src="screenshots/releases_overlay.png" alt="iPhone — Share on your terms"><figcaption>iPhone 6.9" · 1320×2868</figcaption></figure>
+        <figure><img src="screenshots/releases_ipad_overlay.png" alt="iPad — Share on your terms"><figcaption>iPad 13" · 2064×2752</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="shot">
+      <div class="frameno">Frame 4 · lab</div>
+      <div class="cap-line"><span class="headline">Lab results in plain English</span> — <span class="subline">Every value against its reference range, flagged at a glance.</span></div>
+      <div class="pair">
+        <figure><img src="screenshots/lab_overlay.png" alt="iPhone — Lab results in plain English"><figcaption>iPhone 6.9" · 1320×2868</figcaption></figure>
+        <figure><img src="screenshots/lab_ipad_overlay.png" alt="iPad — Lab results in plain English"><figcaption>iPad 13" · 2064×2752</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="shot">
+      <div class="frameno">Frame 5 · sleep</div>
+      <div class="cap-line"><span class="headline">See the trend, not just today</span> — <span class="subline">Week and month views for sleep, heart rate, SpO₂, and steps.</span></div>
+      <div class="pair">
+        <figure><img src="screenshots/sleep_overlay.png" alt="iPhone — See the trend, not just today"><figcaption>iPhone 6.9" · 1320×2868</figcaption></figure>
+        <figure><img src="screenshots/sleep_ipad_overlay.png" alt="iPad — See the trend, not just today"><figcaption>iPad 13" · 2064×2752</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="shot">
+      <div class="frameno">Frame 6 · providers</div>
+      <div class="cap-line"><span class="headline">Every provider in one list</span> — <span class="subline">Clinics, labs, and hospitals — with the details you actually need.</span></div>
+      <div class="pair">
+        <figure><img src="screenshots/providers_overlay.png" alt="iPhone — Every provider in one list"><figcaption>iPhone 6.9" · 1320×2868</figcaption></figure>
+        <figure><img src="screenshots/providers_ipad_overlay.png" alt="iPad — Every provider in one list"><figcaption>iPad 13" · 2064×2752</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="shot">
+      <div class="frameno">Frame 7 · myPDA</div>
+      <div class="cap-line"><span class="headline">Delegate to someone you trust</span> — <span class="subline">Per-category access for family or a caregiver. Revoke instantly.</span></div>
+      <div class="pair">
+        <figure><img src="screenshots/myPDA_overlay.png" alt="iPhone — Delegate to someone you trust"><figcaption>iPhone 6.9" · 1320×2868</figcaption></figure>
+        <figure><img src="screenshots/myPDA_ipad_overlay.png" alt="iPad — Delegate to someone you trust"><figcaption>iPad 13" · 2064×2752</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="shot">
+      <div class="frameno">Frame 8 · pdaView</div>
+      <div class="cap-line"><span class="headline">Help a loved one, safely</span> — <span class="subline">Agents get exactly the access you grant — nothing more.</span></div>
+      <div class="pair">
+        <figure><img src="screenshots/pdaView_overlay.png" alt="iPhone — Help a loved one, safely"><figcaption>iPhone 6.9" · 1320×2868</figcaption></figure>
+        <figure><img src="screenshots/pdaView_ipad_overlay.png" alt="iPad — Help a loved one, safely"><figcaption>iPad 13" · 2064×2752</figcaption></figure>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>App Privacy (data declarations)</h2>
+  <p class="note">Secondary; the <a href="https://www.veladon.com/privacy">Privacy Policy</a> is the
+     source of truth. Fill App Store Connect → App Privacy from the privacy policy, not from memory.
+     Summary of what to declare for v1.0.0:</p>
+  <table>
+    <tr><th>Data type</th><th>Collected?</th><th>Linked?</th><th>Tracking?</th><th>Notes</th></tr>
+    <tr><td>Health &amp; Fitness</td><td class="ok">Yes</td><td>Yes</td><td>No</td><td>HealthKit metrics (heart rate, sleep, SpO₂, steps, activity) + clinical records (allergies, conditions, immunizations, lab results, medications, procedures, vital signs, coverage). Read-only <strong>while the app is open</strong> — no background delivery. Never used for advertising, marketing, or data mining (Apple HealthKit rule).</td></tr>
+    <tr><td>Contact Info</td><td class="ok">Yes</td><td>Yes</td><td>No</td><td>Name, email, <strong>phone number, and mailing address</strong>. Phone + address are required at onboarding.</td></tr>
+    <tr><td>User Content (Photos)</td><td class="ok">Yes</td><td>Yes</td><td>No</td><td>Camera captures and photo-library images of paper health documents you upload, plus an optional profile avatar. The document content is health-related.</td></tr>
+    <tr><td>Other Data</td><td class="ok">Yes</td><td>Yes</td><td>No</td><td>Date of birth and <strong>last four digits of SSN</strong> (optional; used for record-request authorizations). Treated as sensitive identifiers — encrypted at rest with AES-256-GCM. Maps to Apple's “Other Data Types.”</td></tr>
+    <tr><td>Identifiers</td><td class="ok">Yes</td><td>Yes</td><td>No</td><td>Account/user ID. With Sign in with Apple or Google, also the subject identifier they return. <strong>No</strong> device ID or advertising identifier.</td></tr>
+    <tr><td>Usage Data</td><td class="ok">Yes</td><td>No</td><td>No</td><td>Anonymous product analytics (PostHog) — touch events keyed to <code>testID</code> only (no screen text / PHI), captured without <code>identify()</code>, not linked to a user, not used for third-party tracking or ads.</td></tr>
+    <tr><td>Coarse Location</td><td class="ok">Yes</td><td>Yes</td><td>No</td><td>An approximate location (country, region, city) <strong>derived from your IP address</strong> — shown in Active Devices so you can spot and revoke unfamiliar sessions; PostHog also infers coarse location from IP. <strong>No</strong> precise/GPS location.</td></tr>
+    <tr><td>Diagnostics</td><td class="ok">Yes</td><td>No</td><td>No</td><td>Error reports with technical details about a failure — <strong>never</strong> the contents of your health records.</td></tr>
+  </table>
+  <div class="callout">
+    <strong class="lead">Deep links / Universal Links (new in v1.0.0).</strong>
+    <code class="inline-code">applinks:app.veladon.com</code> plus the <code class="inline-code">zabaca://</code>
+    custom scheme open the app for password-reset, my-records, releases, and PDA-invite links. This is
+    an inbound <strong>navigation</strong> mechanism only: the URLs carry opaque, backend-issued
+    <strong>tokens</strong> — never name, email, or account ID — so deep-link support adds
+    <strong>no new App Privacy data category</strong>. (Invite details such as the invitee's email are
+    fetched from the API <em>against</em> the token and gated server-side; they are not read from the
+    link or from the device.)
+  </div>
+  <p class="note"><strong>Not collected</strong> (declare “No” / leave unchecked): precise/GPS
+     Location, Financial/Payment Info, Contacts, Browsing/Search History, push-notification device
+     tokens, and advertising identifiers. The address you type is postal text (native MapKit
+     autocomplete on iOS), <strong>not</strong> device location; the only location collected is the
+     coarse, IP-derived city/region noted above.</p>
+  <p class="note">Must stay consistent with the privacy policy's “we do not sell / do not track / do
+     not train AI on PHI” commitments. Because the app offers Google sign-in, it also offers
+     <strong>Sign in with Apple</strong> (entitlement present) per App Store Guideline 4.8. Encryption
+     export compliance: declare per the launch plan (non-exempt crypto if applicable; HealthKit/TLS
+     standard crypto is generally exempt).</p>
+
+  <section class="future">
+    <h2>Google Play (Android) <span class="chip">FUTURE · not the current submission</span></h2>
+    <p>Android is on the roadmap, not in this release. Hold this copy until the Android build is
+       ready. The iOS description is the starting point for the full description, but it needs a
+       platform pass first: replace the Apple Health / iPhone / Face ID-Touch ID references with
+       their Android equivalents (Health Connect, Android, biometric unlock) before submitting.</p>
+    <h3>Title <span class="lim">— max 30</span></h3>
+    <pre>Veladon: Health Records</pre>
+    <h3>Short description <span class="lim">— max 80</span></h3>
+    <pre>Request, organize, and share your medical records — your personal health record.</pre>
+    <p class="note"><strong>Full description</strong> (max 4000): the iOS Description above, after the
+       platform pass. <strong>Data safety:</strong> mirror the App Privacy declarations.</p>
+  </section>
+
+  <h2>Pre-submit checklist <span class="chip">text assets</span></h2>
+  <ul class="checklist">
+    <li>App Name ≤ 30 · Subtitle ≤ 30 · Promo ≤ 170 · Keywords ≤ 100 · Description ≤ 4000</li>
+    <li>No “Android” / “web” / cross-platform language in any iOS field</li>
+    <li>No “the app is HIPAA-compliant” phrasing (authorization = compliant; security = equivalent)</li>
+    <li>Description does not claim Veladon retrieves records on the user's behalf</li>
+    <li>URLs resolve: support, marketing, privacy, terms</li>
+    <li>App Privacy matches the live Privacy Policy (incl. anonymous analytics)</li>
+    <li>Screenshot captions match shipped UI</li>
+  </ul>
+
+  <footer class="page">
+    Generated from <code class="inline-code">docs/app-store-metadata.md</code> · Veladon by Zabaca, LLC · © 2026
+  </footer>
+
+</div>
+</body>
+</html>

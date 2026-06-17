@@ -7,7 +7,7 @@ type Props = {
   title?: string;
   variant?: "back" | "close" | "none";
   onBack?: () => void;
-  rightAction?: { label?: string; icon?: React.ReactNode; onPress?: () => void };
+  rightAction?: { label?: string; icon?: React.ReactNode; onPress?: () => void; testID?: string };
 };
 
 export function Header({ title, variant = "back", onBack, rightAction }: Props) {
@@ -32,6 +32,7 @@ export function Header({ title, variant = "back", onBack, rightAction }: Props) 
     if (!rightAction) return <View style={{ width: t.dims.iconBox, height: t.dims.iconBox }} />;
     return (
       <Pressable
+        testID={rightAction.testID}
         onPress={rightAction.onPress}
         accessibilityRole="button"
         style={{ minWidth: t.dims.iconBox, height: t.dims.iconBox, paddingRight: 16, paddingLeft: 8, justifyContent: "center", alignItems: "flex-end" }}

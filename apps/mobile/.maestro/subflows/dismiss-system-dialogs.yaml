@@ -1,0 +1,16 @@
+# Dismiss simulator-level system dialogs that can overlay the app and block
+# assertions — most commonly the "Apple Account Verification" / iCloud prompt
+# that pops over the Sign In screen. These are environmental (not part of the
+# app); every tap is optional, so this is a no-op when no dialog is present.
+appId: com.zabaca.veladon
+---
+# Let the app's launch/cold-start transition settle before the first hierarchy
+# read. Querying mid-animation is what triggers Maestro's iOS-26 XCUITest
+# `kAXErrorInvalidUIElement` crash; waitForAnimationToEnd is screenshot-diff
+# based (no accessibility query), so it's safe and gives the screen time to
+# settle. This subflow runs right after launchApp in every journey.
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: "Not Now"
+    optional: true

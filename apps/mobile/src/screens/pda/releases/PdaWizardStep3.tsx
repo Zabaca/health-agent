@@ -77,7 +77,7 @@ export default function PdaWizardStep3() {
   };
 
   return (
-    <PdaWizardShell step={3} subtitle="Release Duration" primaryLabel="Review & Submit →" onPrimary={handleNext}>
+    <PdaWizardShell step={3} subtitle="Release Duration" primaryLabel="Review & Submit →" primaryTestID="pda-wizard-step3-next" onPrimary={handleNext}>
       <View style={{ flexDirection: "row", gap: 10 }}>
         {OPTIONS.map((o) => {
           const on = o.id === selected;

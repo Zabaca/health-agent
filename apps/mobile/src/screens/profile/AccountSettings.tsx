@@ -11,6 +11,7 @@ import { useTheme } from "@/theme/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { useOAuthButtons } from "@/hooks/useOAuthButtons";
 import { getConnections, unlinkConnection, deleteAccount, ApiError, type Connections } from "@/lib/api";
+import { openLegalDoc } from "@/lib/legal";
 import type { ProfileParamList } from "@/navigation/types";
 
 type Nav = NativeStackNavigationProp<ProfileParamList>;
@@ -138,10 +139,10 @@ export default function AccountSettings() {
         ) : null}
 
         <Group>
-          <Pressable onPress={() => nav.navigate("TermsScreen")}>
+          <Pressable onPress={() => openLegalDoc("terms")}>
             <Row label="Terms of Service" chevron />
           </Pressable>
-          <Pressable onPress={() => nav.navigate("PrivacyScreen")}>
+          <Pressable onPress={() => openLegalDoc("privacy")}>
             <Row label="Privacy Policy" chevron />
           </Pressable>
         </Group>

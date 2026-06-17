@@ -178,6 +178,7 @@ export default function PdaUploadPreview() {
           <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 16 }}>Retake</Text>
         </Pressable>
         <Pressable
+          testID="pda-upload-confirm"
           onPress={onConfirm}
           disabled={uploading}
           style={{

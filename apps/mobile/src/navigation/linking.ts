@@ -1,33 +1,56 @@
-import type { LinkingOptions } from "@react-navigation/native";
+import {
+  getStateFromPath as defaultGetStateFromPath,
+  type LinkingOptions,
+} from "@react-navigation/native";
 
 /**
- * Deep-link configuration for the `zabaca://` URL scheme.
+ * Deep-link configuration for the `zabaca://` scheme and `https://app.veladon.com`
+ * Universal Links (iOS).
  *
- * JAM-281 ships only the scheme + path → screen mapping. The push-notification
- * → URL bridge is owned by JAM-277, which will call `Linking.openURL('zabaca://records')`
- * (or similar) from a notification-response handler.
+ * Universal Links: notification emails point at https://app.veladon.com/<path>.
+ * Apple's apple-app-site-association (served by apps/web) is the gatekeeper — only
+ * /reset-password, /my-records, and /releases are handed to the app; all other URLs
+ * (including /invite/*) stay on the web. Each handed-off path maps to a screen below.
+ *
+ * `invite/:token` is mapped too, but is NOT a Universal Link target (it's off the
+ * AASA allowlist on purpose — see that file). It exists for the zabaca:// scheme
+ * (e.g. a push-notification deep link), which can route to PdaInvite when the PDA
+ * tree is mounted.
  *
  * RootNavigator mounts AuthStack, TabsNavigator, or PdaTabsNavigator directly
- * (no wrapping route), so paths target tab screen names. Patient and PDA tab
- * names don't collide; only one tree is mounted at a time so unmatched paths
- * are no-ops.
+ * (no wrapping route), so paths target screen names in whichever tree is mounted.
+ * Patient and PDA tab names don't collide; only one tree is mounted at a time, so
+ * unmatched paths are no-ops (e.g. /my-records while logged out → SignIn).
+ *
+ * JAM-281 shipped the original scheme + path → screen mapping; the
+ * push-notification → URL bridge is owned by JAM-277.
  */
 export const linking: LinkingOptions<object> = {
-  prefixes: ["zabaca://"],
+  prefixes: ["zabaca://", "https://app.veladon.com"],
+  // Legacy `zabaca://records` predates the web `/my-records` path. Alias it so
+  // both resolve to RecordsList, then defer to the default parser.
+  getStateFromPath(path, options) {
+    const normalized = path.replace(/^\/?records(?=$|[/?#])/, "my-records");
+    return defaultGetStateFromPath(normalized, options);
+  },
   config: {
     screens: {
+      // Logged-out (AuthStack). `?token=` is parsed into route.params.token.
+      ResetPassword: "reset-password",
       // Patient role
       HomeTab: "home",
-      RecordsTab: { screens: { RecordsList: "records" } },
+      RecordsTab: { screens: { RecordsList: "my-records" } },
       ReleasesTab: { screens: { ReleasesList: "releases" } },
       ProvidersTab: { screens: { MyProviders: "providers" } },
       ProfileTab: { screens: { Profile: "profile" } },
-      // PDA role
+      // PDA role. `/invite/:token` → PdaInvite with route.params.token.
       PdaHomeTab: "pda/home",
       PdaRecordsTab: { screens: { PdaRecords: "pda/records" } },
       PdaReleasesTab: { screens: { PdaReleases: "pda/releases" } },
       PdaProvidersTab: { screens: { PdaProviders: "pda/providers" } },
-      PdaProfileTab: { screens: { PdaProfile: "pda/profile" } },
+      PdaProfileTab: {
+        screens: { PdaProfile: "pda/profile", PdaInvite: "invite/:token" },
+      },
     },
   },
 };

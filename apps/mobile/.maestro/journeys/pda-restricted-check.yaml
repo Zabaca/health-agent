@@ -1,0 +1,34 @@
+# Journey 7 — the PDA confirms its provider access is now restricted.
+#
+# Runs after the patient downgraded Manage Providers to Viewer (journey 6).
+# Fresh sign-in as the PDA reloads RepresentedPatientsContext from the server,
+# so the Providers tab now renders the Viewer banner and HIDES the "Add"
+# affordance (gated by isEditor in PdaProviders). This is a UI-only assertion —
+# no DB change to verify beyond journey 6's.
+#
+# Creds come via -e MAESTRO_EMAIL / MAESTRO_PASSWORD (the PDA account).
+appId: com.zabaca.veladon
+name: PDA — provider access is restricted to viewer
+tags:
+  - journey
+  - pda
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- runFlow: ../subflows/login-as.yaml
+- extendedWaitUntil:
+    visible:
+      id: "pda-home-screen"
+    timeout: 30000
+- tapOn: "Providers, tab.*"
+
+# Viewer access: the viewer banner appears and the editor-only "Add" button is
+# gone. Target the banner by testID (text matching is flaky on iOS 26).
+- extendedWaitUntil:
+    visible:
+      id: "pda-providers-viewer-banner"
+    timeout: 15000
+- assertNotVisible:
+    id: "pda-providers-add"

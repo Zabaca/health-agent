@@ -197,6 +197,32 @@ export async function requestPasswordReset(email: string): Promise<void> {
   });
 }
 
+// Completes a password reset opened from a Universal Link
+// (https://app.veladon.com/reset-password?token=...). Public, no auth.
+export async function resetPassword(token: string, password: string): Promise<void> {
+  await apiFetch("/api/password/reset", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
+export type InviteByToken = {
+  inviteId: string;
+  inviteeEmail: string;
+  patientName: string;
+  relationship: string | null;
+};
+
+// Validates a PDA invite token (from an in-app `invite/:token` deep link via the
+// zabaca:// scheme — NOT a web Universal Link; /invite/* is off the AASA allowlist).
+// Public, no auth — throws ApiError 404 (invalid) or 410 (expired). Returns
+// inviteId, which the existing respondToRepresentingInvite(inviteId, action) accepts.
+export async function getInviteByToken(token: string): Promise<InviteByToken> {
+  return (await apiFetch(
+    `/api/invites/${encodeURIComponent(token)}`,
+  )) as InviteByToken;
+}
+
 export type ActiveSession = {
   id: string;
   platform: "web" | "ios" | "android";

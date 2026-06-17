@@ -1,0 +1,78 @@
+# Journey 1 — a brand-new patient registers through the real UI.
+#
+# SignIn → Create Account (email/password/DOB) → consent gate → Dashboard.
+# The DOB picker defaults to Jan 1 2000 (an adult), so we just open it and tap
+# Done — no wheel manipulation. Credentials come from the harness via -e.
+#
+# Pairs with e2e/run.ts, which afterward asserts the User row + consentedAt in
+# the temp DB.
+appId: com.zabaca.veladon
+name: Patient — register and consent
+tags:
+  - journey
+  - patient
+---
+- clearKeychain
+- launchApp:
+    clearState: true
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible:
+      id: "signin-screen"
+    timeout: 30000
+- tapOn:
+    id: "signin-create-account"
+
+# --- Create Account form ---
+- extendedWaitUntil:
+    visible:
+      id: "register-email"
+    timeout: 15000
+- tapOn:
+    id: "register-email"
+- inputText: ${EMAIL}
+- tapOn:
+    id: "register-password"
+- inputText: ${PASSWORD}
+- tapOn:
+    id: "register-confirm"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "register-dob"
+# The DOB picker renders in a React Native Modal overlay, which iOS does NOT
+# expose to Maestro's accessibility tree — neither its testID nor its text is
+# matchable. The spinner defaults to Jan 1 2000 (an adult), so we just confirm
+# with a coordinate tap on the "Done" button (top-right). Coordinates are stable
+# because the suite standardizes on one simulator.
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    point: "90%,72%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "register-submit"
+
+# --- Consent gate (fresh account) ---
+- extendedWaitUntil:
+    visible:
+      id: "consent-screen"
+    timeout: 20000
+- tapOn:
+    id: "consent-tos"
+# Settle after the last toggle so React re-enables "Continue" before we tap it
+# (tapping it while still disabled is a silent no-op).
+- tapOn:
+    id: "consent-privacy"
+    waitToSettleTimeoutMs: 1000
+# Tap by visible label, not testID: Maestro's id-based tap on this bottom-pinned
+# Button doesn't fire onPress (an iOS/XCUITest quirk), but a tap on the centered
+# "Continue" text does. "Continue" is unique on this screen.
+- tapOn: "Continue"
+
+# --- Landed in the app ---
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-screen"
+    timeout: 20000

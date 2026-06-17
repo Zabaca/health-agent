@@ -101,5 +101,8 @@ export const config = {
   // `relay-Ke8z` is the PostHog reverse-proxy path (see next.config rewrites).
   // Excluded so unauthenticated /relay-Ke8z/* requests aren't redirected to
   // /login before the rewrite to us.i.posthog.com gets a chance to run.
-  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|api/me|relay-Ke8z|_next/static|_next/image|uploads|.*\\.png|.*\\.ico|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.webp|.*\\.gif|.*\\.woff2?).*)"],
+  // `\.well-known` excludes the whole subtree (Apple rejects redirects on the
+  // apple-app-site-association fetch). Note: this exempts ANY future
+  // /.well-known/* route from auth — keep only public files there.
+  matcher: ["/((?!api/auth|api/register|api/password/forgot|api/password/reset|api/fax/incoming|api/fax/confirm|api/invites|api/staff-invite|api/me|api/e2e-log|relay-Ke8z|\\.well-known|_next/static|_next/image|uploads|.*\\.png|.*\\.ico|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.webp|.*\\.gif|.*\\.woff2?).*)"],
 };

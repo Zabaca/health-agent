@@ -74,7 +74,7 @@ export default function Profile() {
       </View>
 
       {/* User card */}
-      <Pressable onPress={() => nav.navigate("EditProfile")}>
+      <Pressable testID="profile-edit-card" onPress={() => nav.navigate("EditProfile")}>
         <View
           style={{
             backgroundColor: t.colors.surface,
@@ -170,7 +170,7 @@ export default function Profile() {
           overflow: "hidden",
         }}
       >
-        <Pressable onPress={() => nav.navigate("DesignatedAgents")}>
+        <Pressable testID="profile-agents" onPress={() => nav.navigate("DesignatedAgents")}>
           <View
             style={{
               paddingHorizontal: 14,

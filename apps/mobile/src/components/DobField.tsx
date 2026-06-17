@@ -15,6 +15,8 @@ type Props = {
   value: Date | null;
   onChange: (date: Date) => void;
   label?: string;
+  /** testID for the trigger row (the picker's Done button is `dob-done`). */
+  testID?: string;
 };
 
 /**
@@ -22,7 +24,7 @@ type Props = {
  * shows a spinner inside a Cancel/Done bottom sheet. Mirrors the EditProfile
  * pattern so DOB collection looks identical across signup, consent, and profile.
  */
-export function DobField({ value, onChange, label = "DATE OF BIRTH" }: Props) {
+export function DobField({ value, onChange, label = "DATE OF BIRTH", testID }: Props) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Date>(DEFAULT_DOB);
@@ -31,6 +33,7 @@ export function DobField({ value, onChange, label = "DATE OF BIRTH" }: Props) {
     <View style={{ gap: 6 }}>
       <Text style={t.type.rowLabel}>{label}</Text>
       <Pressable
+        testID={testID}
         onPress={() => {
           setDraft(value ?? DEFAULT_DOB);
           setOpen(true);
@@ -78,7 +81,7 @@ export function DobField({ value, onChange, label = "DATE OF BIRTH" }: Props) {
                     <Text style={{ color: t.colors.textSecondary, fontSize: 15 }}>Cancel</Text>
                   </Pressable>
                   <Text style={t.type.bodyStrong}>Date of Birth</Text>
-                  <Pressable onPress={() => { onChange(draft); setOpen(false); }}>
+                  <Pressable testID="dob-done" onPress={() => { onChange(draft); setOpen(false); }}>
                     <Text style={{ color: t.colors.primary, fontSize: 15, fontWeight: "600" }}>Done</Text>
                   </Pressable>
                 </View>

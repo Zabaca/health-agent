@@ -88,6 +88,7 @@ export default function PdaUploadSheet() {
           return (
             <Pressable
               key={s.id}
+              testID={`upload-source-${s.id}`}
               onPress={s.onPress}
               style={{
                 flexDirection: "row",

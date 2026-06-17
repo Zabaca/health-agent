@@ -71,6 +71,7 @@ export default function PdaOnboarding() {
 
         <View style={{ gap: 12 }}>
           <Input
+            testID="pda-onboard-phone"
             label="Phone Number"
             value={phoneNumber}
             onChangeText={setPhoneNumber}
@@ -79,6 +80,7 @@ export default function PdaOnboarding() {
             required
           />
           <AddressAutocompleteInput
+            testID="pda-onboard-address"
             label="Mailing Address"
             value={address}
             onChangeText={setAddress}
@@ -91,6 +93,7 @@ export default function PdaOnboarding() {
 
         <View style={{ flex: 1, justifyContent: "flex-end", paddingBottom: 16 }}>
           <Button
+            testID="pda-onboard-submit"
             label={submitting ? "Saving…" : "Get Started"}
             onPress={onSubmit}
             disabled={!canSubmit || submitting}

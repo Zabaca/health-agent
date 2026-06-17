@@ -154,6 +154,7 @@ export default function InviteRepresentative() {
         contentContainerStyle={{ gap: 16 }}
       >
         <Input
+          testID="invite-email"
           label="Email"
           placeholder="representative@example.com"
           autoCapitalize="none"
@@ -186,9 +187,9 @@ export default function InviteRepresentative() {
             overflow: "hidden",
           }}
         >
-          <PermissionPicker label="Health Records" value={records} onChange={setRecords} isFirst />
-          <PermissionPicker label="Manage Providers" value={providers} onChange={setProviders} />
-          <PermissionPicker label="HIPAA Release Request" value={releases} onChange={setReleases} />
+          <PermissionPicker testID="perm-records" label="Health Records" value={records} onChange={setRecords} isFirst />
+          <PermissionPicker testID="perm-providers" label="Manage Providers" value={providers} onChange={setProviders} />
+          <PermissionPicker testID="perm-releases" label="HIPAA Release Request" value={releases} onChange={setReleases} />
         </View>
       </Screen>
 

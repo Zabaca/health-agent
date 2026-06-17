@@ -19,9 +19,19 @@ export async function uploadToR2(
   filename: string,
   contentType: string,
 ): Promise<string> {
-  const { S3_BUCKET } = getConfiguration();
   const safeFilename = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
   const key = `${crypto.randomUUID()}-${safeFilename}`;
+
+  // E2E: the hermetic test server has no R2 credentials and must not write to
+  // real object storage. Skip only the S3 PutObject and return the same URL
+  // shape; everything else in the upload route (auth, multipart parse, MIME
+  // validation, the IncomingFile/FileUploadLog inserts) still runs for real.
+  // Set exclusively by the mobile E2E harness — production never sets it.
+  if (process.env.E2E_NO_R2 === "1") {
+    return `/api/files/${key}`;
+  }
+
+  const { S3_BUCKET } = getConfiguration();
 
   // PHI documents are app-encrypted (our key) before upload — R2 holds opaque
   // ciphertext. We still record the true ContentType as object metadata (a hint

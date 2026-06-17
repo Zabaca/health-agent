@@ -70,6 +70,7 @@ export default function MyProviders() {
           My Providers
         </Text>
         <Pressable
+          testID="providers-add"
           onPress={() => nav.navigate("AddProvider")}
           style={{
             flexDirection: "row",

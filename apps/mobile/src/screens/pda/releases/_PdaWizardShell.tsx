@@ -16,6 +16,7 @@ export function PdaWizardShell({
   subtitle,
   primaryLabel,
   primaryDisabled,
+  primaryTestID,
   onPrimary,
   children,
 }: {
@@ -24,6 +25,7 @@ export function PdaWizardShell({
   subtitle: string;
   primaryLabel: string;
   primaryDisabled?: boolean;
+  primaryTestID?: string;
   onPrimary: () => void;
   children: React.ReactNode;
 }) {
@@ -90,7 +92,7 @@ export function PdaWizardShell({
       <Screen
         bottom={
           <View style={{ paddingHorizontal: t.spacing.gutter, paddingBottom: 16 }}>
-            <Button label={primaryLabel} onPress={onPrimary} disabled={primaryDisabled} fullWidth />
+            <Button label={primaryLabel} onPress={onPrimary} disabled={primaryDisabled} fullWidth testID={primaryTestID} />
           </View>
         }
         contentContainerStyle={{ gap: 16 }}

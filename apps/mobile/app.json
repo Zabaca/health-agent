@@ -21,6 +21,9 @@
       "requireFullScreen": true,
       "bundleIdentifier": "com.zabaca.veladon",
       "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:app.veladon.com"
+      ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSHealthShareUsageDescription": "Veladon reads your health data to display vitals, activity, sleep, and lab results on your dashboard."

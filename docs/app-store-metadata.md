@@ -6,10 +6,12 @@ separately; this covers the **copy**). Voice and claims are drawn from the marke
 
 > **Source of truth for claims.** Mirror the landing page wording. Two rules that must
 > survive any edit:
-> 1. **The mechanic:** Veladon does *not* fetch your records. *You* generate a
->    HIPAA-compliant **authorization**, *you* submit it, the **provider sends the records
->    to you**, and *you* upload them into Veladon. Never write "Veladon gets/retrieves
->    your records."
+> 1. **The mechanic:** Veladon does *not* fetch your records and never contacts a provider
+>    on its own. *You* generate a HIPAA-compliant **authorization** and choose how the signed
+>    release reaches the provider (**fax it from the app, save a PDF to print and mail or email,
+>    or hand it over in person — by you or your designated agent**); the **provider sends the
+>    records to you**, and *you* upload them into Veladon. Nothing is automated. Never write
+>    "Veladon gets/retrieves your records" or imply the app sends the release for you.
 > 2. **HIPAA:** the **authorization form** is "HIPAA-compliant" (true); the **security**
 >    is "HIPAA-equivalent." Never flatly call the app itself "HIPAA-compliant" — Zabaca is
 >    a PHR vendor, likely not a HIPAA Covered Entity.
@@ -74,12 +76,12 @@ Veladon is your personal health record storage. Request your records from any pr
 Your health history lives in eight different places — every clinic, lab, and hospital behind its own portal, its own login, its own release form. Veladon brings it together. You generate the authorization; the provider sends the records to you; you keep them somewhere you actually look.
 
 HOW IT WORKS
-1. Add a provider — search for the clinic, hospital, lab, or specialist and pick what you want: everything on file, or a specific date range and record type.
-2. Sign the release — Veladon generates a HIPAA-compliant authorization, pre-filled with your information. Sign it on the glass, set an expiration date, and submit. Void it any time before it's acted on.
-3. Request and store — the provider sends the records wherever you direct them: your mailbox, your inbox, the front desk at your next visit. Upload them to Veladon and keep your whole history in one place.
+1. Add a provider — add the clinic, hospital, lab, or specialist you've visited (you already know who holds your records). Enter their name and contact details, then pick what you want: everything on file, or a specific date range and record type.
+2. Sign the release — Veladon generates a HIPAA-compliant authorization, pre-filled with your information. Sign it on the glass and set an expiration date. Void it any time before it's acted on.
+3. Send it your way, then store — a signed release is yours to deliver: fax it from the app, save a PDF to print and mail or email, or hand it to your provider in person at your next visit — by you or your designated agent. Nothing is sent automatically. The provider returns the records wherever you directed; upload them to Veladon and keep your whole history in one place.
 
 WHAT VELADON DOES
-• Releases — the headline feature. Generate a HIPAA-compliant authorization, sign it on the glass, and direct where your records go: to you, your home, or another provider you name. Revoke any release before it's acted on.
+• Releases — generate a HIPAA-compliant authorization and sign it on the glass, then send it your way: fax it from the app, save a PDF to print and mail or email, or hand it over in person (you or your designated agent). You direct where your records go and how the release is delivered — nothing is automated. Revoke any release before it's acted on.
 • Apple Health — connect Apple Health to bring in the vitals and clinical data already on your iPhone: heart rate, sleep, activity, lab results, immunizations, medications, and more — alongside the records you request from providers.
 • Your record, organized — everything sorted by provider and date, with allergies, conditions, immunizations, lab results, medications, procedures, vital signs, and coverage rendered in plain English.
 • Documents — upload photos or scans of the paper records you already have. Tag them by type and provider. Encrypted at rest, retrievable in a tap.
@@ -119,8 +121,15 @@ We're a small team and we read every message. Tell us what you think: info@velad
 ```
 
 ### Category
-- **Primary:** Medical
-- **Secondary:** Health & Fitness
+- **Primary:** Health & Fitness
+- **Secondary:** Productivity
+
+*Deliberately **not** "Medical." Veladon stores, organizes, and shares the user's own
+records — it does not diagnose, treat, or act as a medical device. The Medical category
+invites extra App Review scrutiny and a clinical-claims framing we don't want (see the
+"not a substitute for care" disclaimer above). Health & Fitness is the honest primary;
+Productivity (document organization + sharing) is the secondary. Utilities or Reference
+are acceptable alternates if a different secondary is ever needed.*
 
 ### Age rating
 Expect **12+**. In Apple's questionnaire, the app displays the user's own
@@ -131,18 +140,21 @@ under-rate.
 
 ## Screenshot caption copy (overlay text)
 
-The text that sits on each marketing screenshot. Pair each headline with its subline; keep
-headlines ≤ ~30 chars so they read on a phone thumbnail. Six core frames (drop #6 if only
-five are produced):
+The text that sits on each marketing screenshot. Each row maps to a captured frame in
+`docs/screenshots/` (iPhone `<name>.png` + matching iPad `<name>_ipad.png`). Keep headlines
+≤ ~30 chars so they read on a phone thumbnail. Eight frames, ordered as they should appear
+in the listing:
 
-| # | Headline | Subline |
-|---|----------|---------|
-| 1 | Your medical record. Yours. | Request it, organize it, share it — on your terms. |
-| 2 | Request from any provider | A HIPAA-compliant authorization, pre-filled and ready to sign. |
-| 3 | Sign the release on the glass | Set an expiration. Revoke any time before it's acted on. |
-| 4 | Apple Health, brought in | Vitals, labs, medications, and more — alongside your records. |
-| 5 | Your whole history, in plain English | Sorted by provider and date. Allergies to vital signs. |
-| 6 | Delegate to a caregiver | Per category, per permission. View only, or view and edit. |
+| # | Screenshot | Headline | Subline |
+|---|------------|----------|---------|
+| 1 | `dashboard` | Your day at a glance | Heart rate, SpO₂, steps, and sleep — Apple Health, in one place. |
+| 2 | `records` | Your whole history, one place | Records, labs, imaging, and uploads — sorted by provider and date. |
+| 3 | `releases` | Share on your terms | Generate a HIPAA release, set an expiration, revoke any time. |
+| 4 | `lab` | Lab results in plain English | Every value against its reference range, flagged at a glance. |
+| 5 | `sleep` | See the trend, not just today | Week and month views for sleep, heart rate, SpO₂, and steps. |
+| 6 | `providers` | Every provider in one list | Clinics, labs, and hospitals — with the details you actually need. |
+| 7 | `myPDA` | Delegate to someone you trust | Per-category access for family or a caregiver. Revoke instantly. |
+| 8 | `pdaView` | Help a loved one, safely | Agents get exactly the access you grant — nothing more. |
 
 ---
 
@@ -153,14 +165,31 @@ what to declare for v1.0.0:
 
 | Data type | Collected? | Linked to identity? | Used for tracking? | Notes |
 |-----------|-----------|---------------------|--------------------|-------|
-| Health & Fitness | Yes | Yes | No | HealthKit data, requested records, uploaded documents. Read-only **while the app is open** — no background delivery. Never used for advertising, marketing, or data mining (Apple HealthKit rule). |
-| Contact Info | Yes | Yes | No | Email (and name) for the account. |
-| Identifiers | Yes | Yes | No | Account/user ID. |
-| Usage Data | Yes | No | No | Anonymous product analytics (PostHog) — captured without `identify()`, not linked to a user, not used for third-party tracking or ads. |
+| Health & Fitness | Yes | Yes | No | HealthKit metrics (heart rate, sleep, SpO₂, steps, activity) + clinical records (allergies, conditions, immunizations, lab results, medications, procedures, vital signs, coverage). Read-only **while the app is open** — no background delivery. Never used for advertising, marketing, or data mining (Apple HealthKit rule). |
+| Contact Info | Yes | Yes | No | Name, email, **phone number, and mailing address**. Phone + address are required at onboarding. |
+| User Content (Photos) | Yes | Yes | No | Camera captures and photo-library images of paper health documents you upload, plus an optional profile avatar. The document content is health-related. |
+| Other Data | Yes | Yes | No | Date of birth and **last four digits of SSN** (optional; used for record-request authorizations). Treated as sensitive identifiers — encrypted at rest with AES-256-GCM. Maps to Apple's "Other Data Types." |
+| Identifiers | Yes | Yes | No | Account/user ID. With Sign in with Apple or Google, also the subject identifier they return. **No** device ID or advertising identifier. |
+| Usage Data | Yes | No | No | Anonymous product analytics (PostHog) — touch events keyed to `testID` only (no screen text / PHI), captured without `identify()`, not linked to a user, not used for third-party tracking or ads. |
+| Coarse Location | Yes | Yes | No | An approximate location (country, region, city) **derived from your IP address** — shown in Active Devices so you can spot and revoke unfamiliar sessions; PostHog also infers coarse location from IP. **No** precise/GPS location. |
+| Diagnostics | Yes | No | No | Error reports with technical details about a failure — **never** the contents of your health records. |
+
+> **Deep links / Universal Links (new in v1.0.0).** `applinks:app.veladon.com` plus the
+> `zabaca://` custom scheme open the app for password-reset, my-records, releases, and PDA-invite
+> links. This is an inbound **navigation** mechanism only: the URLs carry opaque, backend-issued
+> **tokens** — never name, email, or account ID — so deep-link support adds **no new App Privacy
+> data category**. (Invite details such as the invitee's email are fetched from the API *against*
+> the token and gated server-side; they are not read from the link or from the device.)
+
+**Not collected** (declare "No" / leave unchecked): precise/GPS Location, Financial/Payment Info,
+Contacts, Browsing/Search History, push-notification device tokens, and advertising identifiers.
+The address you type is postal text (native MapKit autocomplete on iOS), **not** device location;
+the only location collected is the coarse, IP-derived city/region noted above.
 
 Must stay consistent with the privacy policy's "we do not sell / do not track / do not
-train AI on PHI" commitments. Encryption export compliance: declare per the launch plan
-(non-exempt crypto if applicable; HealthKit/TLS standard crypto is generally exempt).
+train AI on PHI" commitments. Because the app offers Google sign-in, it also offers **Sign in with
+Apple** (entitlement present) per App Store Guideline 4.8. Encryption export compliance: declare per
+the launch plan (non-exempt crypto if applicable; HealthKit/TLS standard crypto is generally exempt).
 
 ---
 

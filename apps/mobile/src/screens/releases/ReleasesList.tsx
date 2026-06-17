@@ -375,7 +375,7 @@ export default function ReleasesList() {
           const on = s.id === tab;
           const count = releases.filter(r => computeStatus(r) === s.id).length;
           return (
-            <Pressable key={s.id} onPress={() => setTab(s.id)}>
+            <Pressable key={s.id} testID={`releases-tab-${s.id}`} onPress={() => setTab(s.id)}>
               <View
                 style={{
                   paddingVertical: 8,
@@ -421,7 +421,7 @@ export default function ReleasesList() {
               else nav.navigate("ActiveDetail", { releaseId: r.id });
             };
             return (
-              <Pressable key={r.id} onPress={onPress}>
+              <Pressable key={r.id} testID={`release-row-${status}`} onPress={onPress}>
                 <View
                   style={{
                     backgroundColor: t.colors.surface,

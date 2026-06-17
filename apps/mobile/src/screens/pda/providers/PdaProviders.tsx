@@ -73,6 +73,7 @@ export default function PdaProviders() {
       </Text>
       {isEditor ? (
         <Pressable
+          testID="pda-providers-add"
           onPress={() => nav.navigate("PdaAddProvider")}
           style={{
             flexDirection: "row",
@@ -154,6 +155,7 @@ export default function PdaProviders() {
       {headerRow}
 
       <View
+        testID={isEditor ? "pda-providers-editor-banner" : "pda-providers-viewer-banner"}
         style={{
           backgroundColor: t.colors.primaryBg,
           borderRadius: t.radius.card,

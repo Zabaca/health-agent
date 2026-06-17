@@ -200,6 +200,7 @@ export default function UploadPreview() {
           <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 16 }}>Retake</Text>
         </Pressable>
         <Pressable
+          testID="upload-confirm"
           onPress={onConfirm}
           disabled={uploading}
           style={{

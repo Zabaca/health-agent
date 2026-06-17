@@ -95,16 +95,17 @@ export default function CreateAccount() {
           <View style={[styles.dividerLine, { backgroundColor: t.colors.border }]} />
         </View>
 
-        <Input label="Email" placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-        <Input label="Password" placeholder="Min 8 characters" secureTextEntry value={pw} onChangeText={setPw} />
-        <Input label="Confirm Password" placeholder="Repeat password" secureTextEntry value={confirm} onChangeText={setConfirm} />
-        <DobField value={dob} onChange={setDob} />
+        <Input testID="register-email" label="Email" placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
+        <Input testID="register-password" label="Password" placeholder="Min 8 characters" secureTextEntry value={pw} onChangeText={setPw} />
+        <Input testID="register-confirm" label="Confirm Password" placeholder="Repeat password" secureTextEntry value={confirm} onChangeText={setConfirm} />
+        <DobField testID="register-dob" value={dob} onChange={setDob} />
 
         {error || oauthError ? (
           <Text style={[t.type.caption, { color: t.colors.destructive }]}>{error || oauthError}</Text>
         ) : null}
 
         <Button
+          testID="register-submit"
           label={submitting ? "Creating account…" : "Create Account"}
           onPress={onSubmit}
           disabled={submitting}

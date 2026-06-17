@@ -1,0 +1,75 @@
+# Journey 2 — patient completes setup steps 1–2: profile + a provider.
+#
+# Continues the session left by patient-register (no clearKeychain/clearState —
+# just brings the app to the foreground on the Dashboard). Run by the
+# orchestrator right after register; afterward run.ts asserts profileComplete +
+# a UserProvider row in the temp DB.
+appId: com.zabaca.veladon
+name: Patient — complete profile + add provider
+tags:
+  - journey
+  - patient
+---
+- launchApp
+- runFlow: ../subflows/dismiss-system-dialogs.yaml
+- extendedWaitUntil:
+    visible:
+      id: "dashboard-screen"
+    timeout: 30000
+
+# --- Setup step 1: complete profile (DOB is pre-filled from registration) ---
+# Tab buttons expose accessibility text like "Profile, tab, 5 of 5"; Maestro
+# full-matches the regex, so anchor on that pattern rather than bare "Profile".
+- tapOn: "Profile, tab.*"
+- tapOn:
+    id: "profile-edit-card"
+- extendedWaitUntil:
+    visible:
+      id: "profile-first"
+    timeout: 15000
+# The lower fields (Phone, Address) sit UNDER the keyboard. If we tap them while
+# the keyboard is up, the tap lands on the keyboard and focus stays on the prior
+# field — so text lands in the wrong input. After each field, dismiss the
+# keyboard by tapping that field's static label (keyboardShouldPersistTaps:
+# "handled" dismisses on a non-input tap); Maestro then scrolls the next field
+# into the now-uncovered area before tapping it.
+- tapOn:
+    id: "profile-first"
+- inputText: "Pat"
+- tapOn: "First Name"
+- tapOn:
+    id: "profile-last"
+- inputText: "Tester"
+- tapOn: "Last Name"
+- tapOn:
+    id: "profile-phone"
+- inputText: "5555550100"
+- tapOn: "Phone Number"
+- tapOn:
+    id: "profile-address"
+- inputText: "100 Test St, Boston, MA 02114"
+- tapOn: "Address"
+# Bottom-pinned Button: tap the visible label, not the testID (id-tap can no-op).
+- tapOn: "Save Changes"
+
+# --- Setup step 2: add a provider (default "Hospital" type needs only a name) ---
+- extendedWaitUntil:
+    visible: "Providers, tab.*"
+    timeout: 15000
+- tapOn: "Providers, tab.*"
+- tapOn:
+    id: "providers-add"
+- extendedWaitUntil:
+    visible:
+      id: "provider-name"
+    timeout: 15000
+- tapOn:
+    id: "provider-name"
+- inputText: "Mass General Hospital"
+- tapOn: "PROVIDER TYPE"
+- tapOn: "Save Provider"
+# Regex (Maestro full-matches): the provider row's accessibility text aggregates
+# the name + "Hospital" subtitle, so a bare exact string won't match.
+- extendedWaitUntil:
+    visible: ".*Mass General Hospital.*"
+    timeout: 15000

@@ -1,0 +1,27 @@
+# Smoke test — the app launches and lands on the Sign In screen.
+#
+# Requires NO backend and NO test account, so it is safe to run anywhere
+# (local sim, CI). This is the flow to keep green at all times.
+appId: com.zabaca.veladon
+name: Smoke — app launches to Sign In
+tags:
+  - smoke
+---
+# The session JWT lives in SecureStore (the iOS keychain), which survives
+# `clearState` (that only wipes the app sandbox). Without clearKeychain a
+# previously signed-in run would boot straight to the Dashboard, never showing
+# Sign In. Clear both for a true signed-out start.
+- clearKeychain
+- launchApp:
+    clearState: true
+# First paint waits on the Metro/JS bundle, so give the anchor a generous wait.
+- extendedWaitUntil:
+    visible:
+      id: "signin-screen"
+    timeout: 30000
+- assertVisible:
+    id: "signin-email"
+- assertVisible:
+    id: "signin-password"
+- assertVisible:
+    id: "signin-submit"
