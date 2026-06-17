@@ -119,8 +119,15 @@ We're a small team and we read every message. Tell us what you think: info@velad
 ```
 
 ### Category
-- **Primary:** Medical
-- **Secondary:** Health & Fitness
+- **Primary:** Health & Fitness
+- **Secondary:** Productivity
+
+*Deliberately **not** "Medical." Veladon stores, organizes, and shares the user's own
+records — it does not diagnose, treat, or act as a medical device. The Medical category
+invites extra App Review scrutiny and a clinical-claims framing we don't want (see the
+"not a substitute for care" disclaimer above). Health & Fitness is the honest primary;
+Productivity (document organization + sharing) is the secondary. Utilities or Reference
+are acceptable alternates if a different secondary is ever needed.*
 
 ### Age rating
 Expect **12+**. In Apple's questionnaire, the app displays the user's own
@@ -131,18 +138,21 @@ under-rate.
 
 ## Screenshot caption copy (overlay text)
 
-The text that sits on each marketing screenshot. Pair each headline with its subline; keep
-headlines ≤ ~30 chars so they read on a phone thumbnail. Six core frames (drop #6 if only
-five are produced):
+The text that sits on each marketing screenshot. Each row maps to a captured frame in
+`docs/screenshots/` (iPhone `<name>.png` + matching iPad `<name>_ipad.png`). Keep headlines
+≤ ~30 chars so they read on a phone thumbnail. Eight frames, ordered as they should appear
+in the listing:
 
-| # | Headline | Subline |
-|---|----------|---------|
-| 1 | Your medical record. Yours. | Request it, organize it, share it — on your terms. |
-| 2 | Request from any provider | A HIPAA-compliant authorization, pre-filled and ready to sign. |
-| 3 | Sign the release on the glass | Set an expiration. Revoke any time before it's acted on. |
-| 4 | Apple Health, brought in | Vitals, labs, medications, and more — alongside your records. |
-| 5 | Your whole history, in plain English | Sorted by provider and date. Allergies to vital signs. |
-| 6 | Delegate to a caregiver | Per category, per permission. View only, or view and edit. |
+| # | Screenshot | Headline | Subline |
+|---|------------|----------|---------|
+| 1 | `dashboard` | Your day at a glance | Heart rate, SpO₂, steps, and sleep — Apple Health, in one place. |
+| 2 | `records` | Your whole history, one place | Records, labs, imaging, and uploads — sorted by provider and date. |
+| 3 | `releases` | Share on your terms | Generate a HIPAA release, set an expiration, revoke any time. |
+| 4 | `lab` | Lab results in plain English | Every value against its reference range, flagged at a glance. |
+| 5 | `sleep` | See the trend, not just today | Week and month views for sleep, heart rate, SpO₂, and steps. |
+| 6 | `providers` | Every provider in one list | Clinics, labs, and hospitals — with the details you actually need. |
+| 7 | `myPDA` | Delegate to someone you trust | Per-category access for family or a caregiver. Revoke instantly. |
+| 8 | `pdaView` | Help a loved one, safely | Agents get exactly the access you grant — nothing more. |
 
 ---
 

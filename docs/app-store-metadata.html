@@ -105,6 +105,27 @@
     content: "☐"; position: absolute; left: 14px; top: 9px; color: var(--muted); font-size: 16px;
   }
 
+  .shots { display: flex; flex-direction: column; gap: 16px; margin: 18px 0 8px; }
+  .shot {
+    display: flex; gap: 20px; align-items: flex-start;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+  }
+  .shot img {
+    width: 152px; flex: none; border-radius: 16px; border: 1px solid var(--line);
+    box-shadow: 0 6px 20px rgba(15,23,32,.10); background: #f3f5f7;
+  }
+  .shot .cap { padding-top: 4px; min-width: 0; }
+  .shot .frameno {
+    font-size: 11.5px; color: var(--accent); font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .shot .headline { font-size: 20px; font-weight: 700; margin: 5px 0 6px; letter-spacing: -.01em; line-height: 1.25; }
+  .shot .subline { font-size: 14.5px; color: #374151; margin: 0; }
+  .shot .file { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  @media (max-width: 560px) {
+    .shot { flex-direction: column; align-items: center; text-align: center; }
+    .shot img { width: 160px; }
+  }
   .future { opacity: .92; }
   .future h2 .chip { background: #eef1f4; color: var(--muted); }
 
@@ -231,9 +252,15 @@ We're a small team and we read every message. Tell us what you think: info@velad
   <h3>Category</h3>
   <table>
     <tr><th>Slot</th><th>Value</th></tr>
-    <tr><td>Primary</td><td>Medical</td></tr>
-    <tr><td>Secondary</td><td>Health &amp; Fitness</td></tr>
+    <tr><td>Primary</td><td>Health &amp; Fitness</td></tr>
+    <tr><td>Secondary</td><td>Productivity</td></tr>
   </table>
+  <p class="note">Deliberately <strong>not</strong> “Medical.” Veladon stores, organizes, and shares
+     the user's own records — it does not diagnose, treat, or act as a medical device. The Medical
+     category invites extra App Review scrutiny and a clinical-claims framing we don't want (see the
+     “not a substitute for care” disclaimer). Health &amp; Fitness is the honest primary; Productivity
+     (document organization + sharing) is the secondary. Utilities or Reference are acceptable
+     alternates if a different secondary is ever needed.</p>
 
   <h3>Age rating</h3>
   <p>Expect <strong>12+</strong>. In Apple's questionnaire, the app displays the user's own
@@ -241,18 +268,93 @@ We're a small team and we read every message. Tell us what you think: info@velad
      do not under-rate.</p>
 
   <h2>Screenshot caption copy <span class="chip">overlay text</span></h2>
-  <p>The text that sits on each marketing screenshot. Pair each headline with its subline; keep
-     headlines ≤ ~30 chars so they read on a phone thumbnail. Six core frames (drop #6 if only
-     five are produced):</p>
-  <table>
-    <tr><th>#</th><th>Headline</th><th>Subline</th></tr>
-    <tr><td>1</td><td>Your medical record. Yours.</td><td>Request it, organize it, share it — on your terms.</td></tr>
-    <tr><td>2</td><td>Request from any provider</td><td>A HIPAA-compliant authorization, pre-filled and ready to sign.</td></tr>
-    <tr><td>3</td><td>Sign the release on the glass</td><td>Set an expiration. Revoke any time before it's acted on.</td></tr>
-    <tr><td>4</td><td>Apple Health, brought in</td><td>Vitals, labs, medications, and more — alongside your records.</td></tr>
-    <tr><td>5</td><td>Your whole history, in plain English</td><td>Sorted by provider and date. Allergies to vital signs.</td></tr>
-    <tr><td>6</td><td>Delegate to a caregiver</td><td>Per category, per permission. View only, or view and edit.</td></tr>
-  </table>
+  <p>The overlay text for each marketing frame, paired with the actual captured screenshot.
+     Each frame has an iPhone (6.9") and a matching iPad (13") variant in
+     <code class="inline-code">docs/screenshots/</code>. Headlines are kept ≤ ~30 chars so they read
+     on a phone thumbnail. Shown below in listing order:</p>
+  <div class="shots">
+
+    <div class="shot">
+      <img src="screenshots/dashboard.png" alt="Dashboard — Today's Overview with heart rate, SpO₂, steps, sleep">
+      <div class="cap">
+        <div class="frameno">Frame 1 · iPhone + iPad</div>
+        <div class="headline">Your day at a glance</div>
+        <p class="subline">Heart rate, SpO₂, steps, and sleep — Apple Health, in one place.</p>
+        <div class="file"><code class="inline-code">dashboard.png</code> · <code class="inline-code">dashboard_ipad.png</code></div>
+      </div>
+    </div>
+
+    <div class="shot">
+      <img src="screenshots/records.png" alt="My Records list — documents, labs, immunizations, medications">
+      <div class="cap">
+        <div class="frameno">Frame 2 · iPhone + iPad</div>
+        <div class="headline">Your whole history, one place</div>
+        <p class="subline">Records, labs, imaging, and uploads — sorted by provider and date.</p>
+        <div class="file"><code class="inline-code">records.png</code> · <code class="inline-code">records_ipad.png</code></div>
+      </div>
+    </div>
+
+    <div class="shot">
+      <img src="screenshots/releases.png" alt="My Releases — active, pending, expired with release codes">
+      <div class="cap">
+        <div class="frameno">Frame 3 · iPhone + iPad</div>
+        <div class="headline">Share on your terms</div>
+        <p class="subline">Generate a HIPAA release, set an expiration, revoke any time.</p>
+        <div class="file"><code class="inline-code">releases.png</code> · <code class="inline-code">releases_ipad.png</code></div>
+      </div>
+    </div>
+
+    <div class="shot">
+      <img src="screenshots/lab.png" alt="Lab Panel — results against reference ranges, flagged normal">
+      <div class="cap">
+        <div class="frameno">Frame 4 · iPhone + iPad</div>
+        <div class="headline">Lab results in plain English</div>
+        <p class="subline">Every value against its reference range, flagged at a glance.</p>
+        <div class="file"><code class="inline-code">lab.png</code> · <code class="inline-code">lab_ipad.png</code></div>
+      </div>
+    </div>
+
+    <div class="shot">
+      <img src="screenshots/sleep.png" alt="Sleep detail — week chart with Deep, Core, REM breakdown">
+      <div class="cap">
+        <div class="frameno">Frame 5 · iPhone + iPad</div>
+        <div class="headline">See the trend, not just today</div>
+        <p class="subline">Week and month views for sleep, heart rate, SpO₂, and steps.</p>
+        <div class="file"><code class="inline-code">sleep.png</code> · <code class="inline-code">sleep_ipad.png</code></div>
+      </div>
+    </div>
+
+    <div class="shot">
+      <img src="screenshots/providers.png" alt="My Providers — clinics, labs, hospitals with member IDs and phone">
+      <div class="cap">
+        <div class="frameno">Frame 6 · iPhone + iPad</div>
+        <div class="headline">Every provider in one list</div>
+        <p class="subline">Clinics, labs, and hospitals — with the details you actually need.</p>
+        <div class="file"><code class="inline-code">providers.png</code> · <code class="inline-code">providers_ipad.png</code></div>
+      </div>
+    </div>
+
+    <div class="shot">
+      <img src="screenshots/myPDA.png" alt="My Designated Agents — Jane Doe (Spouse) with per-category editor access">
+      <div class="cap">
+        <div class="frameno">Frame 7 · iPhone + iPad</div>
+        <div class="headline">Delegate to someone you trust</div>
+        <p class="subline">Per-category access for family or a caregiver. Revoke instantly.</p>
+        <div class="file"><code class="inline-code">myPDA.png</code> · <code class="inline-code">myPDA_ipad.png</code></div>
+      </div>
+    </div>
+
+    <div class="shot">
+      <img src="screenshots/pdaView.png" alt="Agent Overview — Your Access: Health Records, Providers, HIPAA Releases">
+      <div class="cap">
+        <div class="frameno">Frame 8 · iPhone + iPad</div>
+        <div class="headline">Help a loved one, safely</div>
+        <p class="subline">Agents get exactly the access you grant — nothing more.</p>
+        <div class="file"><code class="inline-code">pdaView.png</code> · <code class="inline-code">pdaView_ipad.png</code></div>
+      </div>
+    </div>
+
+  </div>
 
   <h2>App Privacy (data declarations)</h2>
   <p class="note">Secondary; the <a href="https://www.veladon.com/privacy">Privacy Policy</a> is the
