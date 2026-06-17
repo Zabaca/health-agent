@@ -112,6 +112,17 @@ apps/mobile/secrets/
 
 # SOPS decrypted
 .decrypted~*
+# App Store metadata holds reviewer demo credentials — commit only the sops-encrypted
+# store.config.enc.json; the decrypted plaintext is generated at push time.
+apps/mobile/store.config.json
+# EAS Update code-signing private key — commit only the sops-encrypted .enc;
+# decrypted plaintext is generated at publish time.
+apps/mobile/keys/private-key.pem
+# ...but the certificate + public key are NOT secret (cert is public; public key
+# is contained in it) and `eas update` reads the cert path from app.json — keep
+# them tracked despite the global *.pem ignore above.
+!apps/mobile/certs/certificate.pem
+!apps/mobile/keys/public-key.pem
 
 # graphify knowledge graph (locally rebuilt by the post-commit hook)
 graphify-out/
