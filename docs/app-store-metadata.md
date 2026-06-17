@@ -171,6 +171,8 @@ what to declare for v1.0.0:
 | Other Data | Yes | Yes | No | Date of birth and **last four digits of SSN** (optional; used for record-request authorizations). Treated as sensitive identifiers — encrypted at rest with AES-256-GCM. Maps to Apple's "Other Data Types." |
 | Identifiers | Yes | Yes | No | Account/user ID. With Sign in with Apple or Google, also the subject identifier they return. **No** device ID or advertising identifier. |
 | Usage Data | Yes | No | No | Anonymous product analytics (PostHog) — touch events keyed to `testID` only (no screen text / PHI), captured without `identify()`, not linked to a user, not used for third-party tracking or ads. |
+| Coarse Location | Yes | Yes | No | An approximate location (country, region, city) **derived from your IP address** — shown in Active Devices so you can spot and revoke unfamiliar sessions; PostHog also infers coarse location from IP. **No** precise/GPS location. |
+| Diagnostics | Yes | No | No | Error reports with technical details about a failure — **never** the contents of your health records. |
 
 > **Deep links / Universal Links (new in v1.0.0).** `applinks:app.veladon.com` plus the
 > `zabaca://` custom scheme open the app for password-reset, my-records, releases, and PDA-invite
@@ -179,10 +181,10 @@ what to declare for v1.0.0:
 > data category**. (Invite details such as the invitee's email are fetched from the API *against*
 > the token and gated server-side; they are not read from the link or from the device.)
 
-**Not collected** (declare "No" / leave unchecked): precise or coarse Location, Financial/Payment
-Info, Contacts, Browsing/Search History, push-notification device tokens, advertising identifiers,
-and third-party Crash/Diagnostics data. Address is typed text (native MapKit autocomplete on iOS) —
-**not** device location.
+**Not collected** (declare "No" / leave unchecked): precise/GPS Location, Financial/Payment Info,
+Contacts, Browsing/Search History, push-notification device tokens, and advertising identifiers.
+The address you type is postal text (native MapKit autocomplete on iOS), **not** device location;
+the only location collected is the coarse, IP-derived city/region noted above.
 
 Must stay consistent with the privacy policy's "we do not sell / do not track / do not
 train AI on PHI" commitments. Because the app offers Google sign-in, it also offers **Sign in with

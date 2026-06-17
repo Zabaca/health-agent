@@ -362,6 +362,8 @@ We're a small team and we read every message. Tell us what you think: info@velad
     <tr><td>Other Data</td><td class="ok">Yes</td><td>Yes</td><td>No</td><td>Date of birth and <strong>last four digits of SSN</strong> (optional; used for record-request authorizations). Treated as sensitive identifiers — encrypted at rest with AES-256-GCM. Maps to Apple's “Other Data Types.”</td></tr>
     <tr><td>Identifiers</td><td class="ok">Yes</td><td>Yes</td><td>No</td><td>Account/user ID. With Sign in with Apple or Google, also the subject identifier they return. <strong>No</strong> device ID or advertising identifier.</td></tr>
     <tr><td>Usage Data</td><td class="ok">Yes</td><td>No</td><td>No</td><td>Anonymous product analytics (PostHog) — touch events keyed to <code>testID</code> only (no screen text / PHI), captured without <code>identify()</code>, not linked to a user, not used for third-party tracking or ads.</td></tr>
+    <tr><td>Coarse Location</td><td class="ok">Yes</td><td>Yes</td><td>No</td><td>An approximate location (country, region, city) <strong>derived from your IP address</strong> — shown in Active Devices so you can spot and revoke unfamiliar sessions; PostHog also infers coarse location from IP. <strong>No</strong> precise/GPS location.</td></tr>
+    <tr><td>Diagnostics</td><td class="ok">Yes</td><td>No</td><td>No</td><td>Error reports with technical details about a failure — <strong>never</strong> the contents of your health records.</td></tr>
   </table>
   <div class="callout">
     <strong class="lead">Deep links / Universal Links (new in v1.0.0).</strong>
@@ -373,10 +375,11 @@ We're a small team and we read every message. Tell us what you think: info@velad
     fetched from the API <em>against</em> the token and gated server-side; they are not read from the
     link or from the device.)
   </div>
-  <p class="note"><strong>Not collected</strong> (declare “No” / leave unchecked): precise or coarse
+  <p class="note"><strong>Not collected</strong> (declare “No” / leave unchecked): precise/GPS
      Location, Financial/Payment Info, Contacts, Browsing/Search History, push-notification device
-     tokens, advertising identifiers, and third-party Crash/Diagnostics data. Address is typed text
-     (native MapKit autocomplete on iOS) — <strong>not</strong> device location.</p>
+     tokens, and advertising identifiers. The address you type is postal text (native MapKit
+     autocomplete on iOS), <strong>not</strong> device location; the only location collected is the
+     coarse, IP-derived city/region noted above.</p>
   <p class="note">Must stay consistent with the privacy policy's “we do not sell / do not track / do
      not train AI on PHI” commitments. Because the app offers Google sign-in, it also offers
      <strong>Sign in with Apple</strong> (entitlement present) per App Store Guideline 4.8. Encryption
