@@ -44,7 +44,7 @@ const faqJsonLd = {
       name: "How does Veladon get my records from a provider?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Veladon doesn't get them — you do. We help you generate a HIPAA-compliant authorization, pre-filled and signable in the app. You submit it, and the provider sends the records to the address or contact you specified on the release: your home, your email, your hands at the next visit. Veladon is where you upload and keep them once they arrive. Federal law gives providers up to thirty days to respond, though most respond in one to two weeks.",
+        text: "Veladon doesn't get them — you do. We help you generate a HIPAA-compliant authorization, pre-filled and signable in the app. Then you decide how the signed release reaches the provider — fax it from the app, save a PDF to print and mail or email, or hand it over at your next visit, by you or your designated agent. Nothing is sent automatically. The provider then sends the records to the address or contact you specified on the release: your home, your email, your hands at the next visit. Veladon is where you upload and keep them once they arrive. Federal law gives providers up to thirty days to respond, though most respond in one to two weeks.",
       },
     },
     {
@@ -76,7 +76,7 @@ const faqJsonLd = {
       name: "Can I share records with another doctor?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes — that's part of why Veladon exists. Generate a Release naming the recipient, sign it, and submit. Same authorization flow as a request; you direct where the records go. You can also assign a Designated Agent — a family member, caregiver, or other trusted person — to help manage your records on your behalf.",
+        text: "Yes — that's part of why Veladon exists. Generate a Release naming the recipient and sign it, then deliver it your way — fax, a PDF to print and mail or email, or in person, by you or your designated agent. Same authorization flow as a request; you're always the one who sends it, and you direct where the records go. You can also assign a Designated Agent — a family member, caregiver, or other trusted person — to help manage your records on your behalf.",
       },
     },
     {
@@ -163,25 +163,29 @@ export default function HomePage() {
             <div className="row2">
               <div className="label">01 · Add a provider</div>
               <div className="body">
-                Search for the clinic, hospital, lab, or specialist. Pick what you
-                want — everything on file, or a specific date range and record type.
+                Add the clinic, hospital, lab, or specialist you've visited — you
+                already know who holds your records. Enter their name and contact
+                details, then pick what you want: everything on file, or a specific
+                date range and record type.
               </div>
             </div>
             <div className="row2">
               <div className="label">02 · Sign the release</div>
               <div className="body">
                 Veladon generates a HIPAA-compliant authorization, pre-filled with your
-                information. Sign it on the glass, set an expiration date, and submit.
-                You can void it any time before it's acted on.
+                information. Sign it on the glass and set an expiration date. You can void
+                it any time before it's acted on.
               </div>
             </div>
             <div className="row2">
-              <div className="label">03 · Request and store</div>
+              <div className="label">03 · Send it your way, then store</div>
               <div className="body">
-                Veladon helps you submit the request and tracks it. The provider sends
-                the records to wherever you tell them — your mailbox, your inbox, the
-                front desk at your next visit. You upload them to Veladon and keep
-                your whole history in one place.
+                A signed release is yours to deliver — fax it straight from the app, save
+                it as a PDF to print and mail or email, or hand it to your provider in person
+                at your next visit, by you or a designated agent acting for you. You choose how it's
+                sent; Veladon never contacts a provider on its own. The provider then returns
+                the records wherever you directed — your mailbox, your inbox, the front desk —
+                and you upload them to keep your whole history in one place.
               </div>
             </div>
           </div>
@@ -196,10 +200,12 @@ export default function HomePage() {
             <div className="row2">
               <div className="label">Releases</div>
               <div className="body">
-                The headline feature. Generate a HIPAA-compliant authorization,
-                pre-filled with your information, and sign it on the glass. You direct
-                the provider where to send the records — to you, your home, or another
-                provider you name. Revoke any release before it's acted on.
+                Generate a HIPAA-compliant authorization,
+                pre-filled with your information, and sign it on the glass. Then send it
+                your way — fax it from the app, save a PDF to print and mail or email, or
+                hand it over in person at your next visit, by you or a designated agent. You direct
+                where the records go and how the release is delivered; nothing is automated.
+                Revoke any release before it's acted on.
               </div>
             </div>
             <div className="row2">
@@ -335,12 +341,14 @@ export default function HomePage() {
             <summary>How does Veladon get my records from a provider?</summary>
             <p>
               Veladon doesn't get them — you do. We help you generate a
-              HIPAA-compliant authorization, pre-filled and signable in the app. You
-              submit it, and the provider sends the records to the address or contact
-              you specified on the release: your home, your email, your hands at the
-              next visit. Veladon is where you upload and keep them once they arrive.
-              Federal law gives providers up to thirty days to respond, though most
-              respond in one to two weeks.
+              HIPAA-compliant authorization, pre-filled and signable in the app. Then
+              you decide how the signed release reaches the provider — fax it from the
+              app, save a PDF to print and mail or email, or hand it over at your next
+              visit, by you or your designated agent. Nothing is sent automatically. The provider then sends
+              the records to the address or contact you specified on the release: your
+              home, your email, your hands at the next visit. Veladon is where you upload
+              and keep them once they arrive. Federal law gives providers up to thirty
+              days to respond, though most respond in one to two weeks.
             </p>
           </details>
           <details className="faq">
@@ -377,9 +385,11 @@ export default function HomePage() {
               them, or to assign a Designated Agent — a family member, caregiver, or
               other trusted person — to help manage your records on your behalf. The
               aim is for your medical history to be accessible to the health providers
-              who need it, on your terms. Generate a Release naming the recipient,
-              sign it, and submit. Same authorization flow as a request; you direct
-              where the records go.
+              who need it, on your terms. Generate a Release naming the recipient and
+              sign it, then deliver it your way — fax, a PDF to print and mail or email,
+              or in person, by you or your designated agent. Same authorization flow as a
+              request; you're
+              always the one who sends it, and you direct where the records go.
             </p>
           </details>
           <details className="faq">
