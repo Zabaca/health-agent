@@ -1,21 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-  <dict>
-    <key>EXUpdatesCheckOnLaunch</key>
-    <string>ALWAYS</string>
-    <key>EXUpdatesEnabled</key>
-    <true/>
-    <key>EXUpdatesLaunchWaitMs</key>
-    <integer>0</integer>
-    <key>EXUpdatesRequestHeaders</key>
-    <dict>
-      <key>expo-channel-name</key>
-      <string>production</string>
-    </dict>
-    <key>EXUpdatesRuntimeVersion</key>
-    <string>1.0.0</string>
-    <key>EXUpdatesURL</key>
-    <string>https://u.expo.dev/6eba529e-f0dd-4857-ba7b-65210baadd8b</string>
-  </dict>
+<dict>
+	<key>EXUpdatesCheckOnLaunch</key>
+	<string>ALWAYS</string>
+	<key>EXUpdatesCodeSigningCertificate</key>
+	<string>-----BEGIN CERTIFICATE-----
+MIIC0TCCAbmgAwIBAgIJa37wyxH8j4/9MA0GCSqGSIb3DQEBCwUAMBIxEDAOBgNV
+BAMTB1ZlbGFkb24wHhcNMjYwNjE3MTYwMTA2WhcNMzYwNjE3MTYwMTA2WjASMRAw
+DgYDVQQDEwdWZWxhZG9uMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
+0k3Lk952AxyWMIQWRqlasK93ikPn15cS+qYjFObtd2PY+K0G3AvhsNFruXrawajd
+56oDTjTkO8gc8HS9JxO0sjuEQ+/4UvmvGVrc9ar3zOswQJ/dEpEjUm0S9COZangE
+BbgiWf2GE+NesZ/twvid39+3Soy+K4I0IlN2lIoGbSx72tfiyHDrgjllmHLQ+UCX
+tJhi3oodWVCG3lmY+igt8bM38utHeCsbnWcaSCPW0NJdfCdb9NcfI8AQz7FeG66L
+bskERZKhD5tJzlYTnQc8UDastlPBb5Pelol2gsJnWk7R5Lry6WZoWa/w1xqCp9ec
+oB2efSwBJh5gIh2PccHEqQIDAQABoyowKDAOBgNVHQ8BAf8EBAMCB4AwFgYDVR0l
+AQH/BAwwCgYIKwYBBQUHAwMwDQYJKoZIhvcNAQELBQADggEBAH41/j8OgS60Y6vk
+F3UTqWvtTjjZM5oTqU/8jQGIX4YWPjhh1/7D7DF+0FFA4lYwdQIPj20bXA/ELLh1
+zlxZ0u+5ONuBXz+iF8IpzwekbyxyJsNmV8gqVKhxXFQp700vofM2h1R0+1e33xo2
+3EH6GYHwmjNPcbUJVzAVAkC6jk++TGBC8Y2HUuDm0VHkwFq8fzBgs7lNB3eRxOTl
+qqynafijq85m23WnnQIg61x8j5AgnWoGc+fAwgcFE4yjgLyXdFgcwtbpn8xifYO4
+EM6f6dDRVaTne7RyUIu5/Umem4ISdQ3ML08YmnRYbH15fJA7XbYlSa5rhhn0l1xF
+3Z4aqFY=
+-----END CERTIFICATE-----
+</string>
+	<key>EXUpdatesCodeSigningMetadata</key>
+	<dict>
+		<key>alg</key>
+		<string>rsa-v1_5-sha256</string>
+		<key>keyid</key>
+		<string>main</string>
+	</dict>
+	<key>EXUpdatesEnabled</key>
+	<true/>
+	<key>EXUpdatesLaunchWaitMs</key>
+	<integer>0</integer>
+	<key>EXUpdatesRequestHeaders</key>
+	<dict>
+		<key>expo-channel-name</key>
+		<string>production</string>
+	</dict>
+	<key>EXUpdatesRuntimeVersion</key>
+	<string>1.0.0</string>
+	<key>EXUpdatesURL</key>
+	<string>https://u.expo.dev/6eba529e-f0dd-4857-ba7b-65210baadd8b</string>
+</dict>
 </plist>
