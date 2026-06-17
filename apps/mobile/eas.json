@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 10.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "preview": {
@@ -19,13 +19,13 @@
   "submit": {
     "production": {
       "ios": {
+        "ascAppId": "6773436877",
+        "appleTeamId": "CYCW5D248P",
         "ascApiKeyPath": "./secrets/AuthKey.p8",
-        "ascApiKeyId": "$APP_STORE_CONNECT_API_KEY_ID",
-        "ascApiIssuerId": "$APP_STORE_CONNECT_ISSUER_ID"
+        "ascApiKeyId": "QN8J3XMDW8",
+        "ascApiKeyIssuerId": "8106318b-27eb-40b5-a057-cc38ea490b29",
+        "metadataPath": "./store.config.json"
       }
     }
-  },
-  "update": {
-    "channel": "production"
   }
 }

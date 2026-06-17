@@ -112,6 +112,9 @@ apps/mobile/secrets/
 
 # SOPS decrypted
 .decrypted~*
+# App Store metadata holds reviewer demo credentials — commit only the sops-encrypted
+# store.config.enc.json; the decrypted plaintext is generated at push time.
+apps/mobile/store.config.json
 
 # graphify knowledge graph (locally rebuilt by the post-commit hook)
 graphify-out/

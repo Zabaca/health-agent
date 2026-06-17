@@ -3,6 +3,12 @@
     "name": "Veladon",
     "slug": "veladon",
     "scheme": "zabaca",
+    "owner": "zabaca-llc",
+    "extra": {
+      "eas": {
+        "projectId": "6eba529e-f0dd-4857-ba7b-65210baadd8b"
+      }
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -56,8 +62,14 @@
       ],
       "@react-native-community/datetimepicker"
     ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "updates": {
-      "enabled": false
+      "enabled": true,
+      "url": "https://u.expo.dev/6eba529e-f0dd-4857-ba7b-65210baadd8b",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }
