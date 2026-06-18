@@ -1,3 +1,5 @@
+"use client";
+
 import { Table, Anchor, Text } from "@mantine/core";
 import Link from "next/link";
 
