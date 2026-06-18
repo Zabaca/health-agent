@@ -5,6 +5,7 @@ import { releases as releasesTable, providers as providersTable } from "@/lib/db
 import { and, asc, eq } from "drizzle-orm";
 import { decryptPii } from "@/lib/crypto";
 import { buildReleaseHtml } from "@/lib/releases/release-print-html";
+import { inlineApiFileImages } from "@/lib/releases/inline-files";
 
 export async function GET(
   req: Request,
@@ -25,7 +26,7 @@ export async function GET(
   }
 
   const release = decryptPii(row) as typeof row;
-  const html = buildReleaseHtml(release as Parameters<typeof buildReleaseHtml>[0]);
+  const html = await inlineApiFileImages(buildReleaseHtml(release as Parameters<typeof buildReleaseHtml>[0]));
 
   return new Response(html, {
     headers: { "Content-Type": "text/html; charset=utf-8" },

@@ -5,6 +5,7 @@ import { patientDesignatedAgents, releases, users } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { decryptPii } from "@/lib/crypto";
 import { buildReleaseHtml } from "@/lib/releases/release-print-html";
+import { inlineApiFileImages } from "@/lib/releases/inline-files";
 
 type Ctx = { params: Promise<{ patientId: string; releaseId: string }> };
 
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   }
 
   const release = decryptPii(row) as typeof row;
-  const html = buildReleaseHtml(release as Parameters<typeof buildReleaseHtml>[0]);
+  const html = await inlineApiFileImages(buildReleaseHtml(release as Parameters<typeof buildReleaseHtml>[0]));
 
   return new Response(html, {
     headers: { "Content-Type": "text/html; charset=utf-8" },
