@@ -121,6 +121,11 @@ export default function SignaturePad({ value, onChange, error, typedName }: Prop
   const handleClear = () => {
     sigRef.current?.clear();
     setHasDrawing(false);
+    // Clearing the canvas abandons the manual drawing, so drop the sticky manual
+    // flag — typing a name can auto-sign again (and if a name is already typed,
+    // the auto-draw effect re-signs from it). This is the path back from a
+    // hand-drawn signature to typed-name auto-sign.
+    setIsManualMode(false);
   };
 
   const handleResign = () => {

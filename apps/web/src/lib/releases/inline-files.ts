@@ -29,6 +29,11 @@ const API_FILE_RE = /\/api\/files\/([^"'\s)]+)/g;
  * Inlining the decrypted bytes makes the document self-contained without ever
  * exposing the file route publicly. Values already in data-URL form (e.g. a
  * signature stored inline) contain no `/api/files/` and pass through untouched.
+ *
+ * Note: this inlines *every* `/api/files/` reference in the HTML, not just the
+ * signature. Today the release document only embeds the signature; if other R2
+ * attachments are ever added to the template they'll be decrypted and base64
+ * inlined too (watch the resulting PDF size).
  */
 export async function inlineApiFileImages(html: string): Promise<string> {
   const keys = new Set<string>();
@@ -44,9 +49,13 @@ export async function inlineApiFileImages(html: string): Promise<string> {
         const stored = Buffer.from(await obj.Body.transformToByteArray());
         const bytes = Buffer.from(decryptBuffer(stored));
         dataUrlByKey.set(key, `data:${mimeFromKey(key)};base64,${bytes.toString("base64")}`);
-      } catch {
+      } catch (err) {
         // Leave the original src in place — it renders as a broken image but
-        // never crashes the export.
+        // never crashes the export. Log (key only, never bytes) so a failed
+        // fetch/decrypt on a signed legal document is diagnosable.
+        console.error(
+          `inlineApiFileImages: failed to inline /api/files/${key}: ${(err as Error)?.message ?? err}`,
+        );
       }
     }),
   );

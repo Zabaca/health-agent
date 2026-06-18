@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TextInput, Title, Paper, Stack, SimpleGrid, Text, Select, Badge } from "@mantine/core";
 import { useFormContext, Controller } from "react-hook-form";
-import type { UseFormSetValue } from "react-hook-form";
+import type { UseFormSetValue, UseFormGetValues } from "react-hook-form";
 import dynamic from "next/dynamic";
 import type { ReleaseFormData } from "@/types/release";
 import IsoDatePickerInput from "@/components/shared/IsoDatePickerInput";
@@ -75,6 +75,32 @@ function populateSelf(setValue: UseFormSetValue<ReleaseFormData>) {
   setValue("authAgentEmail", "");
 }
 
+// Map the form's loaded values onto a picker option. Patient releases are
+// created fresh today (always "self"), but mobile/legacy releases can carry
+// agent fields with or without a designatedAgentId — resolve by id first, then
+// by identity, so an existing recipient is never silently swapped for the first
+// PDA. Anything unresolved falls back to self rather than clobbering the form.
+function resolveInitialRecipientId(
+  getValues: UseFormGetValues<ReleaseFormData>,
+  patientRecipients: RecipientOption[],
+): string {
+  if (!getValues("releaseAuthAgent")) return SELF_RECIPIENT_ID;
+
+  const existingId = getValues("designatedAgentId");
+  if (existingId && patientRecipients.some((r) => r.id === existingId)) return existingId;
+
+  const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
+  const email = norm(getValues("authAgentEmail"));
+  const firstName = norm(getValues("authAgentFirstName"));
+  const lastName = norm(getValues("authAgentLastName"));
+  const match = patientRecipients.find(
+    (r) =>
+      (email && norm(r.email) === email) ||
+      (firstName && lastName && norm(r.firstName) === firstName && norm(r.lastName) === lastName),
+  );
+  return match?.id ?? SELF_RECIPIENT_ID;
+}
+
 export default function AuthorizationSection({ recipients, staffMode }: Props) {
   const {
     register,
@@ -109,13 +135,9 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
   const patientRecipients = !staffMode ? (recipients ?? []) : [];
   const showPicker = patientRecipients.length > 0;
 
-  const [selectedRecipientId, setSelectedRecipientId] = useState<string>(() => {
-    // Preserve an existing agent selection when editing; otherwise default to self.
-    if (!getValues("releaseAuthAgent")) return SELF_RECIPIENT_ID;
-    const existingId = getValues("designatedAgentId");
-    if (existingId && patientRecipients.some((r) => r.id === existingId)) return existingId;
-    return patientRecipients[0]?.id ?? SELF_RECIPIENT_ID;
-  });
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string>(() =>
+    resolveInitialRecipientId(getValues, patientRecipients),
+  );
 
   // Apply the initial selection to the form once on mount so the agent fields
   // stay consistent with the picker (self clears them; a PDA populates them).
