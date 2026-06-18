@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TextInput, Title, Paper, Stack, SimpleGrid, Text, Select, Badge } from "@mantine/core";
 import { useFormContext, Controller } from "react-hook-form";
-import type { UseFormSetValue } from "react-hook-form";
+import type { UseFormSetValue, UseFormGetValues } from "react-hook-form";
 import dynamic from "next/dynamic";
 import type { ReleaseFormData } from "@/types/release";
 import IsoDatePickerInput from "@/components/shared/IsoDatePickerInput";
@@ -49,13 +49,56 @@ function AgentField({ label, value }: { label: string; value?: string | null }) 
   );
 }
 
+// Sentinel value for the "release to myself" option (no PDA representative).
+const SELF_RECIPIENT_ID = "self";
+
 function populateRecipient(recipient: RecipientOption, setValue: UseFormSetValue<ReleaseFormData>) {
   setValue("releaseAuthAgent", true);
+  setValue("designatedAgentId", recipient.type === "pda" ? recipient.id : undefined);
   setValue("authAgentFirstName", recipient.firstName ?? "");
   setValue("authAgentLastName", recipient.lastName ?? "");
   setValue("authAgentAddress", recipient.address ?? "");
   setValue("authAgentPhone", recipient.phoneNumber ?? "");
   setValue("authAgentEmail", recipient.email ?? "");
+}
+
+// "I'm making the request myself" — clear all agent fields so the release is
+// stored as self-authorized (matches the mobile release wizard's "self" choice).
+function populateSelf(setValue: UseFormSetValue<ReleaseFormData>) {
+  setValue("releaseAuthAgent", false);
+  setValue("designatedAgentId", undefined);
+  setValue("authAgentFirstName", "");
+  setValue("authAgentLastName", "");
+  setValue("authAgentOrganization", "");
+  setValue("authAgentAddress", "");
+  setValue("authAgentPhone", "");
+  setValue("authAgentEmail", "");
+}
+
+// Map the form's loaded values onto a picker option. Patient releases are
+// created fresh today (always "self"), but mobile/legacy releases can carry
+// agent fields with or without a designatedAgentId — resolve by id first, then
+// by identity, so an existing recipient is never silently swapped for the first
+// PDA. Anything unresolved falls back to self rather than clobbering the form.
+function resolveInitialRecipientId(
+  getValues: UseFormGetValues<ReleaseFormData>,
+  patientRecipients: RecipientOption[],
+): string {
+  if (!getValues("releaseAuthAgent")) return SELF_RECIPIENT_ID;
+
+  const existingId = getValues("designatedAgentId");
+  if (existingId && patientRecipients.some((r) => r.id === existingId)) return existingId;
+
+  const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
+  const email = norm(getValues("authAgentEmail"));
+  const firstName = norm(getValues("authAgentFirstName"));
+  const lastName = norm(getValues("authAgentLastName"));
+  const match = patientRecipients.find(
+    (r) =>
+      (email && norm(r.email) === email) ||
+      (firstName && lastName && norm(r.firstName) === firstName && norm(r.lastName) === lastName),
+  );
+  return match?.id ?? SELF_RECIPIENT_ID;
 }
 
 export default function AuthorizationSection({ recipients, staffMode }: Props) {
@@ -64,6 +107,7 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
     control,
     watch,
     setValue,
+    getValues,
     trigger,
     formState: { errors },
   } = useFormContext<ReleaseFormData>();
@@ -84,25 +128,37 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
   const sigValue = watch("authSignatureImage");
   const printedName = watch("authPrintedName");
 
-  // For patient mode: track selected recipient when there are multiple options
-  const hasMultiple = !staffMode && (recipients?.length ?? 0) > 1;
-  const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(
-    hasMultiple ? null : (recipients?.[0]?.id ?? null)
+  // Patient mode: the "Give authorization to" picker always offers a "self"
+  // option (default) followed by the patient's PDAs — mirroring the mobile
+  // release wizard, where the patient can release to themselves even when a
+  // designated agent exists.
+  const patientRecipients = !staffMode ? (recipients ?? []) : [];
+  const showPicker = patientRecipients.length > 0;
+
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string>(() =>
+    resolveInitialRecipientId(getValues, patientRecipients),
   );
 
-  // Patient mode: auto-populate when only one recipient (no selection needed)
+  // Apply the initial selection to the form once on mount so the agent fields
+  // stay consistent with the picker (self clears them; a PDA populates them).
   useEffect(() => {
-    if (staffMode || hasMultiple) return;
-    const recipient = recipients?.[0];
-    if (!recipient) return;
-    populateRecipient(recipient, setValue);
+    if (staffMode || !showPicker) return;
+    if (selectedRecipientId === SELF_RECIPIENT_ID) {
+      populateSelf(setValue);
+    } else {
+      const recipient = patientRecipients.find((r) => r.id === selectedRecipientId);
+      if (recipient) populateRecipient(recipient, setValue);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Patient mode: populate fields when user selects a recipient
   function handleRecipientSelect(id: string | null) {
-    setSelectedRecipientId(id);
-    if (!id) return;
-    const recipient = recipients?.find(r => r.id === id);
+    const next = id ?? SELF_RECIPIENT_ID;
+    setSelectedRecipientId(next);
+    if (next === SELF_RECIPIENT_ID) {
+      populateSelf(setValue);
+      return;
+    }
+    const recipient = patientRecipients.find((r) => r.id === next);
     if (recipient) populateRecipient(recipient, setValue);
   }
 
@@ -127,7 +183,7 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
     trigger("authSignatureImage");
   };
 
-  const selectedRecipient = recipients?.find(r => r.id === selectedRecipientId) ?? null;
+  const selectedRecipient = patientRecipients.find(r => r.id === selectedRecipientId) ?? null;
 
   return (
     <Paper withBorder p="md" radius="md">
@@ -135,8 +191,8 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
         Authorization
       </Title>
       <Stack gap="md">
-        {/* Patient mode: multiple recipients — show dropdown */}
-        {hasMultiple && (
+        {/* Patient mode: "Give authorization to" picker — self (default) + PDAs */}
+        {showPicker && (
           <Paper withBorder p="sm" radius="md">
             <Stack gap="md">
               <Title order={6}>Individual/Organization to Receive the Information</Title>
@@ -145,14 +201,24 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
                 placeholder="Select a recipient"
                 required
                 allowDeselect={false}
-                data={recipients!.map(r => ({
-                  value: r.id,
-                  label: r.label,
-                }))}
+                data={[
+                  { value: SELF_RECIPIENT_ID, label: "Myself — I'm making the request" },
+                  ...patientRecipients.map(r => ({ value: r.id, label: r.label })),
+                ]}
                 value={selectedRecipientId}
                 onChange={handleRecipientSelect}
                 renderOption={({ option }) => {
-                  const r = recipients!.find(x => x.id === option.value);
+                  if (option.value === SELF_RECIPIENT_ID) {
+                    return (
+                      <Stack gap={2}>
+                        <Text size="sm">{option.label}</Text>
+                        <Badge size="xs" variant="light" color="blue">
+                          You · No representative
+                        </Badge>
+                      </Stack>
+                    );
+                  }
+                  const r = patientRecipients.find(x => x.id === option.value);
                   return (
                     <Stack gap={2}>
                       <Text size="sm">{option.label}</Text>
@@ -163,33 +229,18 @@ export default function AuthorizationSection({ recipients, staffMode }: Props) {
                   );
                 }}
               />
-              {selectedRecipient && (
+              {selectedRecipient ? (
                 <SimpleGrid cols={{ base: 1, sm: 2 }}>
                   <AgentField label="First Name" value={selectedRecipient.firstName} />
                   <AgentField label="Last Name" value={selectedRecipient.lastName} />
                   <AgentField label="Email" value={selectedRecipient.email} />
                   <AgentField label="Phone" value={selectedRecipient.phoneNumber} />
                 </SimpleGrid>
+              ) : (
+                <Text size="sm" c="dimmed">
+                  The records will be released to you directly. No representative will be authorized to receive them on your behalf.
+                </Text>
               )}
-            </Stack>
-          </Paper>
-        )}
-
-        {/* Patient mode: single recipient — show as read-only */}
-        {!hasMultiple && !staffMode && recipients?.[0] && (
-          <Paper withBorder p="sm" radius="md">
-            <Stack gap="md">
-              <Title order={6}>Individual/Organization to Receive the Information</Title>
-              <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <AgentField label="First Name" value={recipients[0].firstName} />
-                <AgentField label="Last Name" value={recipients[0].lastName} />
-              </SimpleGrid>
-              <AgentField label="Relationship to Patient" value="Authorized Representative" />
-              <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <AgentField label="Phone Number" value={recipients[0].phoneNumber} />
-                <AgentField label="Email" value={recipients[0].email} />
-              </SimpleGrid>
-              <AgentField label="Address" value={recipients[0].address} />
             </Stack>
           </Paper>
         )}

@@ -51,7 +51,6 @@ export default function ProviderCard({ index, isOpen, onRemove, dragHandleProps 
     <Accordion.Item
       value={`provider-${index}`}
       style={{
-        position: "relative",
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
         borderBottom: "none",
@@ -59,43 +58,48 @@ export default function ProviderCard({ index, isOpen, onRemove, dragHandleProps 
         ...(hasErrors ? { borderColor: "var(--mantine-color-red-5)" } : {}),
       }}
     >
-      <Accordion.Control>
-        <Group gap="xs" wrap="nowrap" align="center" pr={110}>
-          <div
-            {...(dragHandleProps as React.HTMLAttributes<HTMLDivElement>)}
-            style={{ display: "flex", alignItems: "center", color: "var(--mantine-color-gray-5)", touchAction: "none", cursor: "grab" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <IconGripVertical size={16} />
-          </div>
-          <Stack gap={0} style={{ flex: 1 }}>
-            <Title order={5} style={{ margin: 0, color: hasErrors ? "var(--mantine-color-red-6)" : undefined }}>
-              {displayName}
-            </Title>
-            <span style={{ fontSize: 12, color: "#868e96" }}>{providerType || "Provider"}</span>
-          </Stack>
-          {hasErrors && (
-            <Text size="xs" c="red" fw={500}>
-              Fix errors
-            </Text>
-          )}
-        </Group>
-      </Accordion.Control>
-      <Button
-        variant="light"
-        color="red"
-        size="xs"
-        onClick={onRemove}
-        style={{
-          position: "absolute",
-          top: "50%",
-          right: 48,
-          transform: "translateY(-50%)",
-          zIndex: 2,
-        }}
-      >
-        Remove
-      </Button>
+      {/* Wrap Control + Remove button in a relative header so the absolutely
+          positioned button anchors to the header height, not the whole item
+          (which grows when expanded). */}
+      <div style={{ position: "relative" }}>
+        <Accordion.Control>
+          <Group gap="xs" wrap="nowrap" align="center" pr={110}>
+            <div
+              {...(dragHandleProps as React.HTMLAttributes<HTMLDivElement>)}
+              style={{ display: "flex", alignItems: "center", color: "var(--mantine-color-gray-5)", touchAction: "none", cursor: "grab" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IconGripVertical size={16} />
+            </div>
+            <Stack gap={0} style={{ flex: 1 }}>
+              <Title order={5} style={{ margin: 0, color: hasErrors ? "var(--mantine-color-red-6)" : undefined }}>
+                {displayName}
+              </Title>
+              <span style={{ fontSize: 12, color: "#868e96" }}>{providerType || "Provider"}</span>
+            </Stack>
+            {hasErrors && (
+              <Text size="xs" c="red" fw={500}>
+                Fix errors
+              </Text>
+            )}
+          </Group>
+        </Accordion.Control>
+        <Button
+          variant="light"
+          color="red"
+          size="xs"
+          onClick={onRemove}
+          style={{
+            position: "absolute",
+            top: "50%",
+            right: 48,
+            transform: "translateY(-50%)",
+            zIndex: 2,
+          }}
+        >
+          Remove
+        </Button>
+      </div>
       <Accordion.Panel>
         <Stack gap="md">
           <SimpleGrid cols={{ base: 1, sm: 2 }}>

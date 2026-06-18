@@ -68,7 +68,19 @@ export default function SignaturePad({ value, onChange, error, typedName }: Prop
   // preview — the user never has to click "Save Signature" for typed names.
   // Uses an offscreen canvas so it works regardless of resignMode.
   useEffect(() => {
-    if (typedName === undefined || isManualMode || !typedName.trim()) return;
+    if (typedName === undefined || isManualMode) return;
+
+    // Printed name fully cleared — remove the auto-drawn signature too and
+    // reopen the canvas. Without this, the last rendered glyph lingers in the
+    // field because the effect would otherwise bail out before clearing.
+    if (!typedName.trim()) {
+      if (value) {
+        isAutoDrawRef.current = true;
+        onChange("");
+      }
+      setResignMode(true);
+      return;
+    }
 
     const offscreen = document.createElement("canvas");
     offscreen.width = 400;
@@ -100,13 +112,20 @@ export default function SignaturePad({ value, onChange, error, typedName }: Prop
       onChange(dataUrl);
       setResignMode(false);
       setHasDrawing(false);
-      setIsManualMode(false);
+      // Keep manual mode sticky: a hand-drawn signature must not be overwritten
+      // by the typed-name auto-draw effect (which keys off isManualMode).
+      setIsManualMode(true);
     }
   };
 
   const handleClear = () => {
     sigRef.current?.clear();
     setHasDrawing(false);
+    // Clearing the canvas abandons the manual drawing, so drop the sticky manual
+    // flag — typing a name can auto-sign again (and if a name is already typed,
+    // the auto-draw effect re-signs from it). This is the path back from a
+    // hand-drawn signature to typed-name auto-sign.
+    setIsManualMode(false);
   };
 
   const handleResign = () => {
